@@ -13,6 +13,11 @@ pub struct Sha256_2Block {
     pub result: Vec<BoolTarget>,
 }
 
+pub struct MerkleTree1BlockLeaf {
+    pub leaves_padded: Vec<Vec<BoolTarget>>,
+    pub root: Vec<BoolTarget>,
+}
+
 pub const SHA_BLOCK_BITS: usize = 512;
 
 pub fn get_256_bool_target<F: RichField + Extendable<D>, const D: usize>(
@@ -125,4 +130,48 @@ pub fn two_to_one_pad_target<F: RichField + Extendable<D>, const D: usize>(
     );
 
     result
+}
+
+// follows RFC-6962
+pub fn add_virtual_merkle_tree_1_block_leaf_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    n_leaves: usize,
+) -> MerkleTree1BlockLeaf {
+    assert!(n_leaves > 0, "number of leaves provided must be > 0");
+
+    let leaves_padded = (0..n_leaves)
+        .map(|_| get_sha_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+
+    let mut size = n_leaves;
+    let mut prev_items = leaves_padded
+        .iter()
+        .map(|elm| sha256_1_block(builder, elm))
+        .collect::<Vec<Vec<BoolTarget>>>();
+
+    while size != 1 {
+        let mut items: Vec<Vec<BoolTarget>> = vec![];
+        let mut rp = 0; // read position
+        let mut wp = 0; // write position
+        while rp < size {
+            if rp + 1 < size {
+                let pad_result =
+                    two_to_one_pad_target(builder, &prev_items[rp], &prev_items[rp + 1]);
+                let hash = sha256_2_block(builder, &pad_result);
+                items.push(hash);
+                rp += 2;
+            } else {
+                items.push(prev_items[rp].clone());
+                rp += 1;
+            }
+            wp += 1;
+        }
+        size = wp;
+        prev_items = items;
+    }
+
+    MerkleTree1BlockLeaf {
+        leaves_padded,
+        root: prev_items[0].clone(),
+    }
 }
