@@ -2,15 +2,29 @@ use super::merkle_tree_gadget::{
     add_virtual_merkle_tree_1_block_leaf_target, get_256_bool_target, get_sha_block_target,
     sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
 };
+use num::{BigUint, Integer, Zero, FromPrimitive};
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
+};
+use plonky2_crypto::{
+    biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint},
+    hash::{
+        sha256::{CircuitBuilderHashSha2, WitnessHashSha2},
+        CircuitBuilderHash, Hash256Target, HashInputTarget, WitnessHash,
+    },
+    u32::arithmetic_u32::CircuitBuilderU32,
 };
 
 pub struct MerkleProofTarget {
     pub leaf_padded: Vec<BoolTarget>, // shaBlock(0x00 || leaf)
     pub proof: Vec<Vec<BoolTarget>>,
     pub root: Vec<BoolTarget>,
+}
+
+pub struct UpdateValidityTarget {
+    pub untrusted_height: BigUintTarget,
+    pub trusted_height: BigUintTarget,
 }
 
 // all padded leaves are of the form: shaBlock(0x00 || leaf)
@@ -79,6 +93,30 @@ pub fn validators_hash_target<F: RichField + Extendable<D>, const D: usize>(
     (0..256).for_each(|i| builder.connect(merkle_tree.root[i].target, hash[i].target));
 
     hash
+}
+
+pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> UpdateValidityTarget {
+    let untrusted_height = builder.add_virtual_biguint_target(2); // 64 bytes
+    let trusted_height = builder.add_virtual_biguint_target(2); // 64 bytes
+
+    let two_big_target = builder.constant_biguint(&BigUint::from_i8(2).unwrap());
+    let one_bool_target = builder._true();
+    let trusted_height_plus_two = builder.add_biguint(&trusted_height, &two_big_target);
+
+    // ensures untrusted height >= trusted height + 2
+    let result = builder.cmp_biguint(&trusted_height_plus_two, &untrusted_height);
+    builder.connect(result.target, one_bool_target.target);
+
+    // TODO: add more here
+    // - untrusted height  < trusted height + trusting period
+
+    UpdateValidityTarget{
+        untrusted_height,
+        trusted_height
+    }
+
 }
 
 pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
