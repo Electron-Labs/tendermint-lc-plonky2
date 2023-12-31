@@ -7,8 +7,9 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
+// TODO: fix leaf test data - prefix 0x00
 pub struct VerifyMerkleProofTarget {
-    pub leaf_padded: Vec<BoolTarget>,
+    pub leaf_padded: Vec<BoolTarget>, // shaBlock(0x00 || leaf)
     pub proof: Vec<Vec<BoolTarget>>,
     pub root: Vec<BoolTarget>,
 }
