@@ -14,7 +14,7 @@ pub struct Sha256_2Block {
 }
 
 pub struct MerkleTree1BlockLeaf {
-    pub leaves_padded: Vec<Vec<BoolTarget>>,
+    pub leaves_padded: Vec<Vec<BoolTarget>>,  // shaBlock(0x00 || leaf)
     pub root: Vec<BoolTarget>,
 }
 
