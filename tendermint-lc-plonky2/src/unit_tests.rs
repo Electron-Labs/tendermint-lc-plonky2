@@ -1,8 +1,10 @@
 #[cfg(test)]
 mod tests {
+    use crate::merkle_tree_gadget::SHA_BLOCK_BITS;
     use crate::targets::{
-        add_virtual_connect_sign_message_target, add_virtual_update_validity_target,
-        UpdateValidityTarget, HEIGHT_BITS, SIGN_MESSAGE_BITS, TRUSTING_PERIOD
+        add_virtual_connect_sign_message_target, add_virtual_connect_timestamp_target,
+        add_virtual_update_validity_target, UpdateValidityTarget, HEIGHT_BITS, SIGN_MESSAGE_BITS,
+        TRUSTING_PERIOD,
     };
     use crate::test_utils::get_test_data;
     use num::BigUint;
@@ -170,9 +172,12 @@ mod tests {
         (0..SIGN_MESSAGE_BITS)
             .for_each(|i| witness.set_bool_target(target.message[i], data.message[i]));
         (0..256).for_each(|i| {
-            witness.set_bool_target(target.header_hash[i], data.untrusted_header_hash[i])
+            witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i])
         });
-        witness.set_biguint_target(&target.height, &BigUint::from_u64(data.untrusted_height).unwrap());
+        witness.set_biguint_target(
+            &target.height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
@@ -192,11 +197,14 @@ mod tests {
 
         (0..SIGN_MESSAGE_BITS)
             .for_each(|i| witness.set_bool_target(target.message[i], data.message[i]));
-        let mut hash = data.untrusted_header_hash;
+        let mut hash = data.untrusted_hash;
         hash[0] = true;
 
         (0..256).for_each(|i| witness.set_bool_target(target.header_hash[i], hash[i]));
-        witness.set_biguint_target(&target.height, &BigUint::from_u64(data.untrusted_height).unwrap());
+        witness.set_biguint_target(
+            &target.height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
@@ -220,9 +228,56 @@ mod tests {
         height += 1;
 
         (0..256).for_each(|i| {
-            witness.set_bool_target(target.header_hash[i], data.untrusted_header_hash[i])
+            witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i])
         });
         witness.set_biguint_target(&target.height, &BigUint::from_u64(height).unwrap());
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_connect_timestamp() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_timestamp_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(target.header_time_padded[i], data.untrusted_time_padded[i])
+        });
+        witness.set_biguint_target(
+            &target.header_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
+        );
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_connect_timestamp_incorrect() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_timestamp_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(target.header_time_padded[i], data.untrusted_time_padded[i])
+        });
+        witness.set_biguint_target(
+            &target.header_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp + 1).unwrap(),
+        );
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
