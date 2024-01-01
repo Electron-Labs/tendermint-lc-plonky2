@@ -43,8 +43,69 @@ pub struct UntrustedValidatorsQuorum{
     pub untrusted_signatures: Vec<Vec<BoolTarget>>, 
 }
 
+pub struct TrustedValidatorsQuorum{
+    pub untrusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
+    pub untrusted_validators_votes: Vec<BigUintTarget>,
+    pub trusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
+    pub trusted_validators_votes: Vec<BigUintTarget>,
+}
+
 pub const N_VALIDATORS: usize = 150;
 pub const UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+
+pub fn add_virtual_trusted_quorum_target <
+    F: RichField + Extendable<D>,
+    const D: usize
+> (
+    builder: &mut CircuitBuilder<F,D>
+) -> TrustedValidatorsQuorum {
+    let untrusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
+        (0..32*8).map(|_|{
+            builder.add_virtual_bool_target_safe()
+        }).collect()
+    }).collect::<Vec<Vec<BoolTarget>>>();
+
+
+    let untrusted_validators_votes = (0..N_VALIDATORS).map(|_|{
+        builder.add_virtual_biguint_target(8)
+    }).collect::<Vec<BigUintTarget>>();
+
+    let trusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
+        (0..32*8).map(|_|{
+            builder.add_virtual_bool_target_safe()
+        }).collect()
+    }).collect::<Vec<Vec<BoolTarget>>>();
+
+
+    let trusted_validators_votes = (0..N_VALIDATORS).map(|_|{
+        builder.add_virtual_biguint_target(8)
+    }).collect::<Vec<BigUintTarget>>();
+
+    let mut total_voting_power = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
+    let mut trusted_validator_voting_power = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
+
+    for i in 0..N_VALIDATORS{
+        let result = add_virtual_cmp_vec_bool_target(builder, trusted_validators_pub_keys[i].clone(), untrusted_validators_pub_keys[i].clone());
+        let intermediate = builder.mul_biguint_by_bool(&trusted_validators_votes[i], result);
+        trusted_validator_voting_power = builder.add_biguint(&trusted_validator_voting_power, &intermediate);
+
+        total_voting_power = builder.add_biguint(&total_voting_power, &untrusted_validators_votes[i]);
+    }
+
+    // 3 trusted_signature_voting_power > total_voting_power(untrusted)
+    let one_target = builder.one();
+    let three_biguint_target = builder.constant_biguint(&BigUint::from_u64(3).unwrap()); 
+    let three_trusted_validators_voting_power = builder.mul_biguint(&trusted_validator_voting_power, &three_biguint_target);
+    let comparison = builder.cmp_biguint(&total_voting_power, &three_trusted_validators_voting_power);          
+    builder.connect(comparison.target, one_target);
+
+    return TrustedValidatorsQuorum {
+        untrusted_validators_pub_keys: untrusted_validators_pub_keys,
+        untrusted_validators_votes: untrusted_validators_votes,
+        trusted_validators_pub_keys: trusted_validators_pub_keys,
+        trusted_validators_votes: trusted_validators_votes
+    }
+}
 
 
 pub fn add_virtual_untrusted_consensus_target<
