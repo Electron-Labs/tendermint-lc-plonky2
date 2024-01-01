@@ -16,6 +16,8 @@ use plonky2_crypto::{
     u32::arithmetic_u32::CircuitBuilderU32,
 };
 
+use crate::utils::{add_virtual_cmp_vec_bool_target,add_virtual_dummy_verify_signature_target};
+
 pub struct MerkleProofTarget {
     pub leaf_padded: Vec<BoolTarget>, // shaBlock(0x00 || leaf)
     pub proof: Vec<Vec<BoolTarget>>,
@@ -35,9 +37,71 @@ pub struct ProofTarget {
     trusted_next_validators_leaves_padded: Vec<Vec<BoolTarget>>,
     untrusted_validators_hash_proof: Vec<Vec<BoolTarget>>,
 }
+pub struct UntrustedValidatorsQuorum{ 
+    pub untrusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
+    pub untrusted_validators_votes: Vec<BigUintTarget>,
+    pub untrusted_signatures: Vec<Vec<BoolTarget>>, 
+}
 
 pub const N_VALIDATORS: usize = 150;
 pub const UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+
+
+pub fn add_virtual_untrusted_consensus_target<
+    F: RichField + Extendable<D>,
+    const D: usize
+>(
+    builder: &mut CircuitBuilder<F,D>
+) -> UntrustedValidatorsQuorum{
+
+    let untrusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
+        (0..32*8).map(|_|{
+            builder.add_virtual_bool_target_safe()
+        }).collect()
+    }).collect::<Vec<Vec<BoolTarget>>>();
+
+
+    let untrusted_validators_votes = (0..N_VALIDATORS).map(|_|{
+        builder.add_virtual_biguint_target(8)
+    }).collect::<Vec<BigUintTarget>>();
+
+    let untrusted_signatures = (0..N_VALIDATORS).map(|_|{
+        (0..64*8).map(|_|{
+            builder.add_virtual_bool_target_safe()
+        }).collect()
+    }).collect::<Vec<Vec<BoolTarget>>>();
+
+    let zero_biguint_target = builder.zero_biguint(); 
+
+    let mut total_voting_power = builder.add_virtual_biguint_target(8);
+    builder.connect_biguint(&total_voting_power, &zero_biguint_target);
+
+    let mut signature_voting_power = builder.add_virtual_biguint_target(8);
+    builder.connect_biguint(&signature_voting_power, &zero_biguint_target);
+
+
+    for i in 0..untrusted_validators_pub_keys.len(){
+        let result = add_virtual_dummy_verify_signature_target(builder, untrusted_signatures[i].clone());
+        let signature_voting_power_intermediate = builder.mul_biguint_by_bool(&untrusted_validators_votes[i].clone(), result);
+        signature_voting_power = builder.add_biguint(&signature_voting_power, &signature_voting_power_intermediate);
+        total_voting_power = builder.add_biguint(&total_voting_power,&untrusted_validators_votes[i]);
+    }
+
+    let two_biguint_target = builder.constant_biguint(&BigUint::from_u64(2).unwrap());
+    let three_biguint_target = builder.constant_biguint(&BigUint::from_u64(3).unwrap()); 
+    let two_total_voting_power = builder.mul_biguint(&two_biguint_target, &total_voting_power);
+    let three_signature_voting_power = builder.mul_biguint(&three_biguint_target, &signature_voting_power);
+    let result = builder.cmp_biguint(&two_total_voting_power,&three_signature_voting_power);
+    let one_target = builder.one();
+    builder.connect(result.target,one_target);
+
+    return UntrustedValidatorsQuorum{
+        untrusted_validators_pub_keys: untrusted_validators_pub_keys,
+        untrusted_validators_votes: untrusted_validators_votes,
+        untrusted_signatures: untrusted_signatures
+    };
+
+}
 
 pub fn add_virtual_validators_hash_merkle_proof_target<
     F: RichField + Extendable<D>,
