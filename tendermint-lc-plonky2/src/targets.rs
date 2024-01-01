@@ -31,6 +31,8 @@ pub struct MerkleProofTarget {
 pub struct UpdateValidityTarget {
     pub untrusted_height: BigUintTarget,
     pub trusted_height: BigUintTarget,
+    pub untrusted_timestamp: BigUintTarget,
+    pub trusted_timestamp: BigUintTarget,
 }
 
 // all padded leaves are of the form: shaBlock(0x00 || leaf)
@@ -38,7 +40,9 @@ pub struct ProofTarget {
     sign_message: Vec<BoolTarget>,
     untrusted_header_hash: Vec<BoolTarget>,
     untrusted_header_height: BigUintTarget,
+    untrusted_timestamp: BigUintTarget, // Unix timestamps in seconds
     trusted_header_height: BigUintTarget,
+    trusted_timestamp: BigUintTarget, // Unix timestamps in seconds
     untrusted_validators_hash_padded: Vec<BoolTarget>,
     untrusted_validators_leaves_padded: Vec<Vec<BoolTarget>>,
     trusted_next_validators_leaves_padded: Vec<Vec<BoolTarget>>,
@@ -49,6 +53,8 @@ pub const N_VALIDATORS: usize = 150;
 pub const UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
 pub const SIGN_MESSAGE_BITS: usize = 110 * 8;
 pub const HEIGHT_BITS: usize = 64;
+pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for blocks till the year 3058
+pub const TRUSTING_PERIOD: usize = 1209600; // 2 weeks in seconds
 
 pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -145,21 +151,31 @@ pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D:
 ) -> UpdateValidityTarget {
     let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
     let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
 
     let two_big_target = builder.constant_biguint(&BigUint::from_i8(2).unwrap());
     let one_bool_target = builder._true();
-    let trusted_height_plus_two = builder.add_biguint(&trusted_height, &two_big_target);
 
     // ensures untrusted height >= trusted height + 2
+    let trusted_height_plus_two = builder.add_biguint(&trusted_height, &two_big_target);
     let result = builder.cmp_biguint(&trusted_height_plus_two, &untrusted_height);
     builder.connect(result.target, one_bool_target.target);
 
-    // TODO: add more here
-    // - untrusted height  < trusted height + trusting period
+    // ensures trusted height + trusting period >= untrusted height
+    // TODO: verify trusting period once
+    let trusting_period_seconds =
+        builder.constant_biguint(&BigUint::from_usize(TRUSTING_PERIOD).unwrap());
+    let untrusted_max_allowed_timestamp =
+        builder.add_biguint(&trusted_timestamp, &trusting_period_seconds);
+    let result = builder.cmp_biguint(&untrusted_timestamp, &untrusted_max_allowed_timestamp);
+    builder.connect(result.target, one_bool_target.target);
 
     UpdateValidityTarget {
         untrusted_height,
         trusted_height,
+        untrusted_timestamp,
+        trusted_timestamp,
     }
 }
 
@@ -171,8 +187,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>();
     let untrusted_header_hash = get_256_bool_target(builder);
     let untrusted_header_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
     let trusted_header_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
     let untrusted_validators_hash_padded = get_sha_block_target(builder);
+    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
     let untrusted_validators_leaves_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -191,7 +209,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_validators_hash_merkle_proof_target =
         add_virtual_validators_hash_merkle_proof_target(builder);
 
-
     // *** ConnectSignMessageTarget ***
     (0..SIGN_MESSAGE_BITS).for_each(|i| {
         builder.connect(
@@ -206,7 +223,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         )
     });
     builder.connect_biguint(&connect_message_target.height, &untrusted_header_height);
-
 
     // *** MerkleProofTarget-untrusted_validators_hash ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -230,7 +246,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         )
     });
 
-
     // *** UpdateValidityTarget ***
     let update_validity_target = add_virtual_update_validity_target(builder);
     builder.connect_biguint(
@@ -241,7 +256,14 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &update_validity_target.trusted_height,
         &trusted_header_height,
     );
-
+    builder.connect_biguint(
+        &update_validity_target.untrusted_timestamp,
+        &untrusted_timestamp,
+    );
+    builder.connect_biguint(
+        &update_validity_target.trusted_timestamp,
+        &trusted_timestamp,
+    );
 
     // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     (0..256).for_each(|i| {
@@ -255,7 +277,9 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         sign_message,
         untrusted_header_hash,
         untrusted_header_height,
+        untrusted_timestamp,
         trusted_header_height,
+        trusted_timestamp,
         untrusted_validators_hash_padded,
         untrusted_validators_leaves_padded,
         trusted_next_validators_leaves_padded,
