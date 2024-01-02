@@ -3,7 +3,7 @@ mod tests {
     use crate::merkle_tree_gadget::SHA_BLOCK_BITS;
     use crate::targets::{
         add_virtual_connect_sign_message_target, add_virtual_connect_timestamp_target,
-        add_virtual_update_validity_target, UpdateValidityTarget, HEIGHT_BITS, SIGN_MESSAGE_BITS,
+        add_virtual_update_validity_target, UpdateValidityTarget, SIGN_MESSAGE_BITS,
         TRUSTING_PERIOD,
     };
     use crate::test_utils::get_test_data;
@@ -16,7 +16,7 @@ mod tests {
     use plonky2::{hash::hash_types::RichField, plonk::circuit_builder::CircuitBuilder};
     use plonky2_crypto::{
         biguint::WitnessBigUint,
-        hash::{sha256::WitnessHashSha2, WitnessHash},
+        hash::{sha256::WitnessHashSha2},
     };
 
     const D: usize = 2;
@@ -170,7 +170,7 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.message[i]));
+            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
         (0..256).for_each(|i| {
             witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i])
         });
@@ -196,7 +196,7 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.message[i]));
+            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
         let mut hash = data.untrusted_hash;
         hash[0] = true;
 
@@ -223,7 +223,7 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.message[i]));
+            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
         let mut height = data.untrusted_height;
         height += 1;
 

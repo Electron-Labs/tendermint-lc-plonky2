@@ -2,19 +2,12 @@ use super::merkle_tree_gadget::{
     add_virtual_merkle_tree_1_block_leaf_target, get_256_bool_target, get_sha_block_target,
     sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
 };
-use num::{BigUint, FromPrimitive, Integer, Zero};
+use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint},
-    hash::{
-        sha256::{CircuitBuilderHashSha2, WitnessHashSha2},
-        CircuitBuilderHash, Hash256Target, HashInputTarget, WitnessHash,
-    },
-    u32::arithmetic_u32::CircuitBuilderU32,
-};
+use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 pub struct MerkleProofTarget {
     pub leaf_padded: Vec<BoolTarget>, // shaBlock(0x00 || leaf)
@@ -45,20 +38,26 @@ pub struct ProofTarget {
     pub sign_message: Vec<BoolTarget>,
     pub untrusted_hash: Vec<BoolTarget>,
     pub untrusted_height: BigUintTarget,
+    pub untrusted_time_padded: Vec<BoolTarget>,
+    pub untrusted_time_proof: Vec<Vec<BoolTarget>>,
     pub untrusted_timestamp: BigUintTarget, // Unix timestamps in seconds
-    pub trusted_height: BigUintTarget,
-    pub trusted_timestamp: BigUintTarget, // Unix timestamps in seconds
     pub untrusted_validators_hash_padded: Vec<BoolTarget>,
     pub untrusted_validators_padded: Vec<Vec<BoolTarget>>,
-    pub trusted_next_validators_padded: Vec<Vec<BoolTarget>>,
     pub untrusted_validators_hash_proof: Vec<Vec<BoolTarget>>,
+    pub trusted_hash: Vec<BoolTarget>,
+    pub trusted_height: BigUintTarget,
+    pub trusted_time_padded: Vec<BoolTarget>,
+    pub trusted_time_proof: Vec<Vec<BoolTarget>>,
+    pub trusted_timestamp: BigUintTarget, // Unix timestamps in seconds
+    pub trusted_next_validators_padded: Vec<Vec<BoolTarget>>,
 }
 
 pub const N_VALIDATORS: usize = 150;
-pub const UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+pub const VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+pub const HEADER_TIME_PROOF_SIZE: usize = 4;
 pub const SIGN_MESSAGE_BITS: usize = 110 * 8;
 pub const HEIGHT_BITS: usize = 64;
-pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for blocks till the year 3058
+pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for new blocks till the year 3058
 pub const TRUSTING_PERIOD: usize = 1209600; // 2 weeks in seconds
 
 pub fn add_virtual_validators_hash_merkle_proof_target<
@@ -68,7 +67,7 @@ pub fn add_virtual_validators_hash_merkle_proof_target<
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
     let root = get_256_bool_target(builder);
-    let proof = (0..UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE)
+    let proof = (0..VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -82,6 +81,38 @@ pub fn add_virtual_validators_hash_merkle_proof_target<
     hash = sha256_2_block(builder, &pad_result);
 
     pad_result = two_to_one_pad_target(builder, &proof[2], &hash);
+    hash = sha256_2_block(builder, &pad_result);
+
+    pad_result = two_to_one_pad_target(builder, &hash, &proof[3]);
+    hash = sha256_2_block(builder, &pad_result);
+
+    (0..256).for_each(|i| builder.connect(hash[i].target, root[i].target));
+
+    MerkleProofTarget {
+        leaf_padded,
+        proof,
+        root,
+    }
+}
+
+pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> MerkleProofTarget {
+    let root = get_256_bool_target(builder);
+    let proof = (0..HEADER_TIME_PROOF_SIZE)
+        .map(|_| get_256_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let leaf_padded = get_sha_block_target(builder);
+
+    let mut hash = sha256_1_block(builder, &leaf_padded);
+
+    let mut pad_result = two_to_one_pad_target(builder, &proof[0], &hash);
+    hash = sha256_2_block(builder, &pad_result);
+
+    pad_result = two_to_one_pad_target(builder, &proof[1], &hash);
+    hash = sha256_2_block(builder, &pad_result);
+
+    pad_result = two_to_one_pad_target(builder, &hash, &proof[2]);
     hash = sha256_2_block(builder, &pad_result);
 
     pad_result = two_to_one_pad_target(builder, &hash, &proof[3]);
@@ -222,16 +253,23 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_hash = get_256_bool_target(builder);
     let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
     let untrusted_time_padded = get_sha_block_target(builder);
-    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
-    let untrusted_validators_hash_padded = get_sha_block_target(builder);
-    let untrusted_validators_hash_proof = (0..UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE)
+    let untrusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
-    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
-    let trusted_time_padded = get_sha_block_target(builder);
+    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let untrusted_validators_hash_padded = get_sha_block_target(builder);
     let untrusted_validators_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let untrusted_validators_hash_proof = (0..VALIDATORS_HASH_PROOF_SIZE)
+        .map(|_| get_256_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let trusted_hash = get_256_bool_target(builder);
+    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let trusted_time_padded = get_sha_block_target(builder);
+    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let trusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
+        .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_next_validators_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
@@ -243,6 +281,8 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         validators_hash_target(builder, trusted_next_validators_padded.clone());
     let untrusted_validators_hash_merkle_proof_target =
         add_virtual_validators_hash_merkle_proof_target(builder);
+    let untrusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
+    let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
     let update_validity_target = add_virtual_update_validity_target(builder);
     let connect_message_target = add_virtual_connect_sign_message_target(builder);
     let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
@@ -255,7 +295,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             untrusted_validators_hash_padded[i].target,
         )
     });
-    (0..UNTRUSTED_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    (0..VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 untrusted_validators_hash_merkle_proof_target.proof[i][j].target,
@@ -270,15 +310,53 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         )
     });
 
+    // *** MerkleProofTarget - untrusted time ***
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        builder.connect(
+            untrusted_time_merkle_proof_target.leaf_padded[i].target,
+            untrusted_time_padded[i].target,
+        )
+    });
+    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                untrusted_time_merkle_proof_target.proof[i][j].target,
+                untrusted_time_proof[i][j].target,
+            )
+        })
+    });
+    (0..256).for_each(|i| {
+        builder.connect(
+            untrusted_time_merkle_proof_target.root[i].target,
+            untrusted_hash[i].target,
+        )
+    });
+
+    // *** MerkleProofTarget - trusted time ***
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        builder.connect(
+            trusted_time_merkle_proof_target.leaf_padded[i].target,
+            trusted_time_padded[i].target,
+        )
+    });
+    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                trusted_time_merkle_proof_target.proof[i][j].target,
+                trusted_time_proof[i][j].target,
+            )
+        })
+    });
+    (0..256).for_each(|i| {
+        builder.connect(
+            trusted_time_merkle_proof_target.root[i].target,
+            trusted_hash[i].target,
+        )
+    });
+
     // *** UpdateValidityTarget ***
-    builder.connect_biguint(
-        &update_validity_target.untrusted_height,
-        &untrusted_height,
-    );
-    builder.connect_biguint(
-        &update_validity_target.trusted_height,
-        &trusted_height,
-    );
+    builder.connect_biguint(&update_validity_target.untrusted_height, &untrusted_height);
+    builder.connect_biguint(&update_validity_target.trusted_height, &trusted_height);
     builder.connect_biguint(
         &update_validity_target.untrusted_timestamp,
         &untrusted_timestamp,
@@ -339,12 +417,17 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         sign_message,
         untrusted_hash,
         untrusted_height,
+        untrusted_time_padded,
+        untrusted_time_proof,
         untrusted_timestamp,
-        trusted_height,
-        trusted_timestamp,
         untrusted_validators_hash_padded,
         untrusted_validators_padded,
-        trusted_next_validators_padded,
         untrusted_validators_hash_proof,
+        trusted_hash,
+        trusted_height,
+        trusted_time_padded,
+        trusted_timestamp,
+        trusted_time_proof,
+        trusted_next_validators_padded,
     }
 }
