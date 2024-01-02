@@ -10,7 +10,9 @@ pub struct Inputs {
     pub untrusted_timestamp: u64,
     pub untusted_validators_hash_padded: Vec<bool>,
     pub untrusted_validators_hash_proof: Vec<Vec<bool>>,
-    pub trusted_hash: u64,
+    pub trusted_hash: Vec<bool>,
     pub trusted_height: u64,
+    pub trusted_time_padded: Vec<bool>,
+    pub trusted_time_proof: Vec<Vec<bool>>,
     pub trusted_timestamp: u64,
 }
