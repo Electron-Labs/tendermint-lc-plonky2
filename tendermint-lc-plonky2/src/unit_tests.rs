@@ -8,8 +8,8 @@ mod tests {
     use std::io::Read;
     use crate::targets::{
         add_virtual_update_validity_target,
-        add_virtual_untrusted_consensus_target, N_VALIDATORS,
-        add_virtual_trusted_quorum_target,
+        add_virtual_untrusted_quorum_target, N_VALIDATORS,
+        add_virtual_trusted_quorum_target, is_verified_signature,
     };
     use crate::test_utils::get_test_data;
     use num::BigUint;
@@ -90,34 +90,35 @@ mod tests {
 
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         let start_time = std::time::Instant::now();
 
-        let untrusted_consensus = add_virtual_untrusted_consensus_target(&mut builder);
+
+        let untrusted_quorum = add_virtual_untrusted_quorum_target(&mut builder);
+        let is_verified_signature = is_verified_signature(&mut builder, untrusted_quorum.untrusted_signatures.clone());
         println!("built target in {}ms",start_time.elapsed().as_millis());
 
-        //getting data from json
-        let mut file = File::open("src/test_data/12946557_12975357.json").unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-        let json = Json::from_str(&data).unwrap();
         
-        let untrusted_validators_pub_key = json.find_path(&["untrusted_validators_pub_key"]).unwrap();
-        let untrusted_voting_power = json.find_path(&["untrusted_voting_power"]).unwrap();
-        let untrusted_signatures = json.find_path(&["untrusted_signatures"]).unwrap();
+        let test_data = get_test_data();
+        let untrusted_validators_pub_key = test_data.untrusted_validators_pub_key;
+        let untrusted_voting_power = test_data.untrusted_voting_power;
+        let untrusted_signatures = test_data.untrusted_signatures;
         
 
         for i in 0..N_VALIDATORS{
             for j in 0..32*8{
-                pw.set_bool_target(untrusted_consensus.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j].as_boolean().unwrap());
+                witness.set_bool_target(untrusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j]);
             }
             for j in 0..64*8 {
-                pw.set_bool_target(untrusted_consensus.untrusted_signatures[i][j], untrusted_signatures[i][j].as_boolean().unwrap());
+                witness.set_bool_target(untrusted_quorum.untrusted_signatures[i][j], untrusted_signatures[i][j]);
             }
-            pw.set_biguint_target(&untrusted_consensus.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i].as_u64().unwrap()).unwrap());
+            witness.set_biguint_target(&untrusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i]).unwrap());
+        }
+        for i in 0..is_verified_signature.len(){
+            builder.connect(is_verified_signature[i].target, untrusted_quorum.is_verified_signature[i].target);
         }
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         println!("proved in {}ms",start_time.elapsed().as_millis());
         assert!(data.verify(proof).is_ok());    
         
@@ -128,17 +129,14 @@ mod tests {
 
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         let start_time = std::time::Instant::now();
 
-        let untrusted_consensus = add_virtual_untrusted_consensus_target(&mut builder);
+        let untrusted_quorum = add_virtual_untrusted_quorum_target(&mut builder);
+        let is_verified_signature = is_verified_signature(&mut builder, untrusted_quorum.untrusted_signatures.clone());
         println!("built target in {}ms",start_time.elapsed().as_millis());
 
-        //getting data from json
-        let mut file = File::open("src/test_data/12946557_12975357.json").unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-        let json = Json::from_str(&data).unwrap();
+        
 
         let mut file1 = File::open("src/test_data/dummy_data.json").unwrap();
         let mut data1 = String::new();
@@ -146,22 +144,28 @@ mod tests {
         let json1 = Json::from_str(&data1).unwrap();
 
 
-        let untrusted_validators_pub_key = json.find_path(&["untrusted_validators_pub_key"]).unwrap();
-        let untrusted_voting_power = json.find_path(&["untrusted_voting_power"]).unwrap();
+        let test_data = get_test_data();
+        let untrusted_validators_pub_key = test_data.untrusted_validators_pub_key;
+        let untrusted_voting_power = test_data.untrusted_voting_power;
         let untrusted_signatures = json1.find_path(&["neg_untrusted_signatures"]).unwrap();
         
 
         for i in 0..N_VALIDATORS{
             for j in 0..32*8{
-                pw.set_bool_target(untrusted_consensus.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j].as_boolean().unwrap());
+                witness.set_bool_target(untrusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j]);
             }
             for j in 0..64*8{
-                pw.set_bool_target(untrusted_consensus.untrusted_signatures[i][j], untrusted_signatures[i][j].as_boolean().unwrap());
+                witness.set_bool_target(untrusted_quorum.untrusted_signatures[i][j], untrusted_signatures[i][j].as_boolean().unwrap());
             }
-            pw.set_biguint_target(&untrusted_consensus.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i].as_u64().unwrap()).unwrap());
+            witness.set_biguint_target(&untrusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i]).unwrap());
         }
+
+        for i in 0..is_verified_signature.len(){
+            builder.connect(is_verified_signature[i].target, untrusted_quorum.is_verified_signature[i].target);
+        }
+        
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         println!("proved in {}ms",start_time.elapsed().as_millis());
         assert!(data.verify(proof).is_ok());    
         
@@ -170,39 +174,41 @@ mod tests {
     fn test_sufficient_trusted_quorum(){
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         let start_time = std::time::Instant::now();
 
         let trusted_quorum = add_virtual_trusted_quorum_target(&mut builder);
+        let is_verified_signature = is_verified_signature(&mut builder, trusted_quorum.untrusted_signatures.clone());
         println!("built target in {}ms",start_time.elapsed().as_millis());
 
 
-        //getting data from json
-        let mut file = File::open("src/test_data/12946557_12975357.json").unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-        let json = Json::from_str(&data).unwrap();
-        
-        let untrusted_validators_pub_key = json.find_path(&["untrusted_validators_pub_key"]).unwrap();
-        let untrusted_voting_power = json.find_path(&["untrusted_voting_power"]).unwrap();
-        let trusted_validators_pub_key = json.find_path(&["trusted_validators_pub_key"]).unwrap();
-        let trusted_voting_power = json.find_path(&["trusted_voting_power"]).unwrap();
+        let test_data = get_test_data();
+        let untrusted_validators_pub_key = test_data.untrusted_validators_pub_key;
+        let untrusted_signatures = test_data.untrusted_signatures;
+        let untrusted_voting_power = test_data.untrusted_voting_power;
+        let trusted_validators_pub_key = test_data.trusted_validators_pub_key;
+        let trusted_voting_power = test_data.trusted_voting_power;
 
 
         for i in 0..N_VALIDATORS {
             for j in 0..32*8 {
-                pw.set_bool_target(trusted_quorum.trusted_validators_pub_keys[i][j], trusted_validators_pub_key[i][j].as_boolean().unwrap());
-                pw.set_bool_target(trusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j].as_boolean().unwrap());
+                witness.set_bool_target(trusted_quorum.trusted_validators_pub_keys[i][j], trusted_validators_pub_key[i][j]);
+                witness.set_bool_target(trusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j]);
             }
-            pw.set_biguint_target(&trusted_quorum.trusted_validators_votes[i], &BigUint::from_u64(trusted_voting_power[i].as_u64().unwrap()).unwrap());
-            pw.set_biguint_target(&trusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i].as_u64().unwrap()).unwrap());
+            for j in 0..64*8 {
+                witness.set_bool_target(trusted_quorum.untrusted_signatures[i][j],untrusted_signatures[i][j]);
+            }
+            witness.set_biguint_target(&trusted_quorum.trusted_validators_votes[i], &BigUint::from_u64(trusted_voting_power[i]).unwrap());
+            witness.set_biguint_target(&trusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i]).unwrap());
+        }
+        for i in 0..is_verified_signature.len(){
+            builder.connect(is_verified_signature[i].target, trusted_quorum.is_verified_signature[i].target);
         }
         
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         println!("proved in {}ms",start_time.elapsed().as_millis());
         assert!(data.verify(proof).is_ok());
-
 
     }
 
@@ -211,43 +217,44 @@ mod tests {
     fn test_insufficient_trusted_quorum(){
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         let start_time = std::time::Instant::now();
 
         let trusted_quorum = add_virtual_trusted_quorum_target(&mut builder);
+        let is_verified_signature = is_verified_signature(&mut builder, trusted_quorum.untrusted_signatures.clone());
         println!("built target in {}ms",start_time.elapsed().as_millis());
-
-
-        //getting data from json
-        let mut file = File::open("src/test_data/12946557_12975357.json").unwrap();
-        let mut data = String::new();
-        file.read_to_string(&mut data).unwrap();
-        let json = Json::from_str(&data).unwrap();
 
         let mut file1 = File::open("src/test_data/dummy_data.json").unwrap();
         let mut data1 = String::new();
         file1.read_to_string(&mut data1).unwrap();
         let json1 = Json::from_str(&data1).unwrap();
         
-        let untrusted_validators_pub_key = json.find_path(&["untrusted_validators_pub_key"]).unwrap();
-        let untrusted_voting_power = json.find_path(&["untrusted_voting_power"]).unwrap();
+        let test_data = get_test_data();
+        let untrusted_validators_pub_key = test_data.untrusted_validators_pub_key;
+        let untrusted_voting_power = test_data.untrusted_voting_power;
+        let trusted_voting_power = test_data.trusted_voting_power;
+
         let trusted_validators_pub_key = json1.find_path(&["neg_trusted_validators_pub_key"]).unwrap();
-        let trusted_voting_power = json.find_path(&["trusted_voting_power"]).unwrap();
+        let untrusted_signatures = json1.find_path(&["neg_untrusted_signatures"]).unwrap();
 
 
         for i in 0..N_VALIDATORS {
             for j in 0..32*8 {
-                pw.set_bool_target(trusted_quorum.trusted_validators_pub_keys[i][j], trusted_validators_pub_key[i][j].as_boolean().unwrap());
-                pw.set_bool_target(trusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j].as_boolean().unwrap());
+                witness.set_bool_target(trusted_quorum.trusted_validators_pub_keys[i][j], trusted_validators_pub_key[i][j].as_boolean().unwrap());
+                witness.set_bool_target(trusted_quorum.untrusted_validators_pub_keys[i][j], untrusted_validators_pub_key[i][j]);
             }
-            pw.set_biguint_target(&trusted_quorum.trusted_validators_votes[i], &BigUint::from_u64(trusted_voting_power[i].as_u64().unwrap()).unwrap());
-            pw.set_biguint_target(&trusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i].as_u64().unwrap()).unwrap());
+            for j in 0..64*8 {
+                witness.set_bool_target(trusted_quorum.untrusted_signatures[i][j],untrusted_signatures[i][j].as_boolean().unwrap());
+            }
+            witness.set_biguint_target(&trusted_quorum.trusted_validators_votes[i], &BigUint::from_u64(trusted_voting_power[i]).unwrap());
+            witness.set_biguint_target(&trusted_quorum.untrusted_validators_votes[i], &BigUint::from_u64(untrusted_voting_power[i]).unwrap());
         }
-        
+        for i in 0..is_verified_signature.len(){
+            builder.connect(is_verified_signature[i].target, trusted_quorum.is_verified_signature[i].target);
+        }
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         println!("proved in {}ms",start_time.elapsed().as_millis());
         assert!(data.verify(proof).is_ok());
     }
-
 }

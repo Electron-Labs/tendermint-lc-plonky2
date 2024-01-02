@@ -37,17 +37,20 @@ pub struct ProofTarget {
     trusted_next_validators_leaves_padded: Vec<Vec<BoolTarget>>,
     untrusted_validators_hash_proof: Vec<Vec<BoolTarget>>,
 }
-pub struct UntrustedValidatorsQuorum{ 
+pub struct UntrustedValidatorsQuorumTarget{ 
     pub untrusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
     pub untrusted_validators_votes: Vec<BigUintTarget>,
     pub untrusted_signatures: Vec<Vec<BoolTarget>>, 
+    pub is_verified_signature: Vec<BoolTarget>
 }
 
-pub struct TrustedValidatorsQuorum{
+pub struct TrustedValidatorsQuorumTarget{
     pub untrusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
     pub untrusted_validators_votes: Vec<BigUintTarget>,
+    pub untrusted_signatures: Vec<Vec<BoolTarget>>,
     pub trusted_validators_pub_keys: Vec<Vec<BoolTarget>>,
     pub trusted_validators_votes: Vec<BigUintTarget>,
+    pub is_verified_signature: Vec<BoolTarget>
 }
 
 pub const N_VALIDATORS: usize = 150;
@@ -58,7 +61,7 @@ pub fn add_virtual_trusted_quorum_target <
     const D: usize
 > (
     builder: &mut CircuitBuilder<F,D>
-) -> TrustedValidatorsQuorum {
+) -> TrustedValidatorsQuorumTarget {
     let untrusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
         (0..32*8).map(|_|{
             builder.add_virtual_bool_target_safe()
@@ -67,8 +70,14 @@ pub fn add_virtual_trusted_quorum_target <
 
 
     let untrusted_validators_votes = (0..N_VALIDATORS).map(|_|{
-        builder.add_virtual_biguint_target(8)
+        builder.add_virtual_biguint_target(2)
     }).collect::<Vec<BigUintTarget>>();
+
+    let untrusted_signatures = (0..N_VALIDATORS).map(|_|{
+        (0..64*8).map(|_|{
+            builder.add_virtual_bool_target_safe()
+        }).collect()
+    }).collect::<Vec<Vec<BoolTarget>>>();
 
     let trusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
         (0..32*8).map(|_|{
@@ -77,19 +86,33 @@ pub fn add_virtual_trusted_quorum_target <
     }).collect::<Vec<Vec<BoolTarget>>>();
 
 
+    let is_verified_signature = (0..N_VALIDATORS).map(|_|{
+        builder.add_virtual_bool_target_safe()
+    }).collect::<Vec<BoolTarget>>();
+
+
     let trusted_validators_votes = (0..N_VALIDATORS).map(|_|{
-        builder.add_virtual_biguint_target(8)
+        builder.add_virtual_biguint_target(2)
     }).collect::<Vec<BigUintTarget>>();
 
     let mut total_voting_power = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
     let mut trusted_validator_voting_power = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
-    for i in 0..N_VALIDATORS{
-        let result = add_virtual_cmp_vec_bool_target(builder, trusted_validators_pub_keys[i].clone(), untrusted_validators_pub_keys[i].clone());
+    for i in 0..trusted_validators_pub_keys.len(){
+        let mut result = builder._false();
+        for j in 0..untrusted_validators_pub_keys.len(){
+            let result_intermediate = add_virtual_cmp_vec_bool_target(builder, trusted_validators_pub_keys[i].clone(), untrusted_validators_pub_keys[j].clone());
+            result = builder.or(result,result_intermediate);
+        }
+
+        result = builder.and(result, is_verified_signature[i]);
         let intermediate = builder.mul_biguint_by_bool(&trusted_validators_votes[i], result);
         trusted_validator_voting_power = builder.add_biguint(&trusted_validator_voting_power, &intermediate);
+        
+    }
 
-        total_voting_power = builder.add_biguint(&total_voting_power, &untrusted_validators_votes[i]);
+    for i in untrusted_validators_votes.clone(){
+        total_voting_power = builder.add_biguint(&total_voting_power, &i);
     }
 
     // 3 trusted_signature_voting_power > total_voting_power(untrusted)
@@ -99,21 +122,23 @@ pub fn add_virtual_trusted_quorum_target <
     let comparison = builder.cmp_biguint(&total_voting_power, &three_trusted_validators_voting_power);          
     builder.connect(comparison.target, one_target);
 
-    return TrustedValidatorsQuorum {
+    return TrustedValidatorsQuorumTarget {
         untrusted_validators_pub_keys: untrusted_validators_pub_keys,
         untrusted_validators_votes: untrusted_validators_votes,
+        untrusted_signatures: untrusted_signatures,
         trusted_validators_pub_keys: trusted_validators_pub_keys,
-        trusted_validators_votes: trusted_validators_votes
+        trusted_validators_votes: trusted_validators_votes,
+        is_verified_signature: is_verified_signature
     }
 }
 
 
-pub fn add_virtual_untrusted_consensus_target<
+pub fn add_virtual_untrusted_quorum_target<
     F: RichField + Extendable<D>,
     const D: usize
 >(
     builder: &mut CircuitBuilder<F,D>
-) -> UntrustedValidatorsQuorum{
+) -> UntrustedValidatorsQuorumTarget{
 
     let untrusted_validators_pub_keys = (0..N_VALIDATORS).map(|_|{
         (0..32*8).map(|_|{
@@ -123,7 +148,7 @@ pub fn add_virtual_untrusted_consensus_target<
 
 
     let untrusted_validators_votes = (0..N_VALIDATORS).map(|_|{
-        builder.add_virtual_biguint_target(8)
+        builder.add_virtual_biguint_target(2)
     }).collect::<Vec<BigUintTarget>>();
 
     let untrusted_signatures = (0..N_VALIDATORS).map(|_|{
@@ -131,6 +156,10 @@ pub fn add_virtual_untrusted_consensus_target<
             builder.add_virtual_bool_target_safe()
         }).collect()
     }).collect::<Vec<Vec<BoolTarget>>>();
+
+    let is_verified_signature = (0..N_VALIDATORS).map(|_|{
+        builder.add_virtual_bool_target_safe()
+    }).collect::<Vec<BoolTarget>>();
 
     let zero_biguint_target = builder.zero_biguint(); 
 
@@ -142,8 +171,7 @@ pub fn add_virtual_untrusted_consensus_target<
 
 
     for i in 0..untrusted_validators_pub_keys.len(){
-        let result = add_virtual_dummy_verify_signature_target(builder, untrusted_signatures[i].clone());
-        let signature_voting_power_intermediate = builder.mul_biguint_by_bool(&untrusted_validators_votes[i].clone(), result);
+        let signature_voting_power_intermediate = builder.mul_biguint_by_bool(&untrusted_validators_votes[i].clone(), is_verified_signature[i]);
         signature_voting_power = builder.add_biguint(&signature_voting_power, &signature_voting_power_intermediate);
         total_voting_power = builder.add_biguint(&total_voting_power,&untrusted_validators_votes[i]);
     }
@@ -156,10 +184,11 @@ pub fn add_virtual_untrusted_consensus_target<
     let one_target = builder.one();
     builder.connect(result.target,one_target);
 
-    return UntrustedValidatorsQuorum{
+    return UntrustedValidatorsQuorumTarget{
         untrusted_validators_pub_keys: untrusted_validators_pub_keys,
         untrusted_validators_votes: untrusted_validators_votes,
-        untrusted_signatures: untrusted_signatures
+        untrusted_signatures: untrusted_signatures,
+        is_verified_signature: is_verified_signature
     };
 
 }
@@ -302,3 +331,18 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         untrusted_validators_hash_proof,
     }
 }
+
+pub fn is_verified_signature<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    signature: Vec<Vec<BoolTarget>>
+) -> Vec<BoolTarget>{
+    let mut is_verified: Vec<BoolTarget> = Vec::new();
+
+    for i in signature {
+        let result = add_virtual_dummy_verify_signature_target(builder, i);
+        is_verified.push(result);
+    }
+
+    return is_verified;
+}
+

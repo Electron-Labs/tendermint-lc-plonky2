@@ -53,7 +53,7 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
 
         let b1 = (0..32).map(|_| {
             builder.add_virtual_bool_target_safe()
@@ -66,12 +66,12 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
 
         for i in 0..b1.len() {
             if i%2 == 0{
-                pw.set_bool_target(b1[i], false);
-                pw.set_bool_target(b2[i], false);
+                witness.set_bool_target(b1[i], false);
+                witness.set_bool_target(b2[i], false);
             }
             else {
-                pw.set_bool_target(b1[i], true);
-                pw.set_bool_target(b2[i], true);
+                witness.set_bool_target(b1[i], true);
+                witness.set_bool_target(b2[i], true);
             }
             
         }
@@ -79,7 +79,7 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         builder.connect(result.target, true_target.target);
 
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         assert!(data.verify(proof).is_ok())
     }
 
@@ -93,7 +93,7 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
 
         let b1 = (0..32).map(|_| {
             builder.add_virtual_bool_target_safe()
@@ -105,14 +105,14 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let result = add_virtual_cmp_vec_bool_target(&mut builder,b1.clone(),b2.clone());
 
         for i in 0..b1.len() {
-            pw.set_bool_target(b1[i], true);
-            pw.set_bool_target(b2[i], false);
+            witness.set_bool_target(b1[i], true);
+            witness.set_bool_target(b2[i], false);
         }
         let true_target = builder._true();
         builder.connect(result.target, true_target.target);
         
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         assert!(data.verify(proof).is_ok())
     }
     
@@ -125,7 +125,7 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         let b1 = (0..64*8).map(|_| {
             builder.add_virtual_bool_target_safe()
         }).collect::<Vec<BoolTarget>>();
@@ -133,13 +133,13 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let result = add_virtual_dummy_verify_signature_target(&mut builder, b1.clone());
 
         for i in 0..b1.len() {
-            pw.set_bool_target(b1[i], true);
+            witness.set_bool_target(b1[i], true);
         }
         let true_target = builder._true();
         builder.connect(result.target, true_target.target);
 
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         assert!(data.verify(proof).is_ok());
     }
 
@@ -153,7 +153,7 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let mut pw = PartialWitness::new();
+        let mut witness = PartialWitness::new();
         
         let b1 = (0..64*8).map(|_| {
             builder.add_virtual_bool_target_safe()
@@ -161,13 +161,13 @@ pub fn add_virtual_dummy_verify_signature_target<F: RichField + Extendable<D>, c
 
         let result = add_virtual_dummy_verify_signature_target(&mut builder, b1.clone());
         for i in 0..b1.len() {
-            pw.set_bool_target(b1[i], false);
+            witness.set_bool_target(b1[i], false);
         }
         let true_target = builder._true();
         builder.connect(result.target, true_target.target);
 
         let data = builder.build::<C>();
-        let proof = data.prove(pw).unwrap();
+        let proof = data.prove(witness).unwrap();
         assert!(data.verify(proof).is_ok());
     }
 
