@@ -1,12 +1,11 @@
 #[cfg(test)]
 mod tests {
+    use crate::constants::*;
     use crate::merkle_tree_gadget::{get_256_bool_target, SHA_BLOCK_BITS};
     use crate::targets::{
         add_virtual_connect_sign_message_target, add_virtual_connect_timestamp_target,
         add_virtual_trusted_quorum_target, add_virtual_untrusted_quorum_target,
         add_virtual_update_validity_target, is_not_null_signature, UpdateValidityTarget,
-        N_INTERSECTION_INDICES, N_VALIDATORS, N_VALIDATORS_FOR_INTERSECTION, SIGNATURE_BITS,
-        SIGN_MESSAGE_BITS, TRUSTING_PERIOD,
     };
     use crate::test_utils::get_test_data;
     use num::BigUint;
@@ -35,12 +34,14 @@ mod tests {
         assert!(data.verify(proof).is_ok());
     }
 
-    fn set_validity_target<F: RichField, W: WitnessHashSha2<F>>(
+    fn set_update_validity_target<F: RichField, W: WitnessHashSha2<F>>(
         witness: &mut W,
         untrusted_height: u64,
         trusted_height: u64,
         untrusted_timestamp: u64,
         trusted_timestamp: u64,
+        untrusted_version_block_padded: Vec<bool>,
+        untrusted_chain_id_padded: Vec<bool>,
         target: &UpdateValidityTarget,
     ) {
         witness.set_biguint_target(
@@ -59,6 +60,18 @@ mod tests {
             &target.trusted_timestamp,
             &BigUint::from_u64(trusted_timestamp).unwrap(),
         );
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                target.untrusted_version_block_padded[i],
+                untrusted_version_block_padded[i],
+            )
+        });
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                target.untrusted_chain_id_padded[i],
+                untrusted_chain_id_padded[i],
+            )
+        });
     }
 
     #[test]
@@ -72,12 +85,14 @@ mod tests {
 
         let data = get_test_data();
 
-        set_validity_target(
+        set_update_validity_target(
             &mut witness,
             data.untrusted_height,
             data.trusted_height,
             data.untrusted_timestamp,
             data.trusted_timestamp,
+            data.untrusted_version_block_padded,
+            data.untrusted_chain_id_padded,
             &target,
         );
 
@@ -96,12 +111,14 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
-        set_validity_target(
+        set_update_validity_target(
             &mut witness,
             12975357,
             12975356,
             data.untrusted_timestamp,
             data.trusted_timestamp,
+            data.untrusted_version_block_padded,
+            data.untrusted_chain_id_padded,
             &target,
         );
 
@@ -120,12 +137,14 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
-        set_validity_target(
+        set_update_validity_target(
             &mut witness,
             12975357,
             12975357,
             data.untrusted_timestamp,
             data.trusted_timestamp,
+            data.untrusted_version_block_padded,
+            data.untrusted_chain_id_padded,
             &target,
         );
 
@@ -147,12 +166,74 @@ mod tests {
 
         let untrusted_timestamp = data.trusted_timestamp + TRUSTING_PERIOD as u64 + 1;
 
-        set_validity_target(
+        set_update_validity_target(
             &mut witness,
             data.untrusted_height,
             data.trusted_height,
             untrusted_timestamp,
             data.trusted_timestamp,
+            data.untrusted_version_block_padded,
+            data.untrusted_chain_id_padded,
+            &target,
+        );
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_update_validity_target_invalid_chain_id() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_update_validity_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        let mut untrusted_chain_id_padded = data.untrusted_chain_id_padded;
+        untrusted_chain_id_padded[25] = false;
+
+        set_update_validity_target(
+            &mut witness,
+            data.untrusted_height,
+            data.trusted_height,
+            data.untrusted_timestamp,
+            data.trusted_timestamp,
+            data.untrusted_version_block_padded,
+            untrusted_chain_id_padded,
+            &target,
+        );
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_update_validity_target_invalid_version_block() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_update_validity_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        let mut untrusted_version_block_padded = data.untrusted_version_block_padded;
+        untrusted_version_block_padded[18] = true;
+
+        set_update_validity_target(
+            &mut witness,
+            data.untrusted_height,
+            data.trusted_height,
+            data.untrusted_timestamp,
+            data.trusted_timestamp,
+            untrusted_version_block_padded,
+            data.untrusted_chain_id_padded,
             &target,
         );
 

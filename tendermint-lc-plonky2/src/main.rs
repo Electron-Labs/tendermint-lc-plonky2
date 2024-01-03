@@ -1,3 +1,4 @@
+pub mod constants;
 pub mod input_types;
 pub mod merkle_tree_gadget;
 pub mod targets;
@@ -30,13 +31,19 @@ fn main() {
     set_proof_target(
         &mut witness,
         &t.signatures,
+        &t.untrusted_version_block_padded,
+        &t.untrusted_chain_id_padded,
+        t.untrusted_height,
+        t.untrusted_timestamp,
         &t.untrusted_validator_pub_keys,
         &t.untrusted_validator_votes,
+        t.trusted_height,
+        t.trusted_timestamp,
         &t.trusted_next_validator_pub_keys,
         &t.trusted_next_validator_votes,
         &t.untrusted_intersect_indices,
         &t.trusted_next_intersect_indices,
-        &target
+        &target,
     );
 
     let data = builder.build::<C>();
