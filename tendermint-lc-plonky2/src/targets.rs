@@ -60,6 +60,14 @@ pub struct ConnectTimestampTarget {
     pub header_timestamp: BigUintTarget,
 }
 
+pub struct ConnectPubKeysVotesTarget {
+    pub validators_padded: Vec<Vec<BoolTarget>>,
+    pub votes: Vec<BigUintTarget>,
+    pub pub_keys: Vec<Vec<BoolTarget>>,
+}
+
+// TODO: chain_id proof, block_version proof
+
 /* indices */
 // ensure each corresponding signature is not null
 // 0 indices are reserved to indicate null values, that is, no intersection
@@ -67,13 +75,13 @@ pub struct ConnectTimestampTarget {
 
 // all padded leaves are of the form: shaBlock(0x00 || leaf)
 pub struct ProofTarget {
-    // pub sign_message: Vec<BoolTarget>,
+    pub sign_message: Vec<BoolTarget>,
     pub signatures: Vec<Vec<BoolTarget>>,
-    // pub untrusted_hash: Vec<BoolTarget>,
+    pub untrusted_hash: Vec<BoolTarget>,
     pub untrusted_version_block_padded: Vec<BoolTarget>,
     pub untrusted_chain_id_padded: Vec<BoolTarget>,
     pub untrusted_height: BigUintTarget,
-    // pub untrusted_time_padded: Vec<BoolTarget>,
+    pub untrusted_time_padded: Vec<BoolTarget>,
     // pub untrusted_time_proof: Vec<Vec<BoolTarget>>,
     pub untrusted_timestamp: BigUintTarget, // Unix timestamps in seconds
     // pub untrusted_validators_hash_padded: Vec<BoolTarget>,
@@ -81,14 +89,16 @@ pub struct ProofTarget {
     // pub untrusted_validators_hash_proof: Vec<Vec<BoolTarget>>,
     pub untrusted_validator_pub_keys: Vec<Vec<BoolTarget>>,
     pub untrusted_validator_votes: Vec<BigUintTarget>,
+    pub untrusted_validators_padded: Vec<Vec<BoolTarget>>,
     // pub trusted_hash: Vec<BoolTarget>,
     pub trusted_height: BigUintTarget,
-    // pub trusted_time_padded: Vec<BoolTarget>,
+    pub trusted_time_padded: Vec<BoolTarget>,
     // pub trusted_time_proof: Vec<Vec<BoolTarget>>,
     pub trusted_timestamp: BigUintTarget, // Unix timestamps in seconds
     // pub trusted_next_validators_padded: Vec<Vec<BoolTarget>>,
     pub trusted_next_validator_pub_keys: Vec<Vec<BoolTarget>>,
     pub trusted_next_validator_votes: Vec<BigUintTarget>,
+    pub trusted_next_validators_padded: Vec<Vec<BoolTarget>>,
     pub untrusted_intersect_indices: Vec<Target>,
     pub trusted_next_intersect_indices: Vec<Target>,
 }
@@ -511,12 +521,41 @@ pub fn add_virtual_connect_timestamp_target<F: RichField + Extendable<D>, const 
     }
 }
 
+pub fn add_virtual_connect_pub_keys_votes_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> ConnectPubKeysVotesTarget {
+    let pub_keys = (0..N_VALIDATORS)
+        .map(|_| get_256_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let votes = (0..N_VALIDATORS)
+        .map(|_| builder.add_virtual_biguint_target(2))
+        .collect::<Vec<BigUintTarget>>();
+    let validators_padded = (0..N_VALIDATORS)
+        .map(|_| get_sha_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+
+    // TODO: add comments
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(validators_padded[i][40 + j].target, pub_keys[i][j].target)
+        })
+
+        // TODO: connect votes
+    });
+
+    ConnectPubKeysVotesTarget {
+        validators_padded,
+        pub_keys,
+        votes,
+    }
+}
+
 pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ProofTarget {
-    // let sign_message = (0..SIGN_MESSAGE_BITS)
-    //     .map(|_| builder.add_virtual_bool_target_safe())
-    //     .collect::<Vec<BoolTarget>>();
+    let sign_message = (0..SIGN_MESSAGE_BITS)
+        .map(|_| builder.add_virtual_bool_target_safe())
+        .collect::<Vec<BoolTarget>>();
     let signatures = (0..N_VALIDATORS)
         .map(|_| {
             (0..SIGNATURE_BITS)
@@ -524,11 +563,11 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
                 .collect()
         })
         .collect::<Vec<Vec<BoolTarget>>>();
-    // let untrusted_hash = get_256_bool_target(builder);
+    let untrusted_hash = get_256_bool_target(builder);
     let untrusted_version_block_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
     let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
-    // let untrusted_time_padded = get_sha_block_target(builder);
+    let untrusted_time_padded = get_sha_block_target(builder);
     // let untrusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
     //     .map(|_| get_256_bool_target(builder))
     //     .collect::<Vec<Vec<BoolTarget>>>();
@@ -546,9 +585,12 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_validator_votes = (0..N_VALIDATORS)
         .map(|_| builder.add_virtual_biguint_target(2))
         .collect::<Vec<BigUintTarget>>();
+    let untrusted_validators_padded = (0..N_VALIDATORS)
+        .map(|_| get_sha_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
     // let trusted_hash = get_256_bool_target(builder);
     let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
-    // let trusted_time_padded = get_sha_block_target(builder);
+    let trusted_time_padded = get_sha_block_target(builder);
     let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
     // let trusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
     //     .map(|_| get_256_bool_target(builder))
@@ -562,6 +604,9 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let trusted_next_validator_votes = (0..N_VALIDATORS)
         .map(|_| builder.add_virtual_biguint_target(2))
         .collect::<Vec<BigUintTarget>>();
+    let trusted_next_validators_padded = (0..N_VALIDATORS)
+        .map(|_| get_sha_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
     let untrusted_intersect_indices = (0..N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
@@ -569,6 +614,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
 
+    // *** sub circuits ***
     // let untrusted_validators_hash =
     //     validators_hash_target(builder, untrusted_validators_padded.clone());
     // let trusted_next_validators_hash =
@@ -581,9 +627,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     // let untrusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
     // let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
     let update_validity_target = add_virtual_update_validity_target(builder);
-    // let connect_message_target = add_virtual_connect_sign_message_target(builder);
-    // let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
-    // let connect_trusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
+    let connect_message_target = add_virtual_connect_sign_message_target(builder);
+    let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
+    let connect_trusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
+    let connect_untrusted_pub_keys_votes_target =
+        add_virtual_connect_pub_keys_votes_target(builder);
+    let connect_trusted_next_pub_keys_votes_target =
+        add_virtual_connect_pub_keys_votes_target(builder);
 
     // *** TrustedValidatorsQuorumTarget ***
     (0..N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
@@ -731,44 +781,100 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         )
     });
 
-    // // *** ConnectSignMessageTarget ***
-    // (0..SIGN_MESSAGE_BITS).for_each(|i| {
-    //     builder.connect(
-    //         connect_message_target.message[i].target,
-    //         sign_message[i].target,
-    //     )
-    // });
+    // *** ConnectSignMessageTarget ***
+    (0..SIGN_MESSAGE_BITS).for_each(|i| {
+        builder.connect(
+            connect_message_target.message[i].target,
+            sign_message[i].target,
+        )
+    });
+    (0..256).for_each(|i| {
+        builder.connect(
+            connect_message_target.header_hash[i].target,
+            untrusted_hash[i].target,
+        )
+    });
+    builder.connect_biguint(&connect_message_target.height, &untrusted_height);
+
+    // *** ConnectTimestampTarget - untrusted ***
+    builder.connect_biguint(
+        &connect_untrusted_timestamp_target.header_timestamp,
+        &untrusted_timestamp,
+    );
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        builder.connect(
+            connect_untrusted_timestamp_target.header_time_padded[i].target,
+            untrusted_time_padded[i].target,
+        )
+    });
+
+    // *** ConnectTimestampTarget - trusted ***
+    builder.connect_biguint(
+        &connect_trusted_timestamp_target.header_timestamp,
+        &trusted_timestamp,
+    );
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        builder.connect(
+            connect_trusted_timestamp_target.header_time_padded[i].target,
+            trusted_time_padded[i].target,
+        )
+    });
+
+    // // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     // (0..256).for_each(|i| {
     //     builder.connect(
-    //         connect_message_target.header_hash[i].target,
-    //         untrusted_hash[i].target,
-    //     )
-    // });
-    // builder.connect_biguint(&connect_message_target.height, &untrusted_height);
-
-    // // *** ConnectTimestampTarget - untrusted ***
-    // builder.connect_biguint(
-    //     &connect_untrusted_timestamp_target.header_timestamp,
-    //     &untrusted_timestamp,
-    // );
-    // (0..SHA_BLOCK_BITS).for_each(|i| {
-    //     builder.connect(
-    //         connect_untrusted_timestamp_target.header_time_padded[i].target,
-    //         untrusted_time_padded[i].target,
+    //         untrusted_validators_hash[i].target,
+    //         untrusted_validators_hash_padded[8 + i].target,
     //     )
     // });
 
-    // // *** ConnectTimestampTarget - trusted ***
-    // builder.connect_biguint(
-    //     &connect_trusted_timestamp_target.header_timestamp,
-    //     &trusted_timestamp,
-    // );
-    // (0..SHA_BLOCK_BITS).for_each(|i| {
-    //     builder.connect(
-    //         connect_trusted_timestamp_target.header_time_padded[i].target,
-    //         trusted_time_padded[i].target,
-    //     )
-    // });
+    // *** ConnectPubKeysVotesTarget - untrusted ***
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                connect_untrusted_pub_keys_votes_target.pub_keys[i][j].target,
+                untrusted_validator_pub_keys[i][j].target,
+            )
+        })
+    });
+    (0..N_VALIDATORS).for_each(|i| {
+        builder.connect_biguint(
+            &connect_untrusted_pub_keys_votes_target.votes[i],
+            &untrusted_validator_votes[i],
+        )
+    });
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..SHA_BLOCK_BITS).for_each(|j| {
+            builder.connect(
+                connect_untrusted_pub_keys_votes_target.validators_padded[i][j].target,
+                untrusted_validators_padded[i][j].target,
+            )
+        })
+    });
+
+    // *** ConnectPubKeysVotesTarget - trusted ***
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                connect_trusted_next_pub_keys_votes_target.pub_keys[i][j].target,
+                trusted_next_validator_pub_keys[i][j].target,
+            )
+        })
+    });
+    (0..N_VALIDATORS).for_each(|i| {
+        builder.connect_biguint(
+            &connect_trusted_next_pub_keys_votes_target.votes[i],
+            &trusted_next_validator_votes[i],
+        )
+    });
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..SHA_BLOCK_BITS).for_each(|j| {
+            builder.connect(
+                connect_trusted_next_pub_keys_votes_target.validators_padded[i][j].target,
+                trusted_next_validators_padded[i][j].target,
+            )
+        })
+    });
 
     // // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     // (0..256).for_each(|i| {
@@ -779,13 +885,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     // });
 
     ProofTarget {
-        // sign_message,
+        sign_message,
         signatures,
-        // untrusted_hash,
+        untrusted_hash,
         untrusted_version_block_padded,
         untrusted_chain_id_padded,
         untrusted_height,
-        // untrusted_time_padded,
+        untrusted_time_padded,
         // untrusted_time_proof,
         untrusted_timestamp,
         // untrusted_validators_hash_padded,
@@ -793,14 +899,16 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         // untrusted_validators_hash_proof,
         untrusted_validator_pub_keys,
         untrusted_validator_votes,
+        untrusted_validators_padded,
         // trusted_hash,
         trusted_height,
-        // trusted_time_padded,
+        trusted_time_padded,
         trusted_timestamp,
         // trusted_time_proof,
         // trusted_next_validators_padded,
         trusted_next_validator_pub_keys,
         trusted_next_validator_votes,
+        trusted_next_validators_padded,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
     }
@@ -808,13 +916,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
     witness: &mut W,
-    // sign_message: &Vec<bool>,
+    sign_message: &Vec<bool>,
     signatures: &Vec<Vec<bool>>,
-    // untrusted_hash: &Vec<bool>,
+    untrusted_hash: &Vec<bool>,
     untrusted_version_block_padded: &Vec<bool>,
     untrusted_chain_id_padded: &Vec<bool>,
     untrusted_height: u64,
-    // untrusted_time_padded: &Vec<bool>,
+    untrusted_time_padded: &Vec<bool>,
     // untrusted_time_proof: &Vec<Vec<bool>>,
     untrusted_timestamp: u64,
     // untrusted_validators_hash_padded: &Vec<bool>,
@@ -822,25 +930,27 @@ pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
     // untrusted_validators_hash_proof: &Vec<Vec<bool>>,
     untrusted_validator_pub_keys: &Vec<Vec<bool>>,
     untrusted_validator_votes: &Vec<u64>,
+    untrusted_validators_padded: &Vec<Vec<bool>>,
     // trusted_hash: &Vec<bool>,
     trusted_height: u64,
-    // trusted_time_padded: &Vec<bool>,
+    trusted_time_padded: &Vec<bool>,
     // trusted_time_proof: &Vec<Vec<bool>>,
     trusted_timestamp: u64,
     // trusted_next_validators_padded: &Vec<Vec<bool>>,
     trusted_next_validator_pub_keys: &Vec<Vec<bool>>,
     trusted_next_validator_votes: &Vec<u64>,
+    trusted_next_validators_padded: &Vec<Vec<bool>>,
     untrusted_intersect_indices: &Vec<u8>,
     trusted_next_intersect_indices: &Vec<u8>,
     target: &ProofTarget,
 ) {
-    // (0..SIGN_MESSAGE_BITS)
-    //     .for_each(|i| witness.set_bool_target(target.sign_message[i], sign_message[i]));
+    (0..SIGN_MESSAGE_BITS)
+        .for_each(|i| witness.set_bool_target(target.sign_message[i], sign_message[i]));
     (0..N_VALIDATORS).for_each(|i| {
         (0..SIGNATURE_BITS)
             .for_each(|j| witness.set_bool_target(target.signatures[i][j], signatures[i][j]))
     });
-    // (0..256).for_each(|i| witness.set_bool_target(target.untrusted_hash[i], untrusted_hash[i]));
+    (0..256).for_each(|i| witness.set_bool_target(target.untrusted_hash[i], untrusted_hash[i]));
     (0..SHA_BLOCK_BITS).for_each(|i| {
         witness.set_bool_target(
             target.untrusted_version_block_padded[i],
@@ -857,9 +967,9 @@ pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
         &target.untrusted_height,
         &BigUint::from_u64(untrusted_height).unwrap(),
     );
-    // (0..SHA_BLOCK_BITS).for_each(|i| {
-    //     witness.set_bool_target(target.untrusted_time_padded[i], untrusted_time_padded[i])
-    // });
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        witness.set_bool_target(target.untrusted_time_padded[i], untrusted_time_padded[i])
+    });
     // (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
     //     (0..256).for_each(|j| {
     //         witness.set_bool_target(
@@ -908,14 +1018,22 @@ pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
             &BigUint::from_u64(untrusted_validator_votes[i]).unwrap(),
         )
     });
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..SHA_BLOCK_BITS).for_each(|j| {
+            witness.set_bool_target(
+                target.untrusted_validators_padded[i][j],
+                untrusted_validators_padded[i][j],
+            )
+        })
+    });
     // (0..256).for_each(|i| witness.set_bool_target(target.trusted_hash[i], trusted_hash[i]));
     witness.set_biguint_target(
         &target.trusted_height,
         &BigUint::from_u64(trusted_height).unwrap(),
     );
-    // (0..SHA_BLOCK_BITS).for_each(|i| {
-    //     witness.set_bool_target(target.trusted_time_padded[i], trusted_time_padded[i])
-    // });
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        witness.set_bool_target(target.trusted_time_padded[i], trusted_time_padded[i])
+    });
     // (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
     //     (0..256).for_each(|j| {
     //         witness.set_bool_target(target.trusted_time_proof[i][j], trusted_time_proof[i][j])
@@ -946,6 +1064,14 @@ pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
             &target.trusted_next_validator_votes[i],
             &BigUint::from_u64(trusted_next_validator_votes[i]).unwrap(),
         )
+    });
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..SHA_BLOCK_BITS).for_each(|j| {
+            witness.set_bool_target(
+                target.trusted_next_validators_padded[i][j],
+                trusted_next_validators_padded[i][j],
+            )
+        })
     });
     (0..N_INTERSECTION_INDICES).for_each(|i| {
         witness.set_target(

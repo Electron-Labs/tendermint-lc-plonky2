@@ -3,9 +3,10 @@ mod tests {
     use crate::constants::*;
     use crate::merkle_tree_gadget::{get_256_bool_target, SHA_BLOCK_BITS};
     use crate::targets::{
-        add_virtual_connect_sign_message_target, add_virtual_connect_timestamp_target,
-        add_virtual_trusted_quorum_target, add_virtual_untrusted_quorum_target,
-        add_virtual_update_validity_target, is_not_null_signature, UpdateValidityTarget,
+        add_virtual_connect_pub_keys_votes_target, add_virtual_connect_sign_message_target,
+        add_virtual_connect_timestamp_target, add_virtual_trusted_quorum_target,
+        add_virtual_untrusted_quorum_target, add_virtual_update_validity_target,
+        is_not_null_signature, UpdateValidityTarget,
     };
     use crate::test_utils::get_test_data;
     use num::BigUint;
@@ -359,6 +360,45 @@ mod tests {
             &target.header_timestamp,
             &BigUint::from_u64(data.untrusted_timestamp + 1).unwrap(),
         );
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    // TODO: negative
+    #[test]
+    fn test_connect_pub_keys_votes() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.votes[i],
+                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+            )
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    target.validators_padded[i][j],
+                    data.untrusted_validators_padded[i][j],
+                )
+            })
+        });
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
