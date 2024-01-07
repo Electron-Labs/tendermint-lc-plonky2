@@ -66,7 +66,7 @@ pub struct ConnectPubKeysVotesTarget {
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
 
-// TODO: chain_id proof, block_version proof
+// TODO: chain_id proof, block_version proof, trusted_next_validators_proof
 
 /* indices */
 // ensure each corresponding signature is not null
