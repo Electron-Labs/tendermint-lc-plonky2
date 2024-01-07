@@ -66,7 +66,7 @@ pub struct ConnectPubKeysVotesTarget {
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
 
-// TODO: chain_id proof, block_version proof, trusted_next_validators_proof
+// TODO: chain_id proof, block_version proof, trusted_next_validators_proof, untrusted next validators hash proof
 
 /* indices */
 // ensure each corresponding signature is not null
@@ -113,7 +113,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_next_validator_votes = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let is_not_null_signature = (0..N_VALIDATORS)
         .map(|_| builder.add_virtual_bool_target_safe())
@@ -180,7 +180,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         builder.connect(a, b);
 
         // compute intersection votes in trusted
-        let mut vote = builder.add_virtual_biguint_target(2);
+        let mut vote = builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32));
         let vote_c0 = builder.random_access(
             random_access_index,
             trusted_validator_votes_columns[0].clone(),
@@ -230,7 +230,7 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
     builder: &mut CircuitBuilder<F, D>,
 ) -> UntrustedValidatorsQuorumTarget {
     let untrusted_validator_votes = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let is_not_null_signature = (0..N_VALIDATORS)
         .map(|_| builder.add_virtual_bool_target_safe())
@@ -401,10 +401,12 @@ pub fn validators_hash_target<F: RichField + Extendable<D>, const D: usize>(
 pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> UpdateValidityTarget {
-    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
-    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
-    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
-    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+    let untrusted_timestamp = builder
+        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
+    let trusted_timestamp = builder
+        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
     let untrusted_version_block_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
 
@@ -465,7 +467,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         .map(|_| builder.add_virtual_bool_target_safe())
         .collect::<Vec<BoolTarget>>();
     let header_hash = get_256_bool_target(builder);
-    let height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
 
     // connect header hash in message
     // header hash takes the position at [128, 128+256)
@@ -497,16 +499,17 @@ pub fn add_virtual_connect_timestamp_target<F: RichField + Extendable<D>, const 
     builder: &mut CircuitBuilder<F, D>,
 ) -> ConnectTimestampTarget {
     let header_time_padded = get_sha_block_target(builder);
-    let header_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let header_timestamp = builder
+        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
 
     let mut header_timestamp_bits = builder.split_le_base::<2>(header_timestamp.get_limb(0).0, 32);
     let next_bits = builder.split_le_base::<2>(header_timestamp.get_limb(1).0, 32);
-    (0..8).for_each(|i| header_timestamp_bits.push(next_bits[i]));
+    (0..32).for_each(|i| header_timestamp_bits.push(next_bits[i]));
 
-    // 7 bits from each of 5 consecutive bytes in `header_time_padded` starting from 3rd bytes makes up the `header_timestamp_bits`
+    // 7 bits from each of 5 consecutive bytes in `header_time_padded` starting from the 3rd byte makes up the `header_timestamp_bits`
     // `header_time_padded` contains timestamp in LEB128 format
     let offset = 16;
-    (0..TIMESTAMP_BITS.div_ceil(7)).for_each(|j| {
+    (0..TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE)).for_each(|j| {
         (0..7).for_each(|k| {
             builder.connect(
                 header_time_padded[offset + j * 8 + k + 1].target,
@@ -528,19 +531,38 @@ pub fn add_virtual_connect_pub_keys_votes_target<F: RichField + Extendable<D>, c
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let votes = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| {
+            builder.add_virtual_biguint_target(
+                (VOTE_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32),
+            )
+        })
         .collect::<Vec<BigUintTarget>>();
     let validators_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
-    // TODO: add comments
+    // 7 bits from each of 10 consecutive bytes in `validators_padded[i]` starting from the 38th byte makes up the `vote_bits`
+    // `validators_padded[i]` contains voting power in LEB128 format
     (0..N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(validators_padded[i][40 + j].target, pub_keys[i][j].target)
-        })
+        });
 
-        // TODO: connect votes
+        let mut vote_bits = builder.split_le_base::<2>(votes[i].get_limb(0).0, 32);
+        let mut next_bits = builder.split_le_base::<2>(votes[i].get_limb(1).0, 32);
+        (0..32).for_each(|i| vote_bits.push(next_bits[i]));
+        next_bits = builder.split_le_base::<2>(votes[i].get_limb(2).0, 32);
+        (0..32).for_each(|i| vote_bits.push(next_bits[i]));
+
+        let offset = (37 + 1) * 8;
+        (0..VOTE_BITS.div_ceil(LEB128_GROUP_SIZE)).for_each(|j| {
+            (0..7).for_each(|k| {
+                builder.connect(
+                    validators_padded[i][offset + j * 8 + k + 1].target,
+                    vote_bits[j * 7 + 7 - 1 - k],
+                );
+            })
+        });
     });
 
     ConnectPubKeysVotesTarget {
@@ -566,12 +588,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_hash = get_256_bool_target(builder);
     let untrusted_version_block_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
-    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
     let untrusted_time_padded = get_sha_block_target(builder);
     // let untrusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
     //     .map(|_| get_256_bool_target(builder))
     //     .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let untrusted_timestamp = builder
+        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
     // let untrusted_validators_hash_padded = get_sha_block_target(builder);
     // let untrusted_validators_padded = (0..N_VALIDATORS)
     //     .map(|_| get_sha_block_target(builder))
@@ -583,15 +606,16 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let untrusted_validator_votes = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let untrusted_validators_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     // let trusted_hash = get_256_bool_target(builder);
-    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS / 32);
+    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
     let trusted_time_padded = get_sha_block_target(builder);
-    let trusted_timestamp = builder.add_virtual_biguint_target(TIMESTAMP_BITS.div_ceil(32));
+    let trusted_timestamp = builder
+        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
     // let trusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
     //     .map(|_| get_256_bool_target(builder))
     //     .collect::<Vec<Vec<BoolTarget>>>();
@@ -602,7 +626,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_next_validator_votes = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(2))
+        .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let trusted_next_validators_padded = (0..N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))

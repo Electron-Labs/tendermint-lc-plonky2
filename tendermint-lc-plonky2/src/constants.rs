@@ -1,3 +1,4 @@
+pub const VOTE_BITS: usize = 64;
 pub const SIGNATURE_BITS: usize = 64 * 8;
 pub const N_VALIDATORS: usize = 150;
 pub const VALIDATORS_HASH_PROOF_SIZE: usize = 4;
@@ -8,6 +9,7 @@ pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for new bloc
 pub const TRUSTING_PERIOD: usize = 1209600; // 2 weeks in seconds
 pub const N_INTERSECTION_INDICES: usize = 50;
 pub const N_UNTRUSTED_VALS_FOR_QUORUM: usize = 100;
+pub const LEB128_GROUP_SIZE: usize = 7;
 // TODO: make it 128 - error
 pub const N_VALIDATORS_FOR_INTERSECTION: usize = 64; // must be a power of two
 
