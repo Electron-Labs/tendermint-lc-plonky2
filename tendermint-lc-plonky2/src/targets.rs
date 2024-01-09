@@ -169,6 +169,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         .collect::<Vec<Target>>();
 
     (0..N_INTERSECTION_INDICES).for_each(|i| {
+        // TODO: get 2 indices of length 64
         let random_access_index = trusted_next_intersect_indices[i];
         let is_zero_index = builder.is_equal(random_access_index, zero_bool_target.target);
         let enable_constraint = builder.not(is_zero_index); // constrain only if index is non-zero; 0 is reserved for no intersection (null)

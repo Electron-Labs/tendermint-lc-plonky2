@@ -365,7 +365,6 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
-    // TODO: negative
     #[test]
     fn test_connect_pub_keys_votes() {
         let config = CircuitConfig::standard_recursion_config();
@@ -389,6 +388,87 @@ mod tests {
             witness.set_biguint_target(
                 &target.votes[i],
                 &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+            )
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    target.validators_padded[i][j],
+                    data.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_connect_pub_keys_votes_invalid_pubkey() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        let mut untrusted_validator_pub_keys = data.untrusted_validator_pub_keys;
+        untrusted_validator_pub_keys[3][3] = false;
+
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(target.pub_keys[i][j], untrusted_validator_pub_keys[i][j])
+            })
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.votes[i],
+                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+            )
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    target.validators_padded[i][j],
+                    data.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_connect_pub_keys_votes_invalid_vote() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+
+        let mut witness = PartialWitness::new();
+
+        let data = get_test_data();
+
+        let mut untrusted_validator_votes = data.untrusted_validator_votes;
+        untrusted_validator_votes[3] = 14141431 + 1;
+
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.votes[i],
+                &BigUint::from_u64(untrusted_validator_votes[i]).unwrap(),
             )
         });
         (0..N_VALIDATORS).for_each(|i| {
