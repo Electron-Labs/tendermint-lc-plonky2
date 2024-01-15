@@ -4,7 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-plonky2 = "0.1.4"
+# plonky2 = "0.1.4"
+plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "feat/PoseidonBn254Goldilocks"}
+# plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "poseidon_bn254_optimizations"}
 num = "0.4.1"
 serde_json = "1.0.74"
 serde = { version = "1.0", features = ["derive"] }

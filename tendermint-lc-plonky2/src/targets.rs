@@ -7,13 +7,13 @@ use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
-    iop::target::{BoolTarget, Target},
+    iop::{
+        target::{BoolTarget, Target},
+        witness::Witness,
+    },
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::{
-    biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint},
-    hash::sha256::WitnessHashSha2,
-};
+use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -116,7 +116,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let is_not_null_signature = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_bool_target_safe())
+        .map(|_| builder.add_virtual_bool_target_unsafe())
         .collect::<Vec<BoolTarget>>();
     let untrusted_intersect_indices = (0..N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
@@ -234,7 +234,7 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
         .map(|_| builder.add_virtual_biguint_target(VOTE_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
     let is_not_null_signature = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_bool_target_safe())
+        .map(|_| builder.add_virtual_bool_target_unsafe())
         .collect::<Vec<BoolTarget>>();
 
     let mut total_votes = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
@@ -274,12 +274,12 @@ pub fn add_virtual_verify_signatures_target<F: RichField + Extendable<D>, const 
     let signatures = (0..N_VALIDATORS)
         .map(|_| {
             (0..SIGNATURE_BITS)
-                .map(|_| builder.add_virtual_bool_target_safe())
+                .map(|_| builder.add_virtual_bool_target_unsafe())
                 .collect()
         })
         .collect::<Vec<Vec<BoolTarget>>>();
     let verify = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_bool_target_safe())
+        .map(|_| builder.add_virtual_bool_target_unsafe())
         .collect::<Vec<BoolTarget>>();
 
     VerifySignatures { signatures, verify }
@@ -465,7 +465,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
     builder: &mut CircuitBuilder<F, D>,
 ) -> ConnectSignMessageTarget {
     let message = (0..SIGN_MESSAGE_BITS)
-        .map(|_| builder.add_virtual_bool_target_safe())
+        .map(|_| builder.add_virtual_bool_target_unsafe())
         .collect::<Vec<BoolTarget>>();
     let header_hash = get_256_bool_target(builder);
     let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
@@ -577,12 +577,12 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ProofTarget {
     let sign_message = (0..SIGN_MESSAGE_BITS)
-        .map(|_| builder.add_virtual_bool_target_safe())
+        .map(|_| builder.add_virtual_bool_target_unsafe())
         .collect::<Vec<BoolTarget>>();
     let signatures = (0..N_VALIDATORS)
         .map(|_| {
             (0..SIGNATURE_BITS)
-                .map(|_| builder.add_virtual_bool_target_safe())
+                .map(|_| builder.add_virtual_bool_target_unsafe())
                 .collect()
         })
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -939,7 +939,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     }
 }
 
-pub fn set_proof_target<F: RichField, W: WitnessHashSha2<F>>(
+pub fn set_proof_target<F: RichField, W: Witness<F>>(
     witness: &mut W,
     sign_message: &Vec<bool>,
     signatures: &Vec<Vec<bool>>,

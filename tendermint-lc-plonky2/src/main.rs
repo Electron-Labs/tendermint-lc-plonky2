@@ -8,7 +8,7 @@ use plonky2::iop::witness::PartialWitness;
 use plonky2::plonk::{
     circuit_builder::CircuitBuilder,
     circuit_data::{CircuitConfig, CircuitData},
-    config::{GenericConfig, PoseidonGoldilocksConfig},
+    config::{GenericConfig, PoseidonBn254GoldilocksConfig},
     proof::ProofWithPublicInputs,
 };
 use std::fs::File;
@@ -17,7 +17,7 @@ use targets::{add_virtual_proof_target, set_proof_target};
 use test_utils::get_test_data;
 
 const D: usize = 2;
-type C = PoseidonGoldilocksConfig;
+type C = PoseidonBn254GoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub fn save_proof_data(data: CircuitData<F, C, D>, proof: ProofWithPublicInputs<F, C, D>) {

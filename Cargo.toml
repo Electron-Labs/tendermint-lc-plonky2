@@ -3,3 +3,9 @@
 members = [
     "tendermint-lc-plonky2",
 ]
+
+[patch]
+[patch.crates-io]
+plonky2 = { git = "https://github.com/Electron-Labs/plonky2.git", branch = "feat/PoseidonBn254Goldilocks" }
+# plonky2 = { git = "https://github.com/Electron-Labs/plonky2.git", branch = "poseidon_bn254_optimizations" }
+

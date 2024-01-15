@@ -11,18 +11,22 @@ mod tests {
     use crate::test_utils::get_test_data;
     use num::BigUint;
     use num::FromPrimitive;
-    use plonky2::iop::witness::PartialWitness;
-    use plonky2::iop::witness::WitnessWrite;
-    use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData};
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
     use plonky2::{
-        field::types::Field, hash::hash_types::RichField, iop::target::BoolTarget,
-        plonk::circuit_builder::CircuitBuilder,
+        field::types::Field,
+        hash::hash_types::RichField,
+        iop::target::BoolTarget,
+        iop::{witness::PartialWitness, witness::Witness, witness::WitnessWrite},
+        plonk::{
+            circuit_builder::CircuitBuilder,
+            circuit_data::{CircuitConfig, CircuitData},
+            config::{GenericConfig, PoseidonBn254GoldilocksConfig, PoseidonGoldilocksConfig},
+        },
     };
-    use plonky2_crypto::{biguint::WitnessBigUint, hash::sha256::WitnessHashSha2};
+    use plonky2_crypto::biguint::WitnessBigUint;
 
     const D: usize = 2;
-    type C = PoseidonGoldilocksConfig;
+    type C = PoseidonBn254GoldilocksConfig;
+    // type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
     // TODO: load all test data only once
@@ -35,7 +39,7 @@ mod tests {
         assert!(data.verify(proof).is_ok());
     }
 
-    fn set_update_validity_target<F: RichField, W: WitnessHashSha2<F>>(
+    fn set_update_validity_target<F: RichField, W: Witness<F>>(
         witness: &mut W,
         untrusted_height: u64,
         trusted_height: u64,
