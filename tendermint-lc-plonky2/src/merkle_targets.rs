@@ -200,6 +200,9 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, W: Witness<F>, con
     leaves_padded_target: Vec<Vec<BoolTarget>>,
     leaves: Vec<Vec<u8>>,
 ) -> Vec<BoolTarget> {
+    // 150 hash validity starky proof verify
+    // 149 hash validity starky proof verify
+
     let mut items = leaves
         .iter()
         .map(|elm| leaf_hash(elm.clone()))
@@ -211,8 +214,6 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, W: Witness<F>, con
         (0..256).for_each(|j| witness.set_bool_target(target[j], values[j]));
         items_target.push(target);
     });
-
-    // TODO: 1-block-sha256 between leaves_padded_target and items_target here
 
     let mut size = items.len();
 
@@ -228,7 +229,6 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, W: Witness<F>, con
                 let hash_target = get_256_bool_target(builder);
                 (0..256).for_each(|i| witness.set_bool_target(hash_target[i], hash_bool[i]));
                 items_target[wp] = hash_target;
-                // TODO: 2-block-sha256 between two_to_one_padded and hash_target here
                 rp += 2;
             } else {
                 items[wp] = items[rp].clone();
