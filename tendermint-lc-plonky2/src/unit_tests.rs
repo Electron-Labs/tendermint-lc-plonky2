@@ -1,14 +1,18 @@
 #[cfg(test)]
 mod tests {
     use crate::constants::*;
-    use crate::merkle_tree_gadget::{get_256_bool_target, SHA_BLOCK_BITS};
+    use crate::merkle_targets::{
+        bool_to_bytes, bytes_to_bool, get_256_bool_target, get_sha_2block_target,
+        get_sha_block_target, merkle_1_block_leaf_root, SHA_BLOCK_BITS,
+    };
     use crate::targets::{
         add_virtual_connect_pub_keys_votes_target, add_virtual_connect_sign_message_target,
-        add_virtual_connect_timestamp_target, add_virtual_trusted_quorum_target,
-        add_virtual_untrusted_quorum_target, add_virtual_update_validity_target,
-        is_not_null_signature, UpdateValidityTarget,
+        add_virtual_connect_sign_message_target_new, add_virtual_connect_timestamp_target,
+        add_virtual_trusted_quorum_target, add_virtual_untrusted_quorum_target,
+        add_virtual_update_validity_target, is_not_null_signature, validators_hash_target,
+        UpdateValidityTarget,
     };
-    use crate::test_utils::get_test_data;
+    use crate::test_utils::*;
     use num::BigUint;
     use num::FromPrimitive;
     use plonky2::{
@@ -660,6 +664,110 @@ mod tests {
                 is_not_null_signature[i].target,
             )
         });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    // TODO:
+    #[test]
+    fn test_connect_sign_message_new() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let target = add_virtual_connect_sign_message_target_new(&mut builder);
+
+        let data = get_test_data();
+
+        let mut witness = PartialWitness::new();
+
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+                witness.set_bool_target(
+                    target.messages_padded[i][j],
+                    data.sign_messages_padded[i][j],
+                )
+            })
+        });
+        (0..256)
+            .for_each(|i| witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i]));
+        witness.set_biguint_target(
+            &target.height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_validators_hash() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        // TODO: use it from testdata
+        let data_str =
+            std::fs::read_to_string(format!("src/test_data/untrusted_validator_leaves.json"))
+                .unwrap();
+        let data: Validators = serde_json::from_str(&data_str).unwrap();
+        let validator_leaves = data.leaves;
+        let mut validator_leaves_bytes: Vec<Vec<u8>> = vec![];
+        validator_leaves
+            .iter()
+            .for_each(|elm| validator_leaves_bytes.push(bool_to_bytes(elm.clone())));
+        let validator_leaves_padded = validator_leaves
+            .iter()
+            .map(|elm| get_sha_block_for_leaf(elm.clone()))
+            .collect::<Vec<Vec<bool>>>();
+
+        let mut witness = PartialWitness::new();
+
+        let validator_leaves_padded_target = (0..N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        (0..N_VALIDATORS_LEAVES).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    validator_leaves_padded_target[i][j],
+                    validator_leaves_padded[i][j],
+                )
+            })
+        });
+
+        let hash = validators_hash_target(
+            &mut builder,
+            &mut witness,
+            validator_leaves_padded_target,
+            validator_leaves_bytes,
+        );
+
+        let expected = [
+            true, true, true, false, true, false, false, false, false, true, false, true, true,
+            false, false, true, true, true, true, false, false, true, true, false, false, true,
+            false, false, true, true, false, true, false, true, false, true, false, true, true,
+            false, false, true, true, true, false, false, true, false, false, true, false, false,
+            true, true, false, false, false, true, true, true, true, false, true, false, true,
+            true, true, false, false, false, false, false, false, true, true, false, false, false,
+            false, true, true, false, true, false, true, false, true, false, false, true, false,
+            false, true, true, false, false, false, false, true, false, true, false, true, true,
+            false, true, true, true, false, true, true, true, false, false, false, true, true,
+            true, true, false, true, false, true, true, false, true, true, true, false, true,
+            false, true, true, true, false, false, true, false, false, true, true, false, false,
+            false, true, false, true, true, false, true, true, true, true, false, true, true, true,
+            true, true, false, false, false, true, false, true, true, false, false, true, true,
+            true, false, false, false, false, true, false, false, false, false, true, false, false,
+            false, false, false, false, false, false, true, true, true, true, true, true, false,
+            true, true, false, true, false, false, true, false, false, false, false, false, true,
+            false, false, false, false, true, false, false, true, true, true, true, false, true,
+            false, true, false, false, false, false, false, true, true, true, false, true, true,
+            false, true, true, false, false, true, false, false, false, true, true, false, true,
+            true, true, true, true, true, true, false, false,
+        ];
+        let expected_target = get_256_bool_target(&mut builder);
+        (0..256).for_each(|i| witness.set_bool_target(expected_target[i], expected[i]));
+
+        (0..256).for_each(|i| builder.connect(hash[i].target, expected_target[i].target));
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);

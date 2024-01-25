@@ -1,6 +1,6 @@
 pub mod constants;
 pub mod input_types;
-pub mod merkle_tree_gadget;
+pub mod merkle_targets;
 pub mod targets;
 pub mod test_utils;
 

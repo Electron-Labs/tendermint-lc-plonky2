@@ -1,7 +1,7 @@
 use super::constants::*;
-use super::merkle_tree_gadget::{
-    add_virtual_merkle_tree_1_block_leaf_target, get_256_bool_target, get_sha_block_target,
-    sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
+use super::merkle_targets::{
+    merkle_1_block_leaf_root, get_256_bool_target, get_sha_2block_target,
+    get_sha_block_target, sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
 };
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -55,6 +55,13 @@ pub struct ConnectSignMessageTarget {
     pub height: BigUintTarget,
 }
 
+// TODO: use this instead of ConnectSignMessageTarget
+pub struct ConnectSignMessageTargetNew {
+    pub messages_padded: Vec<Vec<BoolTarget>>,
+    pub header_hash: Vec<BoolTarget>,
+    pub height: BigUintTarget,
+}
+
 pub struct ConnectTimestampTarget {
     pub header_time_padded: Vec<BoolTarget>,
     pub header_timestamp: BigUintTarget,
@@ -65,6 +72,8 @@ pub struct ConnectPubKeysVotesTarget {
     pub votes: Vec<BigUintTarget>,
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
+
+// TODO: clone targets instead of making new connections
 
 // TODO: chain_id proof, block_version proof, trusted_next_validators_proof, untrusted next validators hash proof
 
@@ -378,25 +387,17 @@ pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>,
     }
 }
 
-pub fn validators_hash_target<F: RichField + Extendable<D>, const D: usize>(
+pub fn validators_hash_target<F: RichField + Extendable<D>,     W: Witness<F>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    witness: &mut W,
     leaves_padded: Vec<Vec<BoolTarget>>,
+    leaves: Vec<Vec<u8>>,
 ) -> Vec<BoolTarget> {
     let hash = get_256_bool_target(builder);
 
-    let merkle_tree = add_virtual_merkle_tree_1_block_leaf_target(builder, N_VALIDATORS);
+    let root = merkle_1_block_leaf_root(builder, witness, leaves_padded, leaves);
 
-    (0..N_VALIDATORS).for_each(|i| {
-        (0..SHA_BLOCK_BITS).for_each(|j| {
-            builder.connect(
-                merkle_tree.leaves_padded[i][j].target,
-                leaves_padded[i][j].target,
-            )
-        })
-    });
-    (0..256).for_each(|i| builder.connect(merkle_tree.root[i].target, hash[i].target));
-
-    hash
+    root
 }
 
 pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D: usize>(
@@ -542,7 +543,7 @@ pub fn add_virtual_connect_pub_keys_votes_target<F: RichField + Extendable<D>, c
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
-    // 7 bits from each of 10 consecutive bytes in `validators_padded[i]` starting from the 38th byte makes up the `vote_bits`
+    // 7 bits from each of 10 consecutive bytes in `validators_padded[i]` starting from the 39th byte makes up the `vote_bits`
     // `validators_padded[i]` contains voting power in LEB128 format
     (0..N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
@@ -555,7 +556,7 @@ pub fn add_virtual_connect_pub_keys_votes_target<F: RichField + Extendable<D>, c
         next_bits = builder.split_le_base::<2>(votes[i].get_limb(2).0, 32);
         (0..32).for_each(|i| vote_bits.push(next_bits[i]));
 
-        let offset = (37 + 1) * 8;
+        let offset = (37 + 1) * 8; // add 1 for 0 byte prefix
         (0..VOTE_BITS.div_ceil(LEB128_GROUP_SIZE)).for_each(|j| {
             (0..7).for_each(|k| {
                 builder.connect(
@@ -1110,4 +1111,42 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             F::from_canonical_u8(trusted_next_intersect_indices[i]),
         )
     });
+}
+
+pub fn add_virtual_connect_sign_message_target_new<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> ConnectSignMessageTargetNew {
+    let messages_padded = (0..N_VALIDATORS)
+        .map(|_| get_sha_2block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let header_hash = get_256_bool_target(builder);
+    let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+
+    // TODO: take N_VALIDATORS
+    messages_padded.iter().take(1).for_each(|message| {
+        // connect header hash in message
+        // header hash takes the position at [128, 128+256)
+        (0..256).for_each(|i| builder.connect(message[128 + i].target, header_hash[i].target));
+
+        // connect header height in message
+        // header height takes the position at [32, 32+64)
+        let offset = 32;
+        (0..2).for_each(|i| {
+            let height_bits = builder.split_le_base::<2>(height.get_limb(i).0, 32);
+            (0..4).for_each(|j| {
+                (0..8).for_each(|k| {
+                    builder.connect(
+                        message[offset + i * 32 + j * 8 + k].target,
+                        height_bits[j * 8 + 7 - k],
+                    );
+                })
+            });
+        });
+    });
+
+    ConnectSignMessageTargetNew {
+        messages_padded,
+        header_hash,
+        height,
+    }
 }

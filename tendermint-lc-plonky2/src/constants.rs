@@ -12,6 +12,7 @@ pub const N_UNTRUSTED_VALS_FOR_QUORUM: usize = 100;
 pub const LEB128_GROUP_SIZE: usize = 7;
 // TODO: make it 128 - error
 pub const N_VALIDATORS_FOR_INTERSECTION: usize = 64; // must be a power of two
+pub const N_VALIDATORS_LEAVES: usize = N_VALIDATORS;
 
 pub const CHAIN_ID: [bool; 9 * 8] = [
     false, true, true, false, true, true, true, true, false, true, true, true, false, false, true,

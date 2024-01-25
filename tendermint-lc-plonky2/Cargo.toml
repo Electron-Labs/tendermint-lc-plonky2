@@ -5,9 +5,11 @@ edition = "2021"
 
 [dependencies]
 # plonky2 = "0.1.4"
-plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "feat/PoseidonBn254Goldilocks"}
-# plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "poseidon_bn254_optimizations"}
+# plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "feat/PoseidonBn254Goldilocks"}
+plonky2 = { git = "https://github.com/Electron-Labs/plonky2", branch = "derive_bn254_from_ff"}
 num = "0.4.1"
 serde_json = "1.0.74"
 serde = { version = "1.0", features = ["derive"] }
 plonky2_crypto = { git = "https://github.com/Electron-Labs/plonky2-crypto" }
+bitvec = "1.0.1"
+sha2 = "0.10.8"
