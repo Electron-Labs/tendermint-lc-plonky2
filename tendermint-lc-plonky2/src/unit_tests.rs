@@ -9,15 +9,14 @@ mod tests {
         add_virtual_connect_pub_keys_votes_target, add_virtual_connect_sign_message_target,
         add_virtual_connect_sign_message_target_new, add_virtual_connect_timestamp_target,
         add_virtual_trusted_quorum_target, add_virtual_untrusted_quorum_target,
-        add_virtual_update_validity_target, is_not_null_signature, validators_hash_target,
-        UpdateValidityTarget,
+        add_virtual_update_validity_target, is_not_null_signature, UpdateValidityTarget,
     };
     use crate::test_utils::*;
     use num::BigUint;
     use num::FromPrimitive;
     use plonky2::{
         field::types::Field,
-        hash::hash_types::RichField,
+        hash::{{hash_types::RichField}, },
         iop::target::BoolTarget,
         iop::{witness::PartialWitness, witness::Witness, witness::WitnessWrite},
         plonk::{
@@ -26,11 +25,11 @@ mod tests {
             config::{GenericConfig, PoseidonBn254GoldilocksConfig, PoseidonGoldilocksConfig},
         },
     };
-    use plonky2_crypto::biguint::WitnessBigUint;
+    use plonky2_crypto::{biguint::WitnessBigUint, hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},         u32::binary_u32::{Bin32Target, CircuitBuilderBU32},};
 
     const D: usize = 2;
-    type C = PoseidonBn254GoldilocksConfig;
-    // type C = PoseidonGoldilocksConfig;
+    // type C = PoseidonBn254GoldilocksConfig;
+    type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
     // TODO: load all test data only once
@@ -735,39 +734,24 @@ mod tests {
             })
         });
 
-        let hash = validators_hash_target(
-            &mut builder,
-            &mut witness,
-            validator_leaves_padded_target,
-            validator_leaves_bytes,
-        );
+        let computed = merkle_1_block_leaf_root(&mut builder, validator_leaves_padded_target);
 
-        let expected = [
-            true, true, true, false, true, false, false, false, false, true, false, true, true,
-            false, false, true, true, true, true, false, false, true, true, false, false, true,
-            false, false, true, true, false, true, false, true, false, true, false, true, true,
-            false, false, true, true, true, false, false, true, false, false, true, false, false,
-            true, true, false, false, false, true, true, true, true, false, true, false, true,
-            true, true, false, false, false, false, false, false, true, true, false, false, false,
-            false, true, true, false, true, false, true, false, true, false, false, true, false,
-            false, true, true, false, false, false, false, true, false, true, false, true, true,
-            false, true, true, true, false, true, true, true, false, false, false, true, true,
-            true, true, false, true, false, true, true, false, true, true, true, false, true,
-            false, true, true, true, false, false, true, false, false, true, true, false, false,
-            false, true, false, true, true, false, true, true, true, true, false, true, true, true,
-            true, true, false, false, false, true, false, true, true, false, false, true, true,
-            true, false, false, false, false, true, false, false, false, false, true, false, false,
-            false, false, false, false, false, false, true, true, true, true, true, true, false,
-            true, true, false, true, false, false, true, false, false, false, false, false, true,
-            false, false, false, false, true, false, false, true, true, true, true, false, true,
-            false, true, false, false, false, false, false, true, true, true, false, true, true,
-            false, true, true, false, false, true, false, false, false, true, true, false, true,
-            true, true, true, true, true, true, false, false,
+        let expected_hash = [
+            232, 89, 230, 77, 86, 114, 76, 122, 224, 97, 170, 76, 43, 119, 30, 183, 92, 152, 183,
+            190, 44, 225, 8, 7, 237, 32, 132, 245, 7, 108, 141, 252,
         ];
-        let expected_target = get_256_bool_target(&mut builder);
-        (0..256).for_each(|i| witness.set_bool_target(expected_target[i], expected[i]));
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
 
-        (0..256).for_each(|i| builder.connect(hash[i].target, expected_target[i].target));
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(computed[i * 32 + j].target, bin32_target.bits[j].target)
+                });
+            });
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);

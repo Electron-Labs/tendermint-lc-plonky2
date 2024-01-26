@@ -1,7 +1,7 @@
 use super::constants::*;
 use super::merkle_targets::{
-    merkle_1_block_leaf_root, get_256_bool_target, get_sha_2block_target,
-    get_sha_block_target, sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
+    get_256_bool_target, get_sha_2block_target, get_sha_block_target, merkle_1_block_leaf_root,
+    sha256_1_block, sha256_2_block, two_to_one_pad_target, SHA_BLOCK_BITS,
 };
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -385,19 +385,6 @@ pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>,
         proof,
         root,
     }
-}
-
-pub fn validators_hash_target<F: RichField + Extendable<D>,     W: Witness<F>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    witness: &mut W,
-    leaves_padded: Vec<Vec<BoolTarget>>,
-    leaves: Vec<Vec<u8>>,
-) -> Vec<BoolTarget> {
-    let hash = get_256_bool_target(builder);
-
-    let root = merkle_1_block_leaf_root(builder, witness, leaves_padded, leaves);
-
-    root
 }
 
 pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D: usize>(
