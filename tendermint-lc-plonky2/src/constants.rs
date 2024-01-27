@@ -1,8 +1,11 @@
 pub const VOTE_BITS: usize = 64;
 pub const SIGNATURE_BITS: usize = 64 * 8;
 pub const N_VALIDATORS: usize = 150;
-pub const VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+pub const HEADER_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
 pub const HEADER_TIME_PROOF_SIZE: usize = 4;
+pub const HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: usize = 4;
+pub const HEADER_CHAIN_ID_PROOF_SIZE: usize = 4;
+pub const HEADER_VERSION_PROOF_SIZE: usize = 4;
 pub const SIGN_MESSAGE_BITS: usize = 110 * 8;
 pub const HEIGHT_BITS: usize = 64;
 pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for new blocks till the year 3058

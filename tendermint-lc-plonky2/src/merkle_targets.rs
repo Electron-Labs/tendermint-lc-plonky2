@@ -53,28 +53,6 @@ pub fn get_sha_2block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
-// TODO: use starky
-pub fn sha256_1_block<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    input: &Vec<BoolTarget>,
-) -> Vec<BoolTarget> {
-    let result = get_256_bool_target(builder);
-    let one_bool_target = builder._true();
-    (0..256).for_each(|i| builder.connect(result[i].target, one_bool_target.target));
-    result
-}
-
-// TODO: use starky
-pub fn sha256_2_block<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    input: &Vec<BoolTarget>,
-) -> Vec<BoolTarget> {
-    let result = get_256_bool_target(builder);
-    let one_bool_target = builder._true();
-    (0..256).for_each(|i| builder.connect(result[i].target, one_bool_target.target));
-    result
-}
-
 pub fn get_formatted_hash_256_bools(input: &Vec<BoolTarget>) -> Vec<BoolTarget> {
     let mut output: Vec<BoolTarget> = Vec::with_capacity(input.len());
     input.chunks(32).for_each(|elm| {
@@ -215,6 +193,11 @@ pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     hash_bool
 }
 
+// left - 256bits, where all bits are in the same order as in Hash256Target
+// right - 256bits, where all bits are in the same order as in Hash256Target
+// order of bits in Hash256Target:
+//  * each u32 limb is in big endian
+//  * all bits in any byte are stored in reversed order
 // resulting bits are in Hash256Target order
 pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
