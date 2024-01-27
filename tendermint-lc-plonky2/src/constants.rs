@@ -7,7 +7,7 @@ pub const SIGN_MESSAGE_BITS: usize = 110 * 8;
 pub const HEIGHT_BITS: usize = 64;
 pub const TIMESTAMP_BITS: usize = 35; // will be able to accomodate for new blocks till the year 3058
 pub const TRUSTING_PERIOD: usize = 1209600; // 2 weeks in seconds
-pub const N_INTERSECTION_INDICES: usize = 50;
+pub const N_INTERSECTION_INDICES: usize = 45;
 pub const N_UNTRUSTED_VALS_FOR_QUORUM: usize = 100;
 pub const LEB128_GROUP_SIZE: usize = 7;
 // TODO: make it 128 - error
