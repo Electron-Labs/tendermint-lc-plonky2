@@ -1,18 +1,16 @@
+// Merkle Tree gadgets following RFC-6962
+
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::{
-    hash::{
-        sha256::CircuitBuilderHashSha2,
-        {CircuitBuilderHash, HashInputTarget},
-    },
+    hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash},
     u32::{
         arithmetic_u32::CircuitBuilderU32,
         binary_u32::{Bin32Target, CircuitBuilderBU32},
     },
 };
-use sha2::Digest;
 
 pub struct Sha256_1Block {
     pub input: Vec<BoolTarget>,
@@ -77,7 +75,16 @@ pub fn sha256_2_block<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
-// follows RFC-6962
+pub fn get_formatted_hash_256_bools(input: &Vec<BoolTarget>) -> Vec<BoolTarget> {
+    let mut output: Vec<BoolTarget> = Vec::with_capacity(input.len());
+    input.chunks(32).for_each(|elm| {
+        let mut bits_32 = elm.to_vec();
+        bits_32.reverse();
+        output.extend(bits_32);
+    });
+    output
+}
+
 // left - 256bits, where all bits are in the same order as in Hash256Target
 // right - 256bits, where all bits are in the same order as in Hash256Target
 // order of bits in Hash256Target:
@@ -174,9 +181,10 @@ pub fn two_to_one_pad_target<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
+// resulting bits are in Hash256Target order
 pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    input_padded: Vec<BoolTarget>,
+    input_padded: &Vec<BoolTarget>,
 ) -> Vec<BoolTarget> {
     assert_eq!(input_padded.len(), SHA_BLOCK_BITS);
 
@@ -207,6 +215,7 @@ pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     hash_bool
 }
 
+// resulting bits are in Hash256Target order
 pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     left: &Vec<BoolTarget>,
@@ -266,14 +275,13 @@ pub fn bytes_to_bool(bytes_arr: Vec<u8>) -> Vec<bool> {
     return bool_vec;
 }
 
-// follows RFC-6962
 pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    leaves_padded: Vec<Vec<BoolTarget>>,
+    leaves_padded: &Vec<Vec<BoolTarget>>,
 ) -> Vec<BoolTarget> {
     let mut items = leaves_padded
         .iter()
-        .map(|elm| sha256_1_block_hash_target(builder, elm.clone()))
+        .map(|elm| sha256_1_block_hash_target(builder, &elm))
         .collect::<Vec<Vec<BoolTarget>>>();
 
     let mut size = items.len();
@@ -313,7 +321,7 @@ mod tests {
         plonk::{
             circuit_builder::CircuitBuilder,
             circuit_data::{CircuitConfig, CircuitData},
-            config::{GenericConfig, PoseidonBn254GoldilocksConfig},
+            config::{GenericConfig, PoseidonGoldilocksConfig},
         },
     };
     use plonky2_crypto::{
@@ -325,7 +333,7 @@ mod tests {
     };
 
     const D: usize = 2;
-    type C = PoseidonBn254GoldilocksConfig;
+    type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
     pub fn prove_and_verify(data: CircuitData<F, C, D>, witness: PartialWitness<F>) {
@@ -438,7 +446,7 @@ mod tests {
         (0..input_padded.len())
             .for_each(|i| witness.set_bool_target(bool_target[i], input_padded[i]));
 
-        let computed = sha256_1_block_hash_target(&mut builder, bool_target);
+        let computed = sha256_1_block_hash_target(&mut builder, &bool_target);
 
         expected_hash_target
             .iter()

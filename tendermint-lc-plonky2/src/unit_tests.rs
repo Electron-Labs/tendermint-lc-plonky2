@@ -16,19 +16,22 @@ mod tests {
     use num::FromPrimitive;
     use plonky2::{
         field::types::Field,
-        hash::{{hash_types::RichField}, },
+        hash::hash_types::RichField,
         iop::target::BoolTarget,
         iop::{witness::PartialWitness, witness::Witness, witness::WitnessWrite},
         plonk::{
             circuit_builder::CircuitBuilder,
             circuit_data::{CircuitConfig, CircuitData},
-            config::{GenericConfig, PoseidonBn254GoldilocksConfig, PoseidonGoldilocksConfig},
+            config::{GenericConfig, PoseidonGoldilocksConfig},
         },
     };
-    use plonky2_crypto::{biguint::WitnessBigUint, hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},         u32::binary_u32::{Bin32Target, CircuitBuilderBU32},};
+    use plonky2_crypto::{
+        biguint::WitnessBigUint,
+        hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},
+        u32::binary_u32::{Bin32Target, CircuitBuilderBU32},
+    };
 
     const D: usize = 2;
-    // type C = PoseidonBn254GoldilocksConfig;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
@@ -704,20 +707,7 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        // TODO: use it from testdata
-        let data_str =
-            std::fs::read_to_string(format!("src/test_data/untrusted_validator_leaves.json"))
-                .unwrap();
-        let data: Validators = serde_json::from_str(&data_str).unwrap();
-        let validator_leaves = data.leaves;
-        let mut validator_leaves_bytes: Vec<Vec<u8>> = vec![];
-        validator_leaves
-            .iter()
-            .for_each(|elm| validator_leaves_bytes.push(bool_to_bytes(elm.clone())));
-        let validator_leaves_padded = validator_leaves
-            .iter()
-            .map(|elm| get_sha_block_for_leaf(elm.clone()))
-            .collect::<Vec<Vec<bool>>>();
+        let t = get_test_data();
 
         let mut witness = PartialWitness::new();
 
@@ -729,17 +719,18 @@ mod tests {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     validator_leaves_padded_target[i][j],
-                    validator_leaves_padded[i][j],
+                    t.untrusted_validators_padded[i][j],
                 )
             })
         });
 
-        let computed = merkle_1_block_leaf_root(&mut builder, validator_leaves_padded_target);
+        let computed = merkle_1_block_leaf_root(&mut builder, &validator_leaves_padded_target);
 
         let expected_hash = [
             232, 89, 230, 77, 86, 114, 76, 122, 224, 97, 170, 76, 43, 119, 30, 183, 92, 152, 183,
             190, 44, 225, 8, 7, 237, 32, 132, 245, 7, 108, 141, 252,
-        ];
+            ];
+        println!("{:?}", bytes_to_bool([214, 242, 229, 96, 1, 143, 18, 196, 185, 125, 195, 27, 82, 2, 127, 24, 4, 144, 31, 39, 56, 236, 16, 77, 86, 13, 22, 83, 212, 156, 85, 242].to_vec()));
         let expected_hash_target = builder.add_virtual_hash256_target();
         witness.set_hash256_target(&expected_hash_target, &expected_hash);
 

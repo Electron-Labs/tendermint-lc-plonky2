@@ -8,7 +8,7 @@ use plonky2::iop::witness::PartialWitness;
 use plonky2::plonk::{
     circuit_builder::CircuitBuilder,
     circuit_data::{CircuitConfig, CircuitData},
-    config::{GenericConfig, PoseidonBn254GoldilocksConfig},
+    config::{GenericConfig, PoseidonGoldilocksConfig},
     proof::ProofWithPublicInputs,
 };
 use std::fs::File;
@@ -17,7 +17,8 @@ use targets::{add_virtual_proof_target, set_proof_target};
 use test_utils::get_test_data;
 
 const D: usize = 2;
-type C = PoseidonBn254GoldilocksConfig;
+// type C = PoseidonBn254GoldilocksConfig;
+type C = PoseidonGoldilocksConfig;
 type F = <C as GenericConfig<D>>::F;
 
 pub fn save_proof_data(data: CircuitData<F, C, D>, proof: ProofWithPublicInputs<F, C, D>) {
@@ -78,15 +79,17 @@ fn main() {
         t.untrusted_height,
         &t.untrusted_time_padded,
         t.untrusted_timestamp,
+        &t.untrusted_validators_hash_padded,
+        &t.untrusted_validators_padded,
         &t.untrusted_validator_pub_keys,
         &t.untrusted_validator_votes,
-        &t.untrusted_validators_padded,
         t.trusted_height,
         &t.trusted_time_padded,
         t.trusted_timestamp,
+        &t.trusted_next_validators_hash_padded,
+        &t.trusted_next_validators_padded,
         &t.trusted_next_validator_pub_keys,
         &t.trusted_next_validator_votes,
-        &t.trusted_next_validators_padded,
         &t.untrusted_intersect_indices,
         &t.trusted_next_intersect_indices,
         &target,
