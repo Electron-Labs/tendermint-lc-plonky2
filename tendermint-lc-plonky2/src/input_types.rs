@@ -1,14 +1,14 @@
 use std::io::Error;
 use serde::{Deserialize, Serialize};
-use tendermint::block::{CommitSig, Height};
+use tendermint::block::{CommitSig, Height, Header};
 use tendermint::vote::{CanonicalVote, SignedVote, Type, ValidatorIndex, Vote};
 use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
 use tendermint_rpc::{Client, HttpClient, Paging};
 use tendermint_proto::Protobuf;
-use tendermint_proto::types::{BlockId};
-use tendermint_rpc::Paging::Default;
+use ct_merkle::CtMerkleTree;
 use crate::constants::N_INTERSECTION_INDICES;
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
+use sha2::Sha256;
 
 pub const RPC_ENDPOINT: &str = "https://osmosis-rpc.quickapi.com";
 pub const CURRENT_HEIGHT: u64 =  12975357;
@@ -49,6 +49,27 @@ pub struct Inputs {
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
     // pub signature_indices: Vec<u8> TODO
+}
+
+pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
+    let mut mt = CtMerkleTree::<Sha256, Vec<u8>>::new();
+
+    mt.push(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(header.version));
+    mt.push(header.chain_id.encode_vec());
+    mt.push(header.height.encode_vec());
+    mt.push(header.time.encode_vec());
+    mt.push(Protobuf::<tendermint_proto::types::BlockId>::encode_vec(header.last_block_id.unwrap_or_default()));
+    mt.push(header.last_commit_hash.unwrap().encode_vec());
+    mt.push(header.data_hash.unwrap().encode_vec());
+    mt.push(header.validators_hash.encode_vec());
+    mt.push(header.next_validators_hash.encode_vec());
+    mt.push(header.consensus_hash.encode_vec());
+    mt.push(header.app_hash.encode_vec());
+    mt.push(header.last_results_hash.unwrap().encode_vec());
+    mt.push(header.evidence_hash.unwrap().encode_vec());
+    mt.push(header.proposer_address.encode_vec());
+
+    mt
 }
 
 
@@ -281,9 +302,12 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         sign_messages_padded.push(get_sha512_preprocessed_input(bytes_to_bool(sign_message)));
     }
 
+    let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
+    let mt_trusted = get_block_header_merkle_tree(trusted_block.header);
+
+    let untrusted_time_mt_proof = mt_trusted.prove_inclusion(3);
 
     let td = get_test_data();
-
 
     Inputs {
         sign_messages_padded, // 45 messages
