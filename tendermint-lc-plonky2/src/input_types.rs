@@ -6,6 +6,7 @@ use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
 use tendermint_rpc::{Client, HttpClient, Paging};
 use tendermint_proto::Protobuf;
 use ct_merkle::CtMerkleTree;
+use ct_merkle::inclusion::InclusionProof;
 use crate::constants::N_INTERSECTION_INDICES;
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
 use sha2::Sha256;
@@ -47,7 +48,8 @@ pub struct Inputs {
     pub signature_indices: Vec<u8>,
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
-    // pub signature_indices: Vec<u8> TODO
+    pub trusted_chain_id_proof: Vec<Vec<bool>>, //TODO add to Proof target
+    pub trusted_version_proof: Vec<Vec<bool>>, //TODO add to Proof target
 }
 
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
@@ -71,6 +73,16 @@ pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<
     mt
 }
 
+pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Vec<Vec<bool>> {
+    let proof_array = inclusion_proof.as_bytes();
+    let proof_elms = vec![
+        bytes_to_bool(proof_array[..32].to_vec()),
+        bytes_to_bool(proof_array[32..64].to_vec()),
+        bytes_to_bool(proof_array[64..96].to_vec()),
+        bytes_to_bool(proof_array[96..].to_vec()),
+    ];
+    proof_elms
+}
 
 pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  -> Inputs {
     let client = HttpClient::new(RPC_ENDPOINT).unwrap();
@@ -304,9 +316,19 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
     let mt_trusted = get_block_header_merkle_tree(trusted_block.header);
 
-    let untrusted_time_mt_proof = mt_trusted.prove_inclusion(3);
+    let untrusted_time_mt_proof = mt_untrusted.prove_inclusion(3);
+    let trusted_time_mt_proof = mt_trusted.prove_inclusion(3);
 
-    let td = get_test_data();
+    let untrusted_chain_id_mt_proof = mt_untrusted.prove_inclusion(1);
+    let trusted_chain_id_mt_proof = mt_trusted.prove_inclusion(1);
+    println!("tchain {:?}", trusted_chain_id_mt_proof);
+    let untrusted_version_mt_proof = mt_untrusted.prove_inclusion(0);
+    let trusted_version_mt_proof = mt_trusted.prove_inclusion(0);
+
+    let untrusted_validators_hash_proof = mt_untrusted.prove_inclusion(7);
+    let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
+
+    // let td = get_test_data();
 
     Inputs {
         sign_messages_padded, // 45 messages
@@ -314,36 +336,40 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         untrusted_hash,
         untrusted_height,
         untrusted_time_padded,
-        untrusted_time_proof: vec![],
+        untrusted_time_proof: get_merkle_proof_byte_vec(&untrusted_time_mt_proof),
         untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
         untrusted_validators_hash_padded,
         untrusted_validators_padded,
-        untrusted_chain_id_proof: vec![],
+        untrusted_chain_id_proof: get_merkle_proof_byte_vec(&untrusted_chain_id_mt_proof),
         untrusted_chain_id_padded,
-        untrusted_version_proof: vec![],
-        untrusted_version_padded, // rename to untrusted_version_padded
-        untrusted_validators_hash_proof: vec![],
+        untrusted_version_proof: get_merkle_proof_byte_vec(&untrusted_version_mt_proof),
+        untrusted_version_padded,
+        untrusted_validators_hash_proof: get_merkle_proof_byte_vec(&untrusted_validators_hash_proof),
         untrusted_validator_pub_keys,
-        untrusted_validator_vp, // TODO: rename to voting power (VP)
+        untrusted_validator_vp,
         trusted_hash,
         trusted_height,
         trusted_time_padded,
-        trusted_time_proof: vec![],
+        trusted_time_proof: get_merkle_proof_byte_vec(&trusted_time_mt_proof),
         trusted_timestamp: trusted_time.unix_timestamp() as u64,
-        trusted_next_validators_hash_proof: vec![],
+        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(&trusted_next_validators_hash_proof),
         trusted_next_validators_hash_padded,
         trusted_next_validators_padded,
         trusted_next_validator_pub_keys,
         trusted_next_validator_vp,
+        signature_indices: signatures_45_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
-        signature_indices: signatures_45_indices,
+        trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
+        trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
     }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::{BufWriter, Write};
     use tendermint::block::Height;
     use tendermint_rpc::{Client, HttpClient};
     use crate::input_types::CURRENT_HEIGHT;
@@ -351,7 +377,10 @@ mod tests {
 
     #[tokio::test]
     pub async fn test() {
-        get_inputs_for_height(CURRENT_HEIGHT, TRUSTED_HEIGHT).await;
+        let file = File::create("/Users/utsavjain/Desktop/electron_labs/tendermint_aggregate/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/12960957_12975357_v2.json").unwrap();
+        let input = get_inputs_for_height(CURRENT_HEIGHT, TRUSTED_HEIGHT).await;
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, &input).unwrap();
+        writer.flush().unwrap();
     }
-
 }
