@@ -315,7 +315,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     }
 
     let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
-    let mt_trusted = get_block_header_merkle_tree(trusted_block.header);
+    let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
 
     let untrusted_time_mt_proof = mt_untrusted.prove_inclusion(3);
     let trusted_time_mt_proof = mt_trusted.prove_inclusion(3);
@@ -330,7 +330,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
 
     let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_block.clone().header.chain_id.encode_vec()));
-    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(trusted_block.clone().header.version)));
+    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(trusted_block.header.version)));
     // let td = get_test_data();
 
     Inputs {
