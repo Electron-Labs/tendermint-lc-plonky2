@@ -101,6 +101,8 @@ fn main() {
         &t.signature_indices,
         &t.untrusted_intersect_indices,
         &t.trusted_next_intersect_indices,
+        &t.trusted_chain_id_padded,
+        &t.trusted_version_padded,
         &target,
     );
 

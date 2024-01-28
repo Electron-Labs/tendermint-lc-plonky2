@@ -120,13 +120,15 @@ pub struct ProofTarget {
     pub trusted_next_intersect_indices: Vec<Target>,
 }
 
+// Checks trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals) signed correctly
 pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> TrustedValidatorsQuorumTarget {
-    let untrusted_validator_pub_keys = (0..TOP_N_VALIDATORS_FOR_INTERSECTION)
+    // we pickup first 64 untrusted_validator_pub_keys mainly because random_access doesnt work >= 64
+    let untrusted_validator_pub_keys = (0..64)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validator_pub_keys = (0..TOP_N_VALIDATORS_FOR_INTERSECTION)
+    let trusted_next_validator_pub_keys = (0..64)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_next_validator_vp = (0..N_VALIDATORS)
@@ -1307,6 +1309,8 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     signature_indices: &Vec<u8>,
     untrusted_intersect_indices: &Vec<u8>,
     trusted_next_intersect_indices: &Vec<u8>,
+    trusted_chain_id_padded: &Vec<bool>,
+    trusted_version_padded: &Vec<bool>,
     target: &ProofTarget,
 ) {
     // Set N_SIGNATURE_INDICES signed messages (each message is already padded as sha512 - 2 block)
@@ -1452,6 +1456,21 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         &target.trusted_height,
         &BigUint::from_u64(trusted_height).unwrap(),
     );
+
+
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        witness.set_bool_target(
+            target.trusted_version_padded[i],
+            trusted_version_padded[i],
+        )
+    });
+
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        witness.set_bool_target(
+            target.trusted_chain_id_padded[i],
+            trusted_chain_id_padded[i],
+        )
+    });
 
     // Set trusted time padded
     (0..SHA_BLOCK_BITS).for_each(|i| {
