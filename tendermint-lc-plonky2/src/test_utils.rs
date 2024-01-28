@@ -1,4 +1,4 @@
-use crate::input_types::*;
+use crate::input_types::Inputs;
 use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::env;
