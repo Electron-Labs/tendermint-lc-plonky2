@@ -96,6 +96,8 @@ fn main() {
         &t.trusted_next_validator_vp,
         &t.trusted_time_proof,
         &t.trusted_next_validators_hash_proof,
+        &t.trusted_chain_id_proof,
+        &t.trusted_version_proof,
         &t.signature_indices,
         &t.untrusted_intersect_indices,
         &t.trusted_next_intersect_indices,

@@ -15,7 +15,6 @@ pub const RPC_ENDPOINT: &str = "https://osmosis-rpc.quickapi.com";
 pub const CURRENT_HEIGHT: u64 =  12975357;
 pub const TRUSTED_HEIGHT: u64 = 12960957;
 
-// TODO: don't keep any padded input in the json, pad it separetely
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -49,7 +48,9 @@ pub struct Inputs {
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
     pub trusted_chain_id_proof: Vec<Vec<bool>>, //TODO add to Proof target
+    pub trusted_chain_id_padded: Vec<bool>,
     pub trusted_version_proof: Vec<Vec<bool>>, //TODO add to Proof target
+    pub trusted_version_padded: Vec<bool>,
 }
 
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
@@ -241,7 +242,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
                 && i<63
                 && j<63
-                && !sig_check.is_none()
+                && signatures_45_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
@@ -328,6 +329,8 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     let untrusted_validators_hash_proof = mt_untrusted.prove_inclusion(7);
     let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
 
+    let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_block.clone().header.chain_id.encode_vec()));
+    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(trusted_block.clone().header.version)));
     // let td = get_test_data();
 
     Inputs {
@@ -361,7 +364,9 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
         trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
+        trusted_chain_id_padded,
         trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
+        trusted_version_padded
     }
 }
 
