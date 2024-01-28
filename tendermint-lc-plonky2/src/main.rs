@@ -59,9 +59,8 @@ fn main() {
     // register public inputs - {untrusted_hash, trusted_hash, untrusted_height, trusted_height}
     (0..target.untrusted_hash.len())
         .for_each(|i| builder.register_public_input(target.untrusted_hash[i].target));
-    // TODO:
-    // (0..target.trusted_hash.len())
-    //     .for_each(|i| builder.register_public_input(target.trusted_hash[i].target));
+    (0..target.trusted_hash.len())
+        .for_each(|i| builder.register_public_input(target.trusted_hash[i].target));
     (0..target.untrusted_height.num_limbs())
         .for_each(|i| builder.register_public_input(target.untrusted_height.get_limb(i).0));
     (0..target.untrusted_height.num_limbs())
@@ -71,7 +70,7 @@ fn main() {
 
     set_proof_target(
         &mut witness,
-        &t.sign_message,
+        &t.sign_messages_padded,
         &t.signatures,
         &t.untrusted_hash,
         &t.untrusted_version_padded,
@@ -82,7 +81,7 @@ fn main() {
         &t.untrusted_validators_hash_padded,
         &t.untrusted_validators_padded,
         &t.untrusted_validator_pub_keys,
-        &t.untrusted_validator_votes,
+        &t.untrusted_validator_vp,
         &t.untrusted_version_proof,
         &t.untrusted_chain_id_proof,
         &t.untrusted_time_proof,
@@ -94,9 +93,10 @@ fn main() {
         &t.trusted_next_validators_hash_padded,
         &t.trusted_next_validators_padded,
         &t.trusted_next_validator_pub_keys,
-        &t.trusted_next_validator_votes,
+        &t.trusted_next_validator_vp,
         &t.trusted_time_proof,
         &t.trusted_next_validators_hash_proof,
+        &t.signature_indices,
         &t.untrusted_intersect_indices,
         &t.trusted_next_intersect_indices,
         &target,

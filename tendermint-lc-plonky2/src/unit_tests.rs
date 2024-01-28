@@ -6,15 +6,13 @@ mod tests {
         get_sha_block_target, merkle_1_block_leaf_root, SHA_BLOCK_BITS,
     };
     use crate::targets::{
-        add_virtual_connect_pub_keys_votes_target, add_virtual_connect_sign_message_target,
-        add_virtual_connect_sign_message_target_new, add_virtual_connect_timestamp_target,
-        add_virtual_header_chain_id_merkle_proof_target,
+        add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
+        add_virtual_connect_timestamp_target, add_virtual_header_chain_id_merkle_proof_target,
         add_virtual_header_time_merkle_proof_target,
         add_virtual_header_version_merkle_proof_target,
         add_virtual_next_validators_hash_merkle_proof_target, add_virtual_trusted_quorum_target,
         add_virtual_untrusted_quorum_target, add_virtual_update_validity_target,
-        add_virtual_validators_hash_merkle_proof_target, is_not_null_signature,
-        UpdateValidityTarget,
+        add_virtual_validators_hash_merkle_proof_target, UpdateValidityTarget,
     };
     use crate::test_utils::*;
     use num::BigUint;
@@ -268,8 +266,14 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+                witness.set_bool_target(
+                    target.messages_padded[i][j],
+                    data.sign_messages_padded[i][j],
+                )
+            })
+        });
         (0..256)
             .for_each(|i| witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i]));
         witness.set_biguint_target(
@@ -293,8 +297,14 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+                witness.set_bool_target(
+                    target.messages_padded[i][j],
+                    data.sign_messages_padded[i][j],
+                )
+            })
+        });
         let mut hash = data.untrusted_hash;
         hash[0] = true;
 
@@ -320,8 +330,14 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        (0..SIGN_MESSAGE_BITS)
-            .for_each(|i| witness.set_bool_target(target.message[i], data.sign_message[i]));
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+                witness.set_bool_target(
+                    target.messages_padded[i][j],
+                    data.sign_messages_padded[i][j],
+                )
+            })
+        });
         let mut height = data.untrusted_height;
         height += 1;
 
@@ -381,11 +397,11 @@ mod tests {
     }
 
     #[test]
-    fn test_connect_pub_keys_votes() {
+    fn test_connect_pub_keys_vps() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+        let target = add_virtual_connect_pub_keys_vps_target(&mut builder);
 
         let mut witness = PartialWitness::new();
 
@@ -401,8 +417,8 @@ mod tests {
         });
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.votes[i],
-                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+                &target.vps[i],
+                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
             )
         });
         (0..N_VALIDATORS).for_each(|i| {
@@ -420,11 +436,11 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_connect_pub_keys_votes_invalid_pubkey() {
+    fn test_connect_pub_keys_vps_invalid_pubkey() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+        let target = add_virtual_connect_pub_keys_vps_target(&mut builder);
 
         let mut witness = PartialWitness::new();
 
@@ -440,8 +456,8 @@ mod tests {
         });
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.votes[i],
-                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+                &target.vps[i],
+                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
             )
         });
         (0..N_VALIDATORS).for_each(|i| {
@@ -459,18 +475,18 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_connect_pub_keys_votes_invalid_vote() {
+    fn test_connect_pub_keys_vps_invalid_vp() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
-        let target = add_virtual_connect_pub_keys_votes_target(&mut builder);
+        let target = add_virtual_connect_pub_keys_vps_target(&mut builder);
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
 
-        let mut untrusted_validator_votes = data.untrusted_validator_votes;
-        untrusted_validator_votes[3] = 14141431 + 1;
+        let mut untrusted_validator_vp = data.untrusted_validator_vp;
+        untrusted_validator_vp[3] = 14141431 + 1;
 
         (0..N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
@@ -482,8 +498,8 @@ mod tests {
         });
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.votes[i],
-                &BigUint::from_u64(untrusted_validator_votes[i]).unwrap(),
+                &target.vps[i],
+                &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
             )
         });
         (0..N_VALIDATORS).for_each(|i| {
@@ -499,31 +515,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
-    #[test]
-    fn test_is_not_null_signature() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-
-        let mut witness = PartialWitness::new();
-
-        let mut signatures_target = vec![(0..SIGNATURE_BITS)
-            .map(|_| builder._false())
-            .collect::<Vec<BoolTarget>>()];
-        let mut temp = vec![builder._true()];
-        (0..SIGNATURE_BITS - 1).for_each(|_| temp.push(builder._false()));
-        signatures_target.push(temp);
-
-        let is_not_null_signature = is_not_null_signature(&mut builder, signatures_target);
-        let one = builder._true();
-        let zero = builder._false();
-        builder.connect(is_not_null_signature[0].target, zero.target);
-        builder.connect(is_not_null_signature[1].target, one.target);
-
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
-
-    // TODO: add negative tests
+    // TODO: add negative tests and cover more cases
     #[test]
     fn test_sufficient_trusted_quorum_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -536,7 +528,7 @@ mod tests {
 
         let data = get_test_data();
 
-        (0..N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+        (0..TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_validator_pub_keys[i][j],
@@ -544,7 +536,7 @@ mod tests {
                 )
             })
         });
-        (0..N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+        (0..TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.trusted_next_validator_pub_keys[i][j],
@@ -554,27 +546,17 @@ mod tests {
         });
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.trusted_next_validator_votes[i],
-                &BigUint::from_u64(data.trusted_next_validator_votes[i]).unwrap(),
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
             )
         });
 
-        let signatures_target = (0..N_VALIDATORS)
-            .map(|_| get_256_bool_target(&mut builder))
-            .collect::<Vec<Vec<BoolTarget>>>();
-        (0..N_VALIDATORS).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(signatures_target[i][j], data.signatures[i][j]);
-            })
-        });
-        let is_not_null_signature = is_not_null_signature(&mut builder, signatures_target);
-        (0..N_VALIDATORS).for_each(|i| {
-            builder.connect(
-                target.is_not_null_signature[i].target,
-                is_not_null_signature[i].target,
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
             )
         });
-
         (0..N_INTERSECTION_INDICES).for_each(|i| {
             witness.set_target(
                 target.untrusted_intersect_indices[i],
@@ -606,23 +588,48 @@ mod tests {
 
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_votes[i],
-                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+                &target.untrusted_validator_vp[i],
+                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
             )
         });
-        let signatures_target = (0..N_VALIDATORS)
-            .map(|_| get_256_bool_target(&mut builder))
-            .collect::<Vec<Vec<BoolTarget>>>();
-        (0..N_VALIDATORS).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(signatures_target[i][j], data.signatures[i][j]);
-            })
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
-        let is_not_null_signature = is_not_null_signature(&mut builder, signatures_target);
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_sufficient_untrusted_quorum_target_border() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let mut witness = PartialWitness::new();
+
+        let target = add_virtual_untrusted_quorum_target(&mut builder);
+
+        let data = get_test_data();
+
+        // just > 2/3
+        let mut vp = [2; 45].to_vec();
+        vp[0] += 1;
+        vp.extend([0; 150 - 45 - 1].to_vec());
+        vp.extend([45; 1].to_vec());
         (0..N_VALIDATORS).for_each(|i| {
-            builder.connect(
-                target.is_not_null_signature[i].target,
-                is_not_null_signature[i].target,
+            witness.set_biguint_target(
+                &target.untrusted_validator_vp[i],
+                &BigUint::from_u64(vp[i]).unwrap(),
+            )
+        });
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
             )
         });
 
@@ -643,65 +650,22 @@ mod tests {
 
         let data = get_test_data();
 
+        // less than 2/3
+        let mut vp = [2; 45].to_vec();
+        vp.extend([0; 150 - 45 - 1].to_vec());
+        vp.extend([45; 1].to_vec());
         (0..N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_votes[i],
-                &BigUint::from_u64(data.untrusted_validator_votes[i]).unwrap(),
+                &target.untrusted_validator_vp[i],
+                &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
-
-        let signatures_target = (0..N_VALIDATORS)
-            .map(|_| get_256_bool_target(&mut builder))
-            .collect::<Vec<Vec<BoolTarget>>>();
-        // set first 10 signatures to null
-        (0..10).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(signatures_target[i][j], false);
-            })
-        });
-        (10..N_VALIDATORS).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(signatures_target[i][j], data.signatures[i][j]);
-            })
-        });
-        let is_not_null_signature = is_not_null_signature(&mut builder, signatures_target);
-        (0..N_VALIDATORS).for_each(|i| {
-            builder.connect(
-                target.is_not_null_signature[i].target,
-                is_not_null_signature[i].target,
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
             )
         });
-
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
-
-    // TODO:
-    #[test]
-    fn test_connect_sign_message_new() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-
-        let target = add_virtual_connect_sign_message_target_new(&mut builder);
-
-        let data = get_test_data();
-
-        let mut witness = PartialWitness::new();
-
-        (0..N_VALIDATORS).for_each(|i| {
-            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
-                witness.set_bool_target(
-                    target.messages_padded[i][j],
-                    data.sign_messages_padded[i][j],
-                )
-            })
-        });
-        (0..256)
-            .for_each(|i| witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i]));
-        witness.set_biguint_target(
-            &target.height,
-            &BigUint::from_u64(data.untrusted_height).unwrap(),
-        );
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
@@ -831,7 +795,10 @@ mod tests {
         });
         (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(target.proof[i][j], t.trusted_next_validators_hash_proof[i][j])
+                witness.set_bool_target(
+                    target.proof[i][j],
+                    t.trusted_next_validators_hash_proof[i][j],
+                )
             })
         });
         (0..256).for_each(|i| witness.set_bool_target(target.root[i], t.trusted_hash[i]));
