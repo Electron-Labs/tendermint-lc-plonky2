@@ -3,6 +3,7 @@ use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
+use crate::merkle_targets::bool_to_bytes;
 
 pub fn get_test_data() -> Inputs {
     let cur_dir = env::current_dir().unwrap();
@@ -17,6 +18,24 @@ pub fn get_test_data() -> Inputs {
     // println!("data {:?}", data);
     data
 }
+
+pub fn get_sha512_preprocessed_input(message: Vec<bool>) -> Vec<bool> {
+    let mut preprocessed: Vec<bool> = message.iter().map(|x| {
+        if *x {true} else {false}
+    }).collect();
+    let message_len = message.len();
+    // add one necessary padding bit
+    preprocessed.push(true);
+    while preprocessed.len() % 1024 != 896 {
+        preprocessed.push(false);
+    }
+    for i in 0..128{
+        let len_bit = ((message_len as u128) >> (127 - i)) & 1;
+        preprocessed.push(if len_bit == 1  {true} else {false});
+    }
+    preprocessed
+}
+
 
 // prefix with a 0 byte, then proceed towards sha512 padding, outputing 1 sha block
 pub fn get_sha_block_for_leaf(input: Vec<bool>) -> Vec<bool> {
