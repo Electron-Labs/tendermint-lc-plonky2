@@ -650,7 +650,6 @@ pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D:
     }
 }
 
-// TODO: message_padded incorrect as we need SHA512 block for (R + pub_key + message)
 pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ConnectSignMessageTarget {
@@ -662,12 +661,12 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
 
     messages_padded.iter().for_each(|message| {
         // connect header hash in message
-        // header hash takes the position at [128, 128+256)
-        (0..256).for_each(|i| builder.connect(message[128 + i].target, header_hash[i].target));
+        // header hash takes the position at [640, 640+256)
+        (0..256).for_each(|i| builder.connect(message[640 + i].target, header_hash[i].target));
 
         // connect header height in message
-        // header height takes the position at [32, 32+64)
-        let offset = 32;
+        // header height takes the position at [544, 544+64)
+        let offset = 544;
         (0..2).for_each(|i| {
             let height_bits = builder.split_le_base::<2>(height.get_limb(i).0, 32);
             (0..4).for_each(|j| {

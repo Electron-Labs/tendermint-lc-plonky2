@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tendermint::block::{CommitSig, Height, Header};
 use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
-use crate::merkle_targets::bytes_to_bool;
+use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
 use tendermint_rpc::{Client, HttpClient, Paging};
 use tendermint_proto::Protobuf;
 use ct_merkle::CtMerkleTree;
@@ -310,7 +310,13 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         let msg = Protobuf::<tendermint_proto::types::CanonicalVote>::encode_vec(cv);
 
         let sign_message: Vec<u8> = [vec![msg.len() as u8], msg.clone()].concat();
-        sign_messages_padded.push(get_sha512_preprocessed_input(bytes_to_bool(sign_message)));
+
+        // To create sign messages padded we would need sha512 preprocessed with [sig[0..256] + pub_key[0..256] + bytes_to_bool(sign_message)
+        let sig_r = &signatures_45[idx][0..256];
+        let pub_key = untrusted_validator_pub_keys[i].clone();
+        let msg = bytes_to_bool(sign_message.clone());
+        let signed_message = [sig_r, pub_key.as_slice(), msg.as_slice()].concat();
+        sign_messages_padded.push(get_sha512_preprocessed_input(signed_message));
     }
 
     let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
@@ -321,7 +327,6 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
 
     let untrusted_chain_id_mt_proof = mt_untrusted.prove_inclusion(1);
     let trusted_chain_id_mt_proof = mt_trusted.prove_inclusion(1);
-    println!("tchain {:?}", trusted_chain_id_mt_proof);
     let untrusted_version_mt_proof = mt_untrusted.prove_inclusion(0);
     let trusted_version_mt_proof = mt_trusted.prove_inclusion(0);
 
