@@ -1,8 +1,7 @@
-use std::io::Error;
 use serde::{Deserialize, Serialize};
 use tendermint::block::{CommitSig, Height, Header};
-use tendermint::vote::{CanonicalVote, SignedVote, Type, ValidatorIndex, Vote};
-use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
+use crate::merkle_targets::bytes_to_bool;
 use tendermint_rpc::{Client, HttpClient, Paging};
 use tendermint_proto::Protobuf;
 use ct_merkle::CtMerkleTree;

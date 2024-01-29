@@ -3,7 +3,6 @@ use bitvec::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::path::PathBuf;
-use crate::merkle_targets::bool_to_bytes;
 
 pub fn get_test_data() -> Inputs {
     let cur_dir = env::current_dir().unwrap();

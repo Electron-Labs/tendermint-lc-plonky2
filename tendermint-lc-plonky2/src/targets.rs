@@ -14,7 +14,6 @@ use plonky2::{
     },
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2::iop::witness::PartialWitness;
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
 
 pub struct VerifySignatures {
