@@ -37,6 +37,14 @@ pub fn get_256_bool_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
+pub fn get_512_bool_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> Vec<BoolTarget> {
+    (0..512)
+        .map(|_| builder.add_virtual_bool_target_unsafe())
+        .collect::<Vec<BoolTarget>>()
+}
+
 pub fn get_sha_block_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> Vec<BoolTarget> {

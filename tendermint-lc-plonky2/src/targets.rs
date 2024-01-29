@@ -1,9 +1,5 @@
 use super::constants::*;
-use super::merkle_targets::{
-    get_256_bool_target, get_formatted_hash_256_bools, get_sha_2block_target, get_sha_block_target,
-    merkle_1_block_leaf_root, sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target,
-    SHA_BLOCK_BITS,
-};
+use super::merkle_targets::{get_256_bool_target, get_512_bool_target, get_formatted_hash_256_bools, get_sha_2block_target, get_sha_block_target, merkle_1_block_leaf_root, sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, SHA_BLOCK_BITS};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
@@ -57,6 +53,9 @@ pub struct ConnectSignMessageTarget {
     pub messages_padded: Vec<Vec<BoolTarget>>,
     pub header_hash: Vec<BoolTarget>,
     pub height: BigUintTarget,
+    pub signatures: Vec<Vec<BoolTarget>>,
+    pub signature_indexes: Vec<Target>, // we will extract public keys using these signature indexes
+    pub untrusted_pub_keys: Vec<Vec<BoolTarget>>
 }
 
 pub struct ConnectTimestampTarget {
@@ -308,39 +307,38 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
     }
 }
 
-// TODO:
 // returns pub_keys corresponding to top 45 signatures in constrained manner (to be used for signature verification)
-// pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
-//     builder: &mut CircuitBuilder<F, D>,
-//     pub_keys: Vec<Vec<BoolTarget>>,
-//     signature_indices: Vec<Target>,
-// ) -> Vec<Vec<BoolTarget>> {
-//     // prepares pub_keys columns
-//     let mut pub_keys_columns: Vec<Vec<Target>> = vec![];
-//     (0..256).for_each(|i| {
-//         let mut pub_keys_column: Vec<Target> = vec![];
-//         (0..TOP_N_SIGNATURES).for_each(|j| {
-//             pub_keys_column.push(pub_keys[j][i].target);
-//         });
-//         pub_keys_columns.push(pub_keys_column);
-//     });
+pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    pub_keys: &Vec<Vec<BoolTarget>>,
+    signature_indices: &Vec<Target>,
+) -> Vec<Vec<BoolTarget>> {
+    // prepares pub_keys columns
+    let mut pub_keys_columns: Vec<Vec<Target>> = vec![];
+    (0..256).for_each(|i| {
+        let mut pub_keys_column: Vec<Target> = vec![];
+        (0..TOP_N_SIGNATURES).for_each(|j| {
+            pub_keys_column.push(pub_keys[j][i].target);
+        });
+        pub_keys_columns.push(pub_keys_column);
+    });
 
-//     let mut random_access_pub_keys: Vec<Vec<BoolTarget>> = Vec::with_capacity(TOP_N_SIGNATURES);
+    let mut random_access_pub_keys: Vec<Vec<BoolTarget>> = Vec::with_capacity(TOP_N_SIGNATURES);
 
-//     (0..N_SIGNATURE_INDICES).for_each(|i| {
-//         let mut random_access_pub_key: Vec<BoolTarget> = Vec::with_capacity(256);
-//         (0..256).for_each(|j| {
-//             let value = builder.random_access(signature_indices[i], pub_keys_columns[j].clone());
-//             let bool_value = builder.add_virtual_bool_target_unsafe();
-//             builder.connect(bool_value.target, value);
+    (0..N_SIGNATURE_INDICES).for_each(|i| {
+        let mut random_access_pub_key: Vec<BoolTarget> = Vec::with_capacity(256);
+        (0..256).for_each(|j| {
+            let value = builder.random_access(signature_indices[i], pub_keys_columns[j].clone());
+            let bool_value = builder.add_virtual_bool_target_unsafe();
+            builder.connect(bool_value.target, value);
 
-//             random_access_pub_key.push(bool_value);
-//         });
-//         random_access_pub_keys.push(random_access_pub_key);
-//     });
+            random_access_pub_key.push(bool_value);
+        });
+        random_access_pub_keys.push(random_access_pub_key);
+    });
 
-//     random_access_pub_keys
-// }
+    random_access_pub_keys
+}
 
 // pub fn add_virtual_verify_signatures_target<F: RichField + Extendable<D>, const D: usize>(
 //     builder: &mut CircuitBuilder<F, D>,
@@ -358,16 +356,6 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
 
 //     VerifySignatures { signatures, verify }
 // }
-
-pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    messages_padded: Vec<Vec<BoolTarget>>,
-    signatures: Vec<Vec<BoolTarget>>,
-    pub_keys: Vec<Vec<BoolTarget>>,
-) {
-    // TODO: starky
-    // use `get_random_access_pub_keys` for pub_keys input
-}
 
 pub fn add_virtual_validators_hash_merkle_proof_target<
     F: RichField + Extendable<D>,
@@ -657,9 +645,28 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         .map(|_| get_sha_2block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let header_hash = get_256_bool_target(builder);
+    let signatures = (0..N_SIGNATURE_INDICES)
+        .map(|_| get_512_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let signature_indexes = (0..N_SIGNATURE_INDICES)
+        .map(|_| builder.add_virtual_target())
+        .collect::<Vec<Target>>();
     let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+    let untrusted_pub_keys = (0..N_VALIDATORS)
+        .map(|_| get_256_bool_target(builder)).collect::<Vec<Vec<BoolTarget>>>();
 
-    messages_padded.iter().for_each(|message| {
+    let pub_keys = get_random_access_pub_keys(builder, &untrusted_pub_keys, &signature_indexes);
+
+    for j in 0..messages_padded.len() {
+        let message = &messages_padded[j];
+        let signature = &signatures[j];
+        let pub_key = &pub_keys[j];
+        // Connect signature_r
+        (0..256).for_each(|i| builder.connect(message[i].target, signature[i].target));
+
+        // Connect public key
+        (0..256).for_each(|i| builder.connect(message[256+i].target, pub_key[i].target));
+
         // connect header hash in message
         // header hash takes the position at [640, 640+256)
         (0..256).for_each(|i| builder.connect(message[640 + i].target, header_hash[i].target));
@@ -678,12 +685,16 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
                 })
             });
         });
-    });
+        // TODO Verify signatures using plonky2_ed25519
+    }
 
     ConnectSignMessageTarget {
         messages_padded,
         header_hash,
         height,
+        signatures,
+        signature_indexes,
+        untrusted_pub_keys
     }
 }
 
@@ -872,7 +883,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let connect_untrusted_pub_keys_vps_target = add_virtual_connect_pub_keys_vps_target(builder);
     let connect_trusted_next_pub_keys_vps_target = add_virtual_connect_pub_keys_vps_target(builder);
     // TODO: connect approval message height to header root leaf and verify the merkle proof
-    // TODO: message padded block fix
 
     // *** TrustedValidatorsQuorumTarget ***
     (0..TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
@@ -1139,13 +1149,35 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         });
     });
+    // connect header hash
     (0..256).for_each(|i| {
         builder.connect(
             connect_message_target.header_hash[i].target,
             untrusted_hash[i].target,
         )
     });
+    // connect height
     builder.connect_biguint(&connect_message_target.height, &untrusted_height);
+    // connect signatures
+    (0..N_SIGNATURE_INDICES).for_each(|i| {
+        (0..512).for_each(|j| {
+            builder.connect(
+                connect_message_target.signatures[i][j].target, signatures[i][j].target
+            )
+        })
+    });
+    // connect signature indexes
+    (0..N_SIGNATURE_INDICES).for_each(|i| {
+        builder.connect(connect_message_target.signature_indexes[i], signature_indices[i])
+    });
+    // connect untrusted_pub_key
+    (0..N_VALIDATORS).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                connect_message_target.untrusted_pub_keys[i][j].target, untrusted_validator_pub_keys[i][j].target
+            )
+        })
+    });
 
     // *** ConnectTimestampTarget - untrusted ***
     builder.connect_biguint(

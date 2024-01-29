@@ -264,8 +264,9 @@ mod tests {
 
         let data = get_test_data();
 
-        let mut witness = PartialWitness::new();
+        let mut witness = PartialWitness::<F>::new();
 
+        // connect padded message
         (0..N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 2).for_each(|j| {
                 witness.set_bool_target(
@@ -274,12 +275,30 @@ mod tests {
                 )
             })
         });
+        // connect untrusted hash
         (0..256)
             .for_each(|i| witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i]));
+        // connect untrusted height
         witness.set_biguint_target(
             &target.height,
             &BigUint::from_u64(data.untrusted_height).unwrap(),
         );
+        // connect signatures
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..512).for_each(|j| {
+                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
+            })
+        });
+        // connect signature indexes
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+        });
+        // connect untrusted validators
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+            })
+        });
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
@@ -313,6 +332,22 @@ mod tests {
             &target.height,
             &BigUint::from_u64(data.untrusted_height).unwrap(),
         );
+        // connect signatures
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..512).for_each(|j| {
+                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
+            })
+        });
+        // connect signature indexes
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+        });
+        // connect untrusted validators
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+            })
+        });
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
@@ -344,6 +379,22 @@ mod tests {
         (0..256)
             .for_each(|i| witness.set_bool_target(target.header_hash[i], data.untrusted_hash[i]));
         witness.set_biguint_target(&target.height, &BigUint::from_u64(height).unwrap());
+        // connect signatures
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            (0..512).for_each(|j| {
+                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
+            })
+        });
+        // connect signature indexes
+        (0..N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+        });
+        // connect untrusted validators
+        (0..N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+            })
+        });
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
