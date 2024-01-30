@@ -97,7 +97,7 @@ pub fn run_circuit() {
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    let config = CircuitConfig::standard_recursion_config();
+    let config = CircuitConfig::standard_ecc_config();
 
     let mut builder = CircuitBuilder::<F, D>::new(config);
 

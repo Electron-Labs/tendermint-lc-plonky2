@@ -784,7 +784,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> ProofTarget {
     let sign_messages_padded = (0..N_SIGNATURE_INDICES)
-        .map(|_| get_sha_2block_target(builder))
+        .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let signatures = (0..N_VALIDATORS)
         .map(|_| {
