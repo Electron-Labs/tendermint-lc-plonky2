@@ -18,7 +18,7 @@ tendermint-proto = "0.34.0"
 tokio = "1.35.1"
 ct-merkle = "0.1.0"
 sha2 = { version = "0.10.6" }
-
+plonky2_ed25519 = {git = "https://github.com/Electron-Labs/plonky2_ed25519"}
 
 
 

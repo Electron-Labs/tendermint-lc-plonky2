@@ -257,18 +257,18 @@ mod tests {
 
     #[test]
     fn test_connect_sign_message() {
-        let config = CircuitConfig::standard_recursion_config();
+        let config = CircuitConfig::standard_ecc_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
         let target = add_virtual_connect_sign_message_target(&mut builder);
-
+        println!("num_gates {:?}", builder.num_gates());
         let data = get_test_data();
 
         let mut witness = PartialWitness::<F>::new();
 
         // connect padded message
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
                 witness.set_bool_target(
                     target.messages_padded[i][j],
                     data.sign_messages_padded[i][j],
@@ -317,7 +317,7 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
                 witness.set_bool_target(
                     target.messages_padded[i][j],
                     data.sign_messages_padded[i][j],
@@ -366,7 +366,7 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
                 witness.set_bool_target(
                     target.messages_padded[i][j],
                     data.sign_messages_padded[i][j],

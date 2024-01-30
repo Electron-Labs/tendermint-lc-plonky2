@@ -61,6 +61,15 @@ pub fn get_sha_2block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
+pub fn get_sha_512_2_block_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> Vec<BoolTarget> {
+    (0..SHA_BLOCK_BITS * 4)
+        .map(|_| builder.add_virtual_bool_target_unsafe())
+        .collect::<Vec<BoolTarget>>()
+}
+
+
 pub fn get_formatted_hash_256_bools(input: &Vec<BoolTarget>) -> Vec<BoolTarget> {
     let mut output: Vec<BoolTarget> = Vec::with_capacity(input.len());
     input.chunks(32).for_each(|elm| {

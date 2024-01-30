@@ -1,5 +1,5 @@
 use super::constants::*;
-use super::merkle_targets::{get_256_bool_target, get_512_bool_target, get_formatted_hash_256_bools, get_sha_2block_target, get_sha_block_target, merkle_1_block_leaf_root, sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, SHA_BLOCK_BITS};
+use super::merkle_targets::{get_256_bool_target, get_512_bool_target, get_formatted_hash_256_bools, get_sha_2block_target, get_sha_512_2_block_target, get_sha_block_target, merkle_1_block_leaf_root, sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, SHA_BLOCK_BITS};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
@@ -11,6 +11,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
+use plonky2_ed25519::gadgets::eddsa::{make_verify_circuits, verify_using_preprocessed_sha_block};
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -642,7 +643,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
     builder: &mut CircuitBuilder<F, D>,
 ) -> ConnectSignMessageTarget {
     let messages_padded = (0..N_SIGNATURE_INDICES)
-        .map(|_| get_sha_2block_target(builder))
+        .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let header_hash = get_256_bool_target(builder);
     let signatures = (0..N_SIGNATURE_INDICES)
@@ -686,6 +687,11 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
             });
         });
         // TODO Verify signatures using plonky2_ed25519
+        // if j == 0 {
+            verify_using_preprocessed_sha_block(
+                builder, message, pub_key, signature
+            );
+        // }
     }
 
     ConnectSignMessageTarget {
@@ -1142,7 +1148,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
 
     // *** ConnectSignMessageTarget ***
     (0..N_SIGNATURE_INDICES).for_each(|i| {
-        (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+        (0..SHA_BLOCK_BITS * 4).for_each(|j| {
             builder.connect(
                 connect_message_target.messages_padded[i][j].target,
                 sign_messages_padded[i][j].target,
@@ -1343,7 +1349,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 ) {
     // Set N_SIGNATURE_INDICES signed messages (each message is already padded as sha512 - 2 block)
     (0..N_SIGNATURE_INDICES).for_each(|i| {
-        (0..SHA_BLOCK_BITS * 2).for_each(|j| {
+        (0..SHA_BLOCK_BITS * 4).for_each(|j| {
             witness.set_bool_target(
                 target.sign_messages_padded[i][j],
                 sign_messages_padded[i][j],

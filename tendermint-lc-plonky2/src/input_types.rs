@@ -9,6 +9,7 @@ use ct_merkle::inclusion::InclusionProof;
 use crate::constants::N_INTERSECTION_INDICES;
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
 use sha2::Sha256;
+use tendermint::Signature;
 
 pub const RPC_ENDPOINT: &str = "https://osmosis-rpc.quickapi.com";
 pub const CURRENT_HEIGHT: u64 =  12975357;
@@ -299,8 +300,8 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
             block_id: Some(untrusted_commit.block_id),
             timestamp: timestamp_x,
             validator_address: val_x.unwrap(),
-            validator_index: ValidatorIndex::try_from(0u32).unwrap(),
-            signature: None,
+            validator_index: ValidatorIndex::try_from(i).unwrap(),
+            signature: Some(Signature::try_from(bool_to_bytes(signatures_45[idx].to_vec())).unwrap()),
             extension: vec![0u8; 8],
             extension_signature: None,
         };
@@ -314,9 +315,18 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         // To create sign messages padded we would need sha512 preprocessed with [sig[0..256] + pub_key[0..256] + bytes_to_bool(sign_message)
         let sig_r = &signatures_45[idx][0..256];
         let pub_key = untrusted_validator_pub_keys[i].clone();
-        let msg = bytes_to_bool(sign_message.clone());
-        let signed_message = [sig_r, pub_key.as_slice(), msg.as_slice()].concat();
-        sign_messages_padded.push(get_sha512_preprocessed_input(signed_message));
+        let msg_bits = bytes_to_bool(sign_message.clone());
+        let signed_message = [sig_r, pub_key.as_slice(), msg_bits.as_slice()].concat();
+        // get_sha512_preprocessed_input(signed_message.clone());
+        // if idx == 0 {
+        // println!("== {:?} ==", i);
+        // println!("msg {:?}", bool_to_bytes(msg_bits.clone()));
+        // println!("sig {:?}", bool_to_bytes(signatures_45[idx].clone()));
+        // println!("pub key {:?}", bool_to_bytes(pub_key.clone()));
+        // println!("signed_msg {:?}", bool_to_bytes(get_sha512_preprocessed_input(signed_message.clone())));
+        // }
+        // println!("{:?}", )
+        sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
     }
 
     let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
