@@ -4,18 +4,18 @@ use std::marker::PhantomData;
 use std::time::Instant;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::witness::{PartialWitness, Witness};
+use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, ProverOnlyCircuitData, VerifierOnlyCircuitData};
+use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, ProverOnlyCircuitData, VerifierCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData};
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig, Hasher};
-use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget};
 use plonky2::plonk::prover::prove;
 use serde::Serialize;
 use crate::input_types::Inputs;
 use crate::serializer::{CustomGateSerializer, CustomGeneratorSerializer};
 use crate::targets::{add_virtual_proof_target, ProofTarget, set_proof_target};
 use crate::test_utils::get_test_data;
-use crate::utils::{dump_bytes_to_json, read_bytes_from_json};
+use crate::utils::{dump_bytes_to_json, dump_circuit_data, load_circuit_dat_from_dir, read_bytes_from_json};
 
 pub fn save_proof_data<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + Serialize, const D: usize>(data: CircuitData<F, C, D>, proof: ProofWithPublicInputs<F, C, D>) {
     let common_data = data.common;
@@ -57,6 +57,33 @@ pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(builder: &
     target
 }
 
+pub struct RecursionTargets<const D: usize> {
+    pt: ProofWithPublicInputsTarget<D>,
+    inner_data: VerifierCircuitTarget
+}
+
+pub fn make_recursion_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F>,
+    InnerC: GenericConfig<D, F = F>,
+    const D: usize,
+> (
+    builder: &mut CircuitBuilder<F, D>,
+    inner_common_data: &CommonCircuitData<F, D>,
+) -> RecursionTargets<D> 
+where
+    InnerC::Hasher: AlgebraicHasher<F> 
+{
+    let pt = builder.add_virtual_proof_with_pis(inner_common_data);
+    let inner_data = builder.add_virtual_verifier_data(inner_common_data.config.fri_config.cap_height);
+    builder.verify_proof::<InnerC>(&pt, &inner_data, inner_common_data);
+    RecursionTargets::<D> {
+        pt,
+        inner_data,
+    }
+}
+
+
 pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witness<F>>(pw: &mut W, inputs: Inputs, proof_target: &ProofTarget) {
     set_proof_target::<F, W>(
         pw,
@@ -97,6 +124,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
     );
 }
 
+// build and dump circuit data for tendermint lc circuit
 pub fn build_tendermint_lc_circuit<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + 'static, const D: usize>(
     storage_dir: &str
 )
@@ -105,93 +133,108 @@ where
 {
     println!("Building Tendermint lc circuit");
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
-    let target = generate_circuit::<F, D>(&mut builder);
+    let _target = generate_circuit::<F, D>(&mut builder);
     println!("Building circuit with {:?} gates", builder.num_gates());
     let t = Instant::now();
     let data = builder.build::<C>();
     println!("Time taken to build the circuit : {:?}", t.elapsed());
-    let cd_bytes = data.common.clone().to_bytes(&CustomGateSerializer).unwrap();
-    dump_bytes_to_json(cd_bytes, format!("{storage_dir}/common_data.json").as_str());
-    let prover_only_bytes = data.prover_only.to_bytes(&CustomGeneratorSerializer::<C, D> {_phantom: PhantomData::<C>}, &data.common).unwrap();
-    dump_bytes_to_json(prover_only_bytes, format!("{storage_dir}/prover_only.json").as_str());
-    let verifier_only_bytes = data.verifier_only.to_bytes().unwrap();
-    dump_bytes_to_json(verifier_only_bytes, format!("{storage_dir}/verifier_only.json").as_str());
+    dump_circuit_data::<F, C, D>(&data, storage_dir);
 }
 
+// build and dump circuit data for recursion circuit
+pub fn build_recursion_circuit<
+    F: RichField + Extendable<D>,
+    C: GenericConfig<D, F = F> + 'static,
+    InnerC: GenericConfig<D, F = F>,
+    const D: usize,
+> (
+    inner_common_data_path: &str,
+    storage_dir: &str
+)
+where
+    InnerC::Hasher: AlgebraicHasher<F>,
+    [(); C::Hasher::HASH_SIZE]:, <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>
+ {
+    let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+
+    println!("Reconstructing inner common data");
+    let inner_cd_bytes = read_bytes_from_json(inner_common_data_path);
+    let inner_common_data = CommonCircuitData::<F, D>::from_bytes(inner_cd_bytes, &CustomGateSerializer).unwrap();
+    make_recursion_circuit::<F, C, InnerC, D>(&mut builder, &inner_common_data);
+    println!("Building recursive circuit with {:?} gates", builder.num_gates());
+
+    let data = builder.build::<C>();
+    println!("Recursive circuit build complete");
+    dump_circuit_data::<F, C, D>(&data, storage_dir);
+}
+
+
 pub fn generate_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + 'static, const D: usize>(
-    storage_dir: &str,
+    lc_storage_dir: &str,
+    recursive_storage_dir: &str,
     inputs: Inputs
 ) 
 where
     [(); C::Hasher::HASH_SIZE]:, <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
-{
-    println!("Reconstructing common data");
-    let t_cd = Instant::now();
-    let cd_bytes = read_bytes_from_json(format!("{storage_dir}/common_data.json").as_str());
-    let common_data = CommonCircuitData::<F, D>::from_bytes(cd_bytes, &CustomGateSerializer).unwrap();
-    println!("Common data reconstructed in {:?}", t_cd.elapsed());
-
-    println!("Reconstructing prover only data");
-    let t_po = Instant::now();
-    let prover_only_bytes = read_bytes_from_json(format!("{storage_dir}/prover_only.json").as_str());
-    let prover_only = ProverOnlyCircuitData::<F, C, D>::from_bytes(
-        prover_only_bytes.as_slice(),
-        &CustomGeneratorSerializer::<C, D> {_phantom: PhantomData::<C>},
-        &common_data
-    ).unwrap();
-    println!("Prover only data reconstructed in {:?}", t_po.elapsed());    
-
-    println!("Reconstructing verifier only data");
-    let t_vo = Instant::now();
-    let verifier_only_bytes = read_bytes_from_json(format!("{storage_dir}/verifier_only.json").as_str());
-    let verifier_only = VerifierOnlyCircuitData::<C, D>::from_bytes(verifier_only_bytes).unwrap();
-    println!("Verifier only data reconstructed in {:?}", t_vo.elapsed());
-
+{   
+    println!("--- Light Client circuit ---");
+    let data = load_circuit_dat_from_dir::<F, C, D>(lc_storage_dir);
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let target = generate_circuit::<F, D>(&mut builder);
-    println!("Starting proof generation");
+    println!("Starting lc proof generation");
     let t_pg = Instant::now();
     let mut pw = PartialWitness::new();
     set_proof_targets::<F, D, PartialWitness<F>>(&mut pw, inputs, &target);
-    let proof_with_pis = prove::<F, C, D>(&prover_only, &common_data, pw, &mut Default::default()).unwrap();
+    let proof_with_pis = prove::<F, C, D>(&data.prover_only, &data.common, pw, &mut Default::default()).unwrap();
     println!("Proof generated in {:?}", t_pg.elapsed());
     let proof_with_pis_bytes = proof_with_pis.to_bytes();
-    dump_bytes_to_json(proof_with_pis_bytes, format!("{storage_dir}/proof_with_pis.json").as_str());
+    dump_bytes_to_json(proof_with_pis_bytes, format!("{lc_storage_dir}/proofs/proof_with_pis.json").as_str());
 
-    let data = CircuitData::<F, C, D> {
-        prover_only,
-        verifier_only,
-        common: common_data,
-    };
-    data.verify(proof_with_pis).expect("verify error");
+    data.verify(proof_with_pis.clone()).expect("verify error");
+
+    println!("--- Recursion Circuit ---");
+    // Add one more recursion proof generation layer 
+    let recursive_data = load_circuit_dat_from_dir::<F, C, D>(recursive_storage_dir);
+    let mut recursive_builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    // Config for both outer and inner circuit are same for now
+    let recursion_targets = make_recursion_circuit::<F, C, C, D>(&mut recursive_builder, &data.common);
+    println!("Starting to generate recursive proof");
+    let t_pg_rec = Instant::now();
+    let mut pw_rec = PartialWitness::new();
+    pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
+    pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &data.verifier_only);
+    let rec_proof_with_pis = prove::<F, C, D>(&recursive_data.prover_only, &recursive_data.common, pw_rec, &mut Default::default()).unwrap();
+    let proof_with_pis_bytes = proof_with_pis.to_bytes();
+    dump_bytes_to_json(proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis.json").as_str());
+    println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
+    recursive_data.verify(rec_proof_with_pis).expect("verify error");
+
 }
 
 pub fn run_circuit() {
+    //TODO: move this stuff to yaml
+    let light_client_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/lc_circuit";
+    let recursion_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/recursion_circuit";
+
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    let config = CircuitConfig::standard_ecc_config();
-
-    let mut builder = CircuitBuilder::<F, D>::new(config);
-
-    let mut witness = PartialWitness::new();
-
-    let target = generate_circuit::<F, D>(&mut builder);
-
     let t: Inputs = get_test_data();
 
-    set_proof_targets::<F, D, PartialWitness<F>>(&mut witness, t, &target);
+    // TODO pick this x up from cmd env
+    let x: usize = 3;
 
-    println!("Starting to build the circuit");
-    let data = builder.build::<C>();
-    println!("Circuit build done");
-    println!("Proof gen started");
-    let start_time = std::time::Instant::now();
-    let proof = data.prove(witness).unwrap();
-    let duration_ms = start_time.elapsed().as_millis();
-    println!("proved in {}ms", duration_ms);
-    assert!(data.verify(proof.clone()).is_ok());
-
-    // save_proof_data::<F, C, D>(data, proof);
+    // Build tendermint light client circuit
+    if x == 1{
+        build_tendermint_lc_circuit::<F, C, D>(light_client_path);
+    }
+    // Build recursive circuit 
+    if x == 2{
+        build_recursion_circuit::<F, C, C, D>(format!("{light_client_path}/circuit_data/common_data.json").as_str(), recursion_path);
+    }
+    // Generate proof for lc and recursion both
+    if x == 3 {
+        generate_proof::<F, C, D>(light_client_path, recursion_path, t);
+    }
 }
