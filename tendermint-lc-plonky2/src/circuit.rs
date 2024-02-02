@@ -76,6 +76,7 @@ where
 {
     let pt = builder.add_virtual_proof_with_pis(inner_common_data);
     let inner_data = builder.add_virtual_verifier_data(inner_common_data.config.fri_config.cap_height);
+    builder.register_public_inputs(&pt.public_inputs);
     builder.verify_proof::<InnerC>(&pt, &inner_data, inner_common_data);
     RecursionTargets::<D> {
         pt,
