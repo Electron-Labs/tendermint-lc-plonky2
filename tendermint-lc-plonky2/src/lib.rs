@@ -1,3 +1,6 @@
+#![allow(incomplete_features)]
+#![feature(generic_const_exprs)]
+
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::Witness;
@@ -9,3 +12,5 @@ pub mod targets;
 pub mod unit_tests;
 pub mod constants;
 pub mod circuit;
+pub mod utils;
+pub mod serializer;

@@ -687,11 +687,11 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
             });
         });
         // TODO Verify signatures using plonky2_ed25519
-        // if j == 0 {
+        if j == 0 {
             verify_using_preprocessed_sha_block(
                 builder, message, pub_key, signature
             );
-        // }
+        }
     }
 
     ConnectSignMessageTarget {
