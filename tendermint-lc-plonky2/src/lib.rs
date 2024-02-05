@@ -12,5 +12,3 @@ pub mod targets;
 pub mod unit_tests;
 pub mod constants;
 pub mod circuit;
-pub mod utils;
-pub mod serializer;
