@@ -207,7 +207,7 @@ where
     pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
     pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &data.verifier_only);
     let rec_proof_with_pis = prove::<F, C, D>(&recursive_data.prover_only, &recursive_data.common, pw_rec, &mut Default::default()).unwrap();
-    let proof_with_pis_bytes = proof_with_pis.to_bytes();
+    let proof_with_pis_bytes = rec_proof_with_pis.to_bytes();
     dump_bytes_to_json(proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis.json").as_str());
     println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
     recursive_data.verify(rec_proof_with_pis).expect("verify error");
@@ -215,7 +215,7 @@ where
 }
 
 pub fn run_circuit() {
-    //TODO: move this stuff to yaml
+        //TODO: move this stuff to yaml
     let light_client_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/lc_circuit";
     let recursion_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/recursion_circuit";
 
