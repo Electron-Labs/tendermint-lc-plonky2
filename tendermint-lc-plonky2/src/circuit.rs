@@ -16,7 +16,7 @@ use crate::targets::{add_virtual_proof_target, ProofTarget, set_proof_target};
 use crate::test_utils::get_test_data;
 use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
-    dump_bytes_to_json, dump_circuit_data, load_circuit_dat_from_dir, read_bytes_from_json,
+    dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
 
 pub fn save_proof_data<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + Serialize, const D: usize>(data: CircuitData<F, C, D>, proof: ProofWithPublicInputs<F, C, D>) {
@@ -181,7 +181,7 @@ where
     [(); C::Hasher::HASH_SIZE]:, <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
     println!("--- Light Client circuit ---");
-    let data = load_circuit_dat_from_dir::<F, C, D>(lc_storage_dir);
+    let data = load_circuit_data_from_dir::<F, C, D>(lc_storage_dir);
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let target = generate_circuit::<F, D>(&mut builder);
     println!("Starting lc proof generation");
@@ -197,7 +197,7 @@ where
 
     println!("--- Recursion Circuit ---");
     // Add one more recursion proof generation layer
-    let recursive_data = load_circuit_dat_from_dir::<F, C, D>(recursive_storage_dir);
+    let recursive_data = load_circuit_data_from_dir::<F, C, D>(recursive_storage_dir);
     let mut recursive_builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
     // Config for both outer and inner circuit are same for now
     let recursion_targets = make_recursion_circuit::<F, C, C, D>(&mut recursive_builder, &data.common);
