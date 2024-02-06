@@ -175,7 +175,8 @@ where
 pub fn generate_proof<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + 'static, const D: usize>(
     lc_storage_dir: &str,
     recursive_storage_dir: &str,
-    inputs: Inputs
+    inputs: Inputs,
+    tag: &str
 )
 where
     [(); C::Hasher::HASH_SIZE]:, <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
@@ -207,8 +208,8 @@ where
     pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
     pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &data.verifier_only);
     let rec_proof_with_pis = prove::<F, C, D>(&recursive_data.prover_only, &recursive_data.common, pw_rec, &mut Default::default()).unwrap();
-    let proof_with_pis_bytes = rec_proof_with_pis.to_bytes();
-    dump_bytes_to_json(proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis.json").as_str());
+    let proof_with_pis_bytes = proof_with_pis.to_bytes();
+    dump_bytes_to_json(proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis_{tag}.json").as_str());
     println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
     recursive_data.verify(rec_proof_with_pis).expect("verify error");
 
@@ -238,6 +239,6 @@ pub fn run_circuit() {
     }
     // Generate proof for lc and recursion both
     if x == 3 {
-        generate_proof::<F, C, D>(light_client_path, recursion_path, t);
+        generate_proof::<F, C, D>(light_client_path, recursion_path, t, "xyz");
     }
 }
