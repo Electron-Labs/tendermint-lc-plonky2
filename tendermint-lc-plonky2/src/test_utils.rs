@@ -102,9 +102,3 @@ pub fn get_sha_block_for_inner(leaf1: Vec<bool>, leaf2: Vec<bool>) -> Vec<bool> 
     // println!("block {:?}", block);
     block.to_vec()
 }
-
-// TODO:
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Validators {
-    pub leaves: Vec<Vec<bool>>,
-}

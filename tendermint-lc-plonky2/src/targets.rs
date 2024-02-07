@@ -1,5 +1,10 @@
 use super::constants::*;
-use super::merkle_targets::{get_256_bool_target, get_512_bool_target, get_formatted_hash_256_bools, get_sha_2block_target, get_sha_512_2_block_target, get_sha_block_target, merkle_1_block_leaf_root, sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, SHA_BLOCK_BITS};
+use super::merkle_targets::{
+    biguint_hash_to_bool_targets, get_256_bool_target, get_512_bool_target,
+    get_formatted_hash_256_bools, get_sha_512_2_block_target, get_sha_block_target,
+    hash256_to_bool_targets, merkle_1_block_leaf_root, sha256_1_block_hash_target,
+    sha256_2_block_two_to_one_hash_target, SHA_BLOCK_BITS,
+};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
@@ -11,7 +16,11 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
+use plonky2_crypto::hash::{CircuitBuilderHash, Hash256Target, WitnessHash};
+use plonky2_crypto::u32::arithmetic_u32::CircuitBuilderU32;
 use plonky2_ed25519::gadgets::eddsa::{make_verify_circuits, verify_using_preprocessed_sha_block};
+
+// TODO: remove all merkle proofs against header and add header merkle tree instead
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -36,7 +45,7 @@ pub struct UntrustedValidatorsQuorumTarget {
 pub struct MerkleProofTarget {
     pub leaf_padded: Vec<BoolTarget>, // shaBlock(0x00 || leaf)
     pub proof: Vec<Vec<BoolTarget>>,
-    pub root: Vec<BoolTarget>,
+    pub root: Hash256Target,
 }
 
 pub struct UpdateValidityTarget {
@@ -56,7 +65,7 @@ pub struct ConnectSignMessageTarget {
     pub height: BigUintTarget,
     pub signatures: Vec<Vec<BoolTarget>>,
     pub signature_indexes: Vec<Target>, // we will extract public keys using these signature indexes
-    pub untrusted_pub_keys: Vec<Vec<BoolTarget>>
+    pub untrusted_pub_keys: Vec<Vec<BoolTarget>>,
 }
 
 pub struct ConnectTimestampTarget {
@@ -87,7 +96,7 @@ pub struct ConnectPubKeysVPsTarget {
 pub struct ProofTarget {
     pub sign_messages_padded: Vec<Vec<BoolTarget>>,
     pub signatures: Vec<Vec<BoolTarget>>,
-    pub untrusted_hash: Vec<BoolTarget>,
+    pub untrusted_hash: Hash256Target,
     pub untrusted_version_padded: Vec<BoolTarget>,
     pub untrusted_chain_id_padded: Vec<BoolTarget>,
     pub untrusted_height: BigUintTarget,
@@ -101,7 +110,7 @@ pub struct ProofTarget {
     pub untrusted_chain_id_proof: Vec<Vec<BoolTarget>>,
     pub untrusted_time_proof: Vec<Vec<BoolTarget>>,
     pub untrusted_validators_hash_proof: Vec<Vec<BoolTarget>>,
-    pub trusted_hash: Vec<BoolTarget>,
+    pub trusted_hash: Hash256Target,
     pub trusted_height: BigUintTarget,
     pub trusted_time_padded: Vec<BoolTarget>,
     pub trusted_timestamp: BigUintTarget, // Unix timestamps in seconds
@@ -152,19 +161,21 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
     // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for index `63`
-    untrusted_intersect_indices.iter().for_each(|&untrusted_idx| {
-        let is_reserved_index = builder.is_equal(untrusted_idx, sixty_three);
-        // constrain only if its a non-reserved index
-        let enable_constraint = builder.not(is_reserved_index);
+    untrusted_intersect_indices
+        .iter()
+        .for_each(|&untrusted_idx| {
+            let is_reserved_index = builder.is_equal(untrusted_idx, sixty_three);
+            // constrain only if its a non-reserved index
+            let enable_constraint = builder.not(is_reserved_index);
 
-        let mut is_untrusted_in_signature = builder._false();
-        signature_indices.iter().for_each(|&signature_idx| {
-            let is_equal = builder.is_equal(untrusted_idx, signature_idx);
-            is_untrusted_in_signature = builder.or(is_untrusted_in_signature, is_equal);
+            let mut is_untrusted_in_signature = builder._false();
+            signature_indices.iter().for_each(|&signature_idx| {
+                let is_equal = builder.is_equal(untrusted_idx, signature_idx);
+                is_untrusted_in_signature = builder.or(is_untrusted_in_signature, is_equal);
+            });
+            let a = builder.mul(is_untrusted_in_signature.target, enable_constraint.target);
+            builder.connect(a, enable_constraint.target);
         });
-        let a = builder.mul(is_untrusted_in_signature.target, enable_constraint.target);
-        builder.connect(a, enable_constraint.target);
-    });
 
     // compute total voting power
     (0..N_VALIDATORS)
@@ -341,6 +352,7 @@ pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
     random_access_pub_keys
 }
 
+// TODO: ?
 // pub fn add_virtual_verify_signatures_target<F: RichField + Extendable<D>, const D: usize>(
 //     builder: &mut CircuitBuilder<F, D>,
 // ) -> VerifySignatures {
@@ -364,7 +376,7 @@ pub fn add_virtual_validators_hash_merkle_proof_target<
 >(
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
-    let root = get_256_bool_target(builder);
+    let root = builder.add_virtual_hash256_target();
     let proof = (0..HEADER_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -372,29 +384,32 @@ pub fn add_virtual_validators_hash_merkle_proof_target<
 
     let mut hash = sha256_1_block_hash_target(builder, &leaf_padded);
 
-    hash = sha256_2_block_two_to_one_hash_target(
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[0]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[1]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[2]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[3]),
     );
 
-    let hash_bool = get_formatted_hash_256_bools(&hash);
-    (0..256).for_each(|i| builder.connect(hash_bool[i].target, root[i].target));
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
 
     MerkleProofTarget {
         leaf_padded,
@@ -409,7 +424,7 @@ pub fn add_virtual_next_validators_hash_merkle_proof_target<
 >(
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
-    let root = get_256_bool_target(builder);
+    let root = builder.add_virtual_hash256_target();
     let proof = (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -417,29 +432,32 @@ pub fn add_virtual_next_validators_hash_merkle_proof_target<
 
     let mut hash = sha256_1_block_hash_target(builder, &leaf_padded);
 
-    hash = sha256_2_block_two_to_one_hash_target(
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[0]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[1]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[2]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[3]),
         &hash,
     );
 
-    let hash_bool = get_formatted_hash_256_bools(&hash);
-    (0..256).for_each(|i| builder.connect(hash_bool[i].target, root[i].target));
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
 
     MerkleProofTarget {
         leaf_padded,
@@ -451,7 +469,7 @@ pub fn add_virtual_next_validators_hash_merkle_proof_target<
 pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
-    let root = get_256_bool_target(builder);
+    let root = builder.add_virtual_hash256_target();
     let proof = (0..HEADER_TIME_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -459,29 +477,32 @@ pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>,
 
     let mut hash = sha256_1_block_hash_target(builder, &leaf_padded);
 
-    hash = sha256_2_block_two_to_one_hash_target(
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[0]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[1]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[2]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[3]),
     );
 
-    let hash_bool = get_formatted_hash_256_bools(&hash);
-    (0..256).for_each(|i| builder.connect(hash_bool[i].target, root[i].target));
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
 
     MerkleProofTarget {
         leaf_padded,
@@ -496,7 +517,7 @@ pub fn add_virtual_header_chain_id_merkle_proof_target<
 >(
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
-    let root = get_256_bool_target(builder);
+    let root = builder.add_virtual_hash256_target();
     let proof = (0..HEADER_CHAIN_ID_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -504,29 +525,32 @@ pub fn add_virtual_header_chain_id_merkle_proof_target<
 
     let mut hash = sha256_1_block_hash_target(builder, &leaf_padded);
 
-    hash = sha256_2_block_two_to_one_hash_target(
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &get_formatted_hash_256_bools(&proof[0]),
         &hash,
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[1]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[2]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[3]),
     );
 
-    let hash_bool = get_formatted_hash_256_bools(&hash);
-    (0..256).for_each(|i| builder.connect(hash_bool[i].target, root[i].target));
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
 
     MerkleProofTarget {
         leaf_padded,
@@ -541,7 +565,7 @@ pub fn add_virtual_header_version_merkle_proof_target<
 >(
     builder: &mut CircuitBuilder<F, D>,
 ) -> MerkleProofTarget {
-    let root = get_256_bool_target(builder);
+    let root = builder.add_virtual_hash256_target();
     let proof = (0..HEADER_VERSION_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -549,29 +573,32 @@ pub fn add_virtual_header_version_merkle_proof_target<
 
     let mut hash = sha256_1_block_hash_target(builder, &leaf_padded);
 
-    hash = sha256_2_block_two_to_one_hash_target(
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[0]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[1]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[2]),
     );
-    hash = sha256_2_block_two_to_one_hash_target(
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
         builder,
         &hash,
         &get_formatted_hash_256_bools(&proof[3]),
     );
 
-    let hash_bool = get_formatted_hash_256_bools(&hash);
-    (0..256).for_each(|i| builder.connect(hash_bool[i].target, root[i].target));
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
 
     MerkleProofTarget {
         leaf_padded,
@@ -654,7 +681,8 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         .collect::<Vec<Target>>();
     let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
     let untrusted_pub_keys = (0..N_VALIDATORS)
-        .map(|_| get_256_bool_target(builder)).collect::<Vec<Vec<BoolTarget>>>();
+        .map(|_| get_256_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
 
     let pub_keys = get_random_access_pub_keys(builder, &untrusted_pub_keys, &signature_indexes);
 
@@ -666,7 +694,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         (0..256).for_each(|i| builder.connect(message[i].target, signature[i].target));
 
         // Connect public key
-        (0..256).for_each(|i| builder.connect(message[256+i].target, pub_key[i].target));
+        (0..256).for_each(|i| builder.connect(message[256 + i].target, pub_key[i].target));
 
         // connect header hash in message
         // header hash takes the position at [640, 640+256)
@@ -688,9 +716,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         });
         // TODO Verify signatures using plonky2_ed25519
         if j == 0 {
-            verify_using_preprocessed_sha_block(
-                builder, message, pub_key, signature
-            );
+            verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
         }
     }
 
@@ -700,7 +726,7 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
         height,
         signatures,
         signature_indexes,
-        untrusted_pub_keys
+        untrusted_pub_keys,
     }
 }
 
@@ -793,7 +819,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
                 .collect()
         })
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_hash = get_256_bool_target(builder);
+    let untrusted_hash = builder.add_virtual_hash256_target();
     let untrusted_version_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
     let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
@@ -823,7 +849,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
-    let trusted_hash = get_256_bool_target(builder);
+    let trusted_hash = builder.add_virtual_hash256_target();
     let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
     let trusted_time_padded = get_sha_block_target(builder);
     let trusted_timestamp = builder
@@ -874,14 +900,20 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let trusted_quorum_target = add_virtual_trusted_quorum_target(builder);
     let untrusted_quorum_target = add_virtual_untrusted_quorum_target(builder);
     // TODO: Later on than checking so many merkle proofs we can just reconstruct the whole header root
-    let untrusted_version_merkle_proof_target = add_virtual_header_version_merkle_proof_target(builder);
-    let untrusted_chain_id_merkle_proof_target = add_virtual_header_chain_id_merkle_proof_target(builder);
+    let untrusted_version_merkle_proof_target =
+        add_virtual_header_version_merkle_proof_target(builder);
+    let untrusted_chain_id_merkle_proof_target =
+        add_virtual_header_chain_id_merkle_proof_target(builder);
     let untrusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
-    let untrusted_validators_hash_merkle_proof_target = add_virtual_validators_hash_merkle_proof_target(builder);
+    let untrusted_validators_hash_merkle_proof_target =
+        add_virtual_validators_hash_merkle_proof_target(builder);
     let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
-    let trusted_next_validators_hash_merkle_proof_target = add_virtual_next_validators_hash_merkle_proof_target(builder);
-    let trusted_version_merkle_proof_target = add_virtual_header_version_merkle_proof_target(builder);
-    let trusted_chain_id_merkle_proof_target = add_virtual_header_chain_id_merkle_proof_target(builder);
+    let trusted_next_validators_hash_merkle_proof_target =
+        add_virtual_next_validators_hash_merkle_proof_target(builder);
+    let trusted_version_merkle_proof_target =
+        add_virtual_header_version_merkle_proof_target(builder);
+    let trusted_chain_id_merkle_proof_target =
+        add_virtual_header_chain_id_merkle_proof_target(builder);
     let update_validity_target = add_virtual_update_validity_target(builder);
     let connect_message_target = add_virtual_connect_sign_message_target(builder);
     let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
@@ -961,12 +993,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
-        builder.connect(
-            untrusted_version_merkle_proof_target.root[i].target,
-            untrusted_hash[i].target,
-        )
-    });
+    builder.connect_hash256(untrusted_version_merkle_proof_target.root, untrusted_hash);
 
     // *** MerkleProofTarget - chain id ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -983,12 +1010,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
-        builder.connect(
-            untrusted_chain_id_merkle_proof_target.root[i].target,
-            untrusted_hash[i].target,
-        )
-    });
+    builder.connect_hash256(untrusted_chain_id_merkle_proof_target.root, untrusted_hash);
 
     // *** MerkleProofTarget - untrusted time ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -1005,12 +1027,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
-        builder.connect(
-            untrusted_time_merkle_proof_target.root[i].target,
-            untrusted_hash[i].target,
-        )
-    });
+    builder.connect_hash256(untrusted_time_merkle_proof_target.root, untrusted_hash);
 
     // *** MerkleProofTarget - untrusted_validators_hash ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -1027,12 +1044,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
-        builder.connect(
-            untrusted_validators_hash_merkle_proof_target.root[i].target,
-            untrusted_hash[i].target,
-        )
-    });
+    builder.connect_hash256(
+        untrusted_validators_hash_merkle_proof_target.root,
+        untrusted_hash,
+    );
 
     // *** MerkleProofTarget - trusted time ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -1049,12 +1064,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
-        builder.connect(
-            trusted_time_merkle_proof_target.root[i].target,
-            trusted_hash[i].target,
-        )
-    });
+    builder.connect_hash256(trusted_time_merkle_proof_target.root, trusted_hash);
 
     // *** MerkleProofTarget - trusted_next_validators_hash ***
     (0..SHA_BLOCK_BITS).for_each(|i| {
@@ -1071,12 +1081,44 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..256).for_each(|i| {
+    builder.connect_hash256(
+        trusted_next_validators_hash_merkle_proof_target.root,
+        trusted_hash,
+    );
+
+    // *** MerkleProofTarget - trusted_version ***
+    (0..SHA_BLOCK_BITS).for_each(|i| {
         builder.connect(
-            trusted_next_validators_hash_merkle_proof_target.root[i].target,
-            trusted_hash[i].target,
+            trusted_version_merkle_proof_target.leaf_padded[i].target,
+            trusted_version_padded[i].target,
         )
     });
+    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                trusted_version_merkle_proof_target.proof[i][j].target,
+                trusted_version_proof[i][j].target,
+            )
+        })
+    });
+    builder.connect_hash256(trusted_version_merkle_proof_target.root, trusted_hash);
+
+    // *** MerkleProofTarget - trusted chain id ***
+    (0..SHA_BLOCK_BITS).for_each(|i| {
+        builder.connect(
+            trusted_chain_id_merkle_proof_target.leaf_padded[i].target,
+            trusted_chain_id_padded[i].target,
+        )
+    });
+    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                trusted_chain_id_merkle_proof_target.proof[i][j].target,
+                trusted_chain_id_proof[i][j].target,
+            )
+        })
+    });
+    builder.connect_hash256(trusted_chain_id_merkle_proof_target.root, trusted_hash);
 
     // *** UpdateValidityTarget ***
     builder.connect_biguint(&update_validity_target.untrusted_height, &untrusted_height);
@@ -1102,50 +1144,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         )
     });
 
-    // *** MerkleProofTarget - trusted_version ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_version_merkle_proof_target.leaf_padded[i].target,
-            trusted_version_padded[i].target,
-        )
-    });
-    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
-        (0..256).for_each(|j| {
-            builder.connect(
-                trusted_version_merkle_proof_target.proof[i][j].target,
-                trusted_version_proof[i][j].target,
-            )
-        })
-    });
-    (0..256).for_each(|i| {
-        builder.connect(
-            trusted_version_merkle_proof_target.root[i].target,
-            trusted_hash[i].target,
-        )
-    });
-
-    // *** MerkleProofTarget - trusted chain id ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_chain_id_merkle_proof_target.leaf_padded[i].target,
-            trusted_chain_id_padded[i].target,
-        )
-    });
-    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
-        (0..256).for_each(|j| {
-            builder.connect(
-                trusted_chain_id_merkle_proof_target.proof[i][j].target,
-                trusted_chain_id_proof[i][j].target,
-            )
-        })
-    });
-    (0..256).for_each(|i| {
-        builder.connect(
-            trusted_chain_id_merkle_proof_target.root[i].target,
-            trusted_hash[i].target,
-        )
-    });
-
     // *** ConnectSignMessageTarget ***
     (0..N_SIGNATURE_INDICES).for_each(|i| {
         (0..SHA_BLOCK_BITS * 4).for_each(|j| {
@@ -1156,10 +1154,12 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         });
     });
     // connect header hash
+    let untrusted_hash_bool_targets =
+        get_formatted_hash_256_bools(&hash256_to_bool_targets(builder, &untrusted_hash));
     (0..256).for_each(|i| {
         builder.connect(
             connect_message_target.header_hash[i].target,
-            untrusted_hash[i].target,
+            untrusted_hash_bool_targets[i].target,
         )
     });
     // connect height
@@ -1168,19 +1168,24 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     (0..N_SIGNATURE_INDICES).for_each(|i| {
         (0..512).for_each(|j| {
             builder.connect(
-                connect_message_target.signatures[i][j].target, signatures[i][j].target
+                connect_message_target.signatures[i][j].target,
+                signatures[i][j].target,
             )
         })
     });
     // connect signature indexes
     (0..N_SIGNATURE_INDICES).for_each(|i| {
-        builder.connect(connect_message_target.signature_indexes[i], signature_indices[i])
+        builder.connect(
+            connect_message_target.signature_indexes[i],
+            signature_indices[i],
+        )
     });
     // connect untrusted_pub_key
     (0..N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
-                connect_message_target.untrusted_pub_keys[i][j].target, untrusted_validator_pub_keys[i][j].target
+                connect_message_target.untrusted_pub_keys[i][j].target,
+                untrusted_validator_pub_keys[i][j].target,
             )
         })
     });
@@ -1314,7 +1319,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     witness: &mut W,
     sign_messages_padded: &Vec<Vec<bool>>,
     signatures: &Vec<Vec<bool>>,
-    untrusted_hash: &Vec<bool>,
+    untrusted_hash: &Vec<u8>,
     untrusted_version_padded: &Vec<bool>,
     untrusted_chain_id_padded: &Vec<bool>,
     untrusted_height: u64,
@@ -1328,7 +1333,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     untrusted_chain_id_proof: &Vec<Vec<bool>>,
     untrusted_time_proof: &Vec<Vec<bool>>,
     untrusted_validators_hash_proof: &Vec<Vec<bool>>,
-    trusted_hash: &Vec<bool>,
+    trusted_hash: &Vec<u8>,
     trusted_height: u64,
     trusted_time_padded: &Vec<bool>,
     trusted_timestamp: u64,
@@ -1363,7 +1368,9 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     });
 
     // Set new block hash target (new block hash is sha256 digest)
-    (0..256).for_each(|i| witness.set_bool_target(target.untrusted_hash[i], untrusted_hash[i]));
+    let mut untrusted_hash_slice = [0u8; 32];
+    untrusted_hash_slice.copy_from_slice(untrusted_hash.as_slice());
+    witness.set_hash256_target(&target.untrusted_hash, &untrusted_hash_slice);
 
     // Untrusted header version as padded sha256 - 1 block
     // We take in padded input as it is a leaf in block header
@@ -1387,7 +1394,6 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         &target.untrusted_height,
         &BigUint::from_u64(untrusted_height).unwrap(),
     );
-
 
     // untrusted_time_padded is constrained with untrusted_timestamp inside the ckt
     // Untrusted time padded as padded sha256 - 1 block
@@ -1483,7 +1489,9 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     });
 
     // Set trusted header root
-    (0..256).for_each(|i| witness.set_bool_target(target.trusted_hash[i], trusted_hash[i]));
+    let mut trusted_hash_slice = [0u8; 32];
+    trusted_hash_slice.copy_from_slice(trusted_hash.as_slice());
+    witness.set_hash256_target(&target.trusted_hash, &trusted_hash_slice);
 
     // Set trusted height
     witness.set_biguint_target(
@@ -1491,12 +1499,8 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         &BigUint::from_u64(trusted_height).unwrap(),
     );
 
-
     (0..SHA_BLOCK_BITS).for_each(|i| {
-        witness.set_bool_target(
-            target.trusted_version_padded[i],
-            trusted_version_padded[i],
-        )
+        witness.set_bool_target(target.trusted_version_padded[i], trusted_version_padded[i])
     });
 
     (0..SHA_BLOCK_BITS).for_each(|i| {

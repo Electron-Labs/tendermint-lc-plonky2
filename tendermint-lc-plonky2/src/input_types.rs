@@ -20,7 +20,7 @@ pub const TRUSTED_HEIGHT: u64 = 12960957;
 pub struct Inputs {
     pub sign_messages_padded: Vec<Vec<bool>>,
     pub signatures: Vec<Vec<bool>>,
-    pub untrusted_hash: Vec<bool>,
+    pub untrusted_hash: Vec<u8>,
     pub untrusted_height: u64,
     pub untrusted_time_padded: Vec<bool>,
     pub untrusted_time_proof: Vec<Vec<bool>>,
@@ -34,7 +34,7 @@ pub struct Inputs {
     pub untrusted_validators_hash_proof: Vec<Vec<bool>>,
     pub untrusted_validator_pub_keys: Vec<Vec<bool>>,
     pub untrusted_validator_vp: Vec<u64>,
-    pub trusted_hash: Vec<bool>,
+    pub trusted_hash: Vec<u8>,
     pub trusted_height: u64,
     pub trusted_time_padded: Vec<bool>,
     pub trusted_time_proof: Vec<Vec<bool>>,
@@ -176,8 +176,8 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         }
     }
 
-    let untrusted_hash = bytes_to_bool(untrusted_commit.clone().block_id.hash.as_bytes().to_vec());
-    let trusted_hash = bytes_to_bool(trusted_commit.block_id.hash.as_bytes().to_vec());
+    let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
+    let trusted_hash = trusted_commit.block_id.hash.as_bytes().to_vec();
 
     let untrusted_time = untrusted_block.header.time;
     let untrusted_time_padded = get_sha_block_for_leaf(bytes_to_bool(untrusted_time.encode_vec()));
@@ -395,8 +395,10 @@ mod tests {
     use crate::input_types::{get_inputs_for_height, RPC_ENDPOINT, TRUSTED_HEIGHT};
 
     #[tokio::test]
+    #[ignore]
     pub async fn test() {
-        let file = File::create("/Users/utsavjain/Desktop/electron_labs/tendermint_aggregate/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/12960957_12975357_v2.json").unwrap();
+        // let file = File::create("/Users/utsavjain/Desktop/electron_labs/tendermint_aggregate/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/12960957_12975357_v2.json").unwrap();
+        let file = File::create(format!("/home/ubuntu/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/{TRUSTED_HEIGHT}_{CURRENT_HEIGHT}_v2.json")).unwrap();
         let input = get_inputs_for_height(CURRENT_HEIGHT, TRUSTED_HEIGHT).await;
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();

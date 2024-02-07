@@ -5,11 +5,10 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::{
-    hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash},
-    u32::{
+    biguint::BigUintTarget, hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash, Hash256Target}, u32::{
         arithmetic_u32::CircuitBuilderU32,
         binary_u32::{Bin32Target, CircuitBuilderBU32},
-    },
+    }
 };
 
 pub struct Sha256_1Block {
@@ -69,7 +68,7 @@ pub fn get_sha_512_2_block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
-
+// covnert to or from bits formatting in HashInputTarget/Hash256Target
 pub fn get_formatted_hash_256_bools(input: &Vec<BoolTarget>) -> Vec<BoolTarget> {
     let mut output: Vec<BoolTarget> = Vec::with_capacity(input.len());
     input.chunks(32).for_each(|elm| {
@@ -176,6 +175,32 @@ pub fn two_to_one_pad_target<F: RichField + Extendable<D>, const D: usize>(
     result
 }
 
+pub fn biguint_hash_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    input: &BigUintTarget
+) -> Vec<BoolTarget> {
+    let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
+    input.limbs.iter().for_each(|&u32_elm| {
+        let bin32_target = builder.convert_u32_bin32(u32_elm);
+        hash_bool.extend(bin32_target.bits);
+    });
+
+    hash_bool
+}
+
+pub fn hash256_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    input: &Hash256Target
+) -> Vec<BoolTarget> {
+    let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
+    input.iter().for_each(|&u32_elm| {
+        let bin32_target = builder.convert_u32_bin32(u32_elm);
+        hash_bool.extend(bin32_target.bits);
+    });
+
+    hash_bool
+}
+
 // resulting bits are in Hash256Target order
 pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -200,14 +225,8 @@ pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
         });
 
     let hash = builder.hash_sha256(&hash_input_target);
-    let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
 
-    hash.limbs.iter().for_each(|&u32_elm| {
-        let bin32_target = builder.convert_u32_bin32(u32_elm);
-        hash_bool.extend(bin32_target.bits);
-    });
-
-    hash_bool
+    biguint_hash_to_bool_targets(builder, &hash)
 }
 
 // left - 256bits, where all bits are in the same order as in Hash256Target
@@ -220,7 +239,7 @@ pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const
     builder: &mut CircuitBuilder<F, D>,
     left: &Vec<BoolTarget>,
     right: &Vec<BoolTarget>,
-) -> Vec<BoolTarget> {
+) -> BigUintTarget {
     assert_eq!(left.len(), 256);
     assert_eq!(right.len(), 256);
     let input_padded = two_to_one_pad_target(builder, left, right);
@@ -239,14 +258,15 @@ pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const
         });
 
     let hash = builder.hash_sha256(&hash_input_target);
-    let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
+    hash
+    // let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
 
-    hash.limbs.iter().for_each(|&u32_elm| {
-        let bin32_target = builder.convert_u32_bin32(u32_elm);
-        hash_bool.extend(bin32_target.bits);
-    });
+    // hash.limbs.iter().for_each(|&u32_elm| {
+    //     let bin32_target = builder.convert_u32_bin32(u32_elm);
+    //     hash_bool.extend(bin32_target.bits);
+    // });
 
-    hash_bool
+    // hash_bool
 }
 
 // assuming input is a multiple of 8
@@ -291,11 +311,12 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
         let mut wp = 0; // write position
         while rp < size {
             if rp + 1 < size {
-                items[wp] = sha256_2_block_two_to_one_hash_target(
+                let hash = &sha256_2_block_two_to_one_hash_target(
                     builder,
                     &items[rp].clone(),
-                    &items[rp + 1].clone(),
+                    &items[rp + 1].clone()
                 );
+                items[wp] = biguint_hash_to_bool_targets(builder, hash);
                 rp += 2;
             } else {
                 items[wp] = items[rp].clone();
@@ -313,7 +334,7 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
 mod tests {
     use super::{
         bytes_to_bool, get_256_bool_target, sha256_1_block_hash_target,
-        sha256_2_block_two_to_one_hash_target, two_to_one_pad_target, BoolTarget, SHA_BLOCK_BITS,
+        sha256_2_block_two_to_one_hash_target, two_to_one_pad_target, BoolTarget, SHA_BLOCK_BITS, biguint_hash_to_bool_targets
     };
     use crate::test_utils::*;
     use plonky2::{
@@ -518,11 +539,12 @@ mod tests {
         let expected_hash_target = builder.add_virtual_hash256_target();
         witness.set_hash256_target(&expected_hash_target, &expected_hash);
 
-        let computed = sha256_2_block_two_to_one_hash_target(
+        let hash_biguint = sha256_2_block_two_to_one_hash_target(
             &mut builder,
             &left_hash_bool_target,
             &right_hash_bool_target,
         );
+        let computed = biguint_hash_to_bool_targets(&mut builder, &hash_biguint);
 
         expected_hash_target
             .iter()

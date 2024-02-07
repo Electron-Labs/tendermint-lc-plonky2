@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::marker::PhantomData;
 use std::time::Instant;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -49,9 +48,9 @@ pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(builder: &
     let target = add_virtual_proof_target(builder);
     // register public inputs - {untrusted_hash, trusted_hash, untrusted_height, trusted_height}
     (0..target.untrusted_hash.len())
-        .for_each(|i| builder.register_public_input(target.untrusted_hash[i].target));
+        .for_each(|i| builder.register_public_input(target.untrusted_hash[i].0));
     (0..target.trusted_hash.len())
-        .for_each(|i| builder.register_public_input(target.trusted_hash[i].target));
+        .for_each(|i| builder.register_public_input(target.trusted_hash[i].0));
     (0..target.untrusted_height.num_limbs())
         .for_each(|i| builder.register_public_input(target.untrusted_height.get_limb(i).0));
     (0..target.untrusted_height.num_limbs())
@@ -227,18 +226,19 @@ pub fn run_circuit() {
     let t: Inputs = get_test_data();
 
     // TODO pick this x up from cmd env
-    let x: usize = 3;
+    let x = std::env::var("X")
+            .expect("`X` env variable must be set");
 
     // Build tendermint light client circuit
-    if x == 1{
+    if x == "1"{
         build_tendermint_lc_circuit::<F, C, D>(light_client_path);
     }
     // Build recursive circuit
-    if x == 2{
+    if x == "2"{
         build_recursion_circuit::<F, C, C, D>(format!("{light_client_path}/circuit_data/common_data.json").as_str(), recursion_path);
     }
     // Generate proof for lc and recursion both
-    if x == 3 {
+    if x == "3" {
         generate_proof::<F, C, D>(light_client_path, recursion_path, t, "xyz");
     }
 }
