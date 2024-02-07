@@ -21,6 +21,7 @@ use plonky2_crypto::u32::arithmetic_u32::CircuitBuilderU32;
 use plonky2_ed25519::gadgets::eddsa::{make_verify_circuits, verify_using_preprocessed_sha_block};
 
 // TODO: remove all merkle proofs against header and add header merkle tree instead
+// TODO: construct and connect merkle tree of old state
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,

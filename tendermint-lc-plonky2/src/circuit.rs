@@ -3,7 +3,7 @@ use std::io::{BufWriter, Write};
 use std::time::Instant;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
+use plonky2::iop::{witness::{PartialWitness, Witness, WitnessWrite}, target::Target};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, ProverOnlyCircuitData, VerifierCircuitData, VerifierCircuitTarget, VerifierOnlyCircuitData};
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig, Hasher};
@@ -46,15 +46,19 @@ pub fn save_proof_data<F: RichField + Extendable<D>, C: GenericConfig<D, F=F> + 
 
 pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(builder: &mut CircuitBuilder<F, D>) -> ProofTarget {
     let target = add_virtual_proof_target(builder);
-    // register public inputs - {untrusted_hash, trusted_hash, untrusted_height, trusted_height}
-    (0..target.untrusted_hash.len())
-        .for_each(|i| builder.register_public_input(target.untrusted_hash[i].0));
+    // register public inputs - {trusted_height, trusted_hash, untrusted_hash, untrusted_height}
+    // TODO: dummy old state
+    let old_public_inputs_root = (0..8).map(|_| builder.constant_bool(true).target).collect::<Vec<Target>>();
+    (0..8)
+        .for_each(|i| builder.register_public_input(old_public_inputs_root[i]));
     (0..target.trusted_hash.len())
         .for_each(|i| builder.register_public_input(target.trusted_hash[i].0));
     (0..target.untrusted_height.num_limbs())
-        .for_each(|i| builder.register_public_input(target.untrusted_height.get_limb(i).0));
-    (0..target.untrusted_height.num_limbs())
         .for_each(|i| builder.register_public_input(target.trusted_height.get_limb(i).0));
+    (0..target.untrusted_hash.len())
+        .for_each(|i| builder.register_public_input(target.untrusted_hash[i].0));
+    (0..target.untrusted_height.num_limbs())
+        .for_each(|i| builder.register_public_input(target.untrusted_height.get_limb(i).0));
     target
 }
 
@@ -207,15 +211,15 @@ where
     pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
     pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &data.verifier_only);
     let rec_proof_with_pis = prove::<F, C, D>(&recursive_data.prover_only, &recursive_data.common, pw_rec, &mut Default::default()).unwrap();
-    let proof_with_pis_bytes = proof_with_pis.to_bytes();
-    dump_bytes_to_json(proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis_{tag}.json").as_str());
+    let rec_proof_with_pis_bytes = rec_proof_with_pis.to_bytes();
+    dump_bytes_to_json(rec_proof_with_pis_bytes, format!("{recursive_storage_dir}/proofs/proof_with_pis_{tag}.json").as_str());
     println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
     recursive_data.verify(rec_proof_with_pis).expect("verify error");
 
 }
 
 pub fn run_circuit() {
-        //TODO: move this stuff to yaml
+    // TODO: move this stuff to yaml
     let light_client_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/lc_circuit";
     let recursion_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/recursion_circuit";
 
@@ -225,7 +229,6 @@ pub fn run_circuit() {
 
     let t: Inputs = get_test_data();
 
-    // TODO pick this x up from cmd env
     let x = std::env::var("X")
             .expect("`X` env variable must be set");
 
