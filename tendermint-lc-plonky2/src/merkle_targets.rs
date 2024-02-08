@@ -5,10 +5,12 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::{
-    biguint::BigUintTarget, hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash, Hash256Target}, u32::{
+    biguint::BigUintTarget,
+    hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash, Hash256Target},
+    u32::{
         arithmetic_u32::CircuitBuilderU32,
         binary_u32::{Bin32Target, CircuitBuilderBU32},
-    }
+    },
 };
 
 pub struct Sha256_1Block {
@@ -177,7 +179,7 @@ pub fn two_to_one_pad_target<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn biguint_hash_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    input: &BigUintTarget
+    input: &BigUintTarget,
 ) -> Vec<BoolTarget> {
     let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
     input.limbs.iter().for_each(|&u32_elm| {
@@ -190,7 +192,7 @@ pub fn biguint_hash_to_bool_targets<F: RichField + Extendable<D>, const D: usize
 
 pub fn hash256_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    input: &Hash256Target
+    input: &Hash256Target,
 ) -> Vec<BoolTarget> {
     let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
     input.iter().for_each(|&u32_elm| {
@@ -314,7 +316,7 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
                 let hash = &sha256_2_block_two_to_one_hash_target(
                     builder,
                     &items[rp].clone(),
-                    &items[rp + 1].clone()
+                    &items[rp + 1].clone(),
                 );
                 items[wp] = biguint_hash_to_bool_targets(builder, hash);
                 rp += 2;
@@ -333,8 +335,9 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
 #[cfg(test)]
 mod tests {
     use super::{
-        bytes_to_bool, get_256_bool_target, sha256_1_block_hash_target,
-        sha256_2_block_two_to_one_hash_target, two_to_one_pad_target, BoolTarget, SHA_BLOCK_BITS, biguint_hash_to_bool_targets
+        biguint_hash_to_bool_targets, bytes_to_bool, get_256_bool_target,
+        sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, two_to_one_pad_target,
+        BoolTarget, SHA_BLOCK_BITS,
     };
     use crate::test_utils::*;
     use plonky2::{

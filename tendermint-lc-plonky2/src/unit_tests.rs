@@ -2,8 +2,9 @@
 mod tests {
     use crate::constants::*;
     use crate::merkle_targets::{
-        bool_to_bytes, bytes_to_bool, get_256_bool_target, get_sha_2block_target,
-        get_sha_block_target, merkle_1_block_leaf_root, SHA_BLOCK_BITS, get_formatted_hash_256_bools, hash256_to_bool_targets
+        bool_to_bytes, bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools,
+        get_sha_2block_target, get_sha_block_target, hash256_to_bool_targets,
+        merkle_1_block_leaf_root, SHA_BLOCK_BITS,
     };
     use crate::targets::{
         add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
@@ -281,9 +282,13 @@ mod tests {
         untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
         witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
         let header_hash_bool_targets =
-        get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256)
-            .for_each(|i| builder.connect(target.header_hash[i].target, header_hash_bool_targets[i].target));
+            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
+        (0..256).for_each(|i| {
+            builder.connect(
+                target.header_hash[i].target,
+                header_hash_bool_targets[i].target,
+            )
+        });
         // connect untrusted height
         witness.set_biguint_target(
             &target.height,
@@ -297,12 +302,18 @@ mod tests {
         });
         // connect signature indexes
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+            witness.set_target(
+                target.signature_indexes[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
         // connect untrusted validators
         (0..N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+                witness.set_bool_target(
+                    target.untrusted_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
             })
         });
 
@@ -337,9 +348,13 @@ mod tests {
         untrusted_hash_slice[0] = 10;
         witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
         let header_hash_bool_targets =
-        get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256)
-            .for_each(|i| builder.connect(target.header_hash[i].target, header_hash_bool_targets[i].target));
+            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
+        (0..256).for_each(|i| {
+            builder.connect(
+                target.header_hash[i].target,
+                header_hash_bool_targets[i].target,
+            )
+        });
 
         witness.set_biguint_target(
             &target.height,
@@ -353,12 +368,18 @@ mod tests {
         });
         // connect signature indexes
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+            witness.set_target(
+                target.signature_indexes[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
         // connect untrusted validators
         (0..N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+                witness.set_bool_target(
+                    target.untrusted_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
             })
         });
 
@@ -394,9 +415,13 @@ mod tests {
         untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
         witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
         let header_hash_bool_targets =
-        get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256)
-            .for_each(|i| builder.connect(target.header_hash[i].target, header_hash_bool_targets[i].target));
+            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
+        (0..256).for_each(|i| {
+            builder.connect(
+                target.header_hash[i].target,
+                header_hash_bool_targets[i].target,
+            )
+        });
         witness.set_biguint_target(&target.height, &BigUint::from_u64(height).unwrap());
         // connect signatures
         (0..N_SIGNATURE_INDICES).for_each(|i| {
@@ -406,12 +431,18 @@ mod tests {
         });
         // connect signature indexes
         (0..N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(target.signature_indexes[i], F::from_canonical_u8(data.signature_indices[i]))
+            witness.set_target(
+                target.signature_indexes[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
         // connect untrusted validators
         (0..N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(target.untrusted_pub_keys[i][j], data.untrusted_validator_pub_keys[i][j])
+                witness.set_bool_target(
+                    target.untrusted_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
             })
         });
 

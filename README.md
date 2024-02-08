@@ -1,1 +1,1 @@
-# Tendermint LightClient Plonky2 for Oasis
+# Tendermint LightClient in Plonky2 for Osmosis chain

@@ -1,20 +1,19 @@
-use serde::{Deserialize, Serialize};
-use tendermint::block::{CommitSig, Height, Header};
-use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
-use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use tendermint_rpc::{Client, HttpClient, Paging};
-use tendermint_proto::Protobuf;
-use ct_merkle::CtMerkleTree;
-use ct_merkle::inclusion::InclusionProof;
 use crate::constants::N_INTERSECTION_INDICES;
+use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
+use ct_merkle::inclusion::InclusionProof;
+use ct_merkle::CtMerkleTree;
+use serde::{Deserialize, Serialize};
 use sha2::Sha256;
+use tendermint::block::{CommitSig, Header, Height};
+use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
+use tendermint_proto::Protobuf;
+use tendermint_rpc::{Client, HttpClient, Paging};
 
 pub const RPC_ENDPOINT: &str = "https://osmosis-rpc.quickapi.com";
-pub const CURRENT_HEIGHT: u64 =  12975357;
+pub const CURRENT_HEIGHT: u64 = 12975357;
 pub const TRUSTED_HEIGHT: u64 = 12960957;
-
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -60,7 +59,9 @@ pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<
     mt.push(header.chain_id.encode_vec());
     mt.push(header.height.encode_vec());
     mt.push(header.time.encode_vec());
-    mt.push(Protobuf::<tendermint_proto::types::BlockId>::encode_vec(header.last_block_id.unwrap_or_default()));
+    mt.push(Protobuf::<tendermint_proto::types::BlockId>::encode_vec(
+        header.last_block_id.unwrap_or_default(),
+    ));
     mt.push(header.last_commit_hash.unwrap().encode_vec());
     mt.push(header.data_hash.unwrap().encode_vec());
     mt.push(header.validators_hash.encode_vec());
@@ -85,7 +86,7 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
     proof_elms
 }
 
-pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  -> Inputs {
+pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -> Inputs {
     let client = HttpClient::new(RPC_ENDPOINT).unwrap();
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
@@ -95,62 +96,51 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
 
     let trusted_commit_response = client.commit(t_height).await;
     let trusted_block_response = client.block(t_height).await;
-    let trusted_next_validators_response = client.validators(Height::from((t_height.value()+1) as u32), Paging::All).await;
+    let trusted_next_validators_response = client
+        .validators(Height::from((t_height.value() + 1) as u32), Paging::All)
+        .await;
 
     let untrusted_commit = match untrusted_commit_response {
-        Ok(commit_response) => {
-            commit_response.signed_header.commit
-        }
+        Ok(commit_response) => commit_response.signed_header.commit,
         Err(_) => {
             panic!("Couldnt fetch untrusted commit")
         }
     };
 
     let trusted_commit = match trusted_commit_response {
-        Ok(commit_response) => {
-            commit_response.signed_header.commit
-        }
+        Ok(commit_response) => commit_response.signed_header.commit,
         Err(_) => {
             panic!("Couldnt fetch trusted commit")
         }
     };
 
     let untrusted_block = match untrusted_block_response {
-        Ok(block_response) => {
-            block_response.block
-        }
+        Ok(block_response) => block_response.block,
         Err(_) => {
             panic!("Couldnt fetch untrusted_block")
         }
     };
 
     let trusted_block = match trusted_block_response {
-        Ok(block_response) => {
-            block_response.block
-        }
+        Ok(block_response) => block_response.block,
         Err(_) => {
             panic!("Couldnt fetch untrusted_block")
         }
     };
 
     let untrusted_validators = match untrusted_validators_response {
-        Ok(validators_response) => {
-            validators_response.validators
-        }
+        Ok(validators_response) => validators_response.validators,
         Err(_) => {
             panic!("Couldnt fetch untrusted_validators")
         }
     };
 
     let trusted_next_validators = match trusted_next_validators_response {
-        Ok(validators_response) => {
-            validators_response.validators
-        }
+        Ok(validators_response) => validators_response.validators,
         Err(_) => {
             panic!("Couldnt fetch trusted_next_validators")
         }
     };
-
 
     let mut signatures_45: Vec<Vec<bool>> = vec![];
     let mut signatures_45_indices: Vec<u8> = vec![];
@@ -160,15 +150,11 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         if signatures_45_indices.len() == 45 {
             break;
         }
-        let sig  = match signatures[i].clone() {
-                CommitSig::BlockIdFlagCommit {
-                    signature, ..
-                } => Some(signature),
-                CommitSig::BlockIdFlagNil {
-                    signature, ..
-                } => None,
-                _ => None,
-            };
+        let sig = match signatures[i].clone() {
+            CommitSig::BlockIdFlagCommit { signature, .. } => Some(signature),
+            CommitSig::BlockIdFlagNil { signature, .. } => None,
+            _ => None,
+        };
 
         if !sig.is_none() {
             signatures_45.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
@@ -185,32 +171,47 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     let trusted_time = trusted_block.header.time;
     let trusted_time_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_time.encode_vec()));
 
-    let untrusted_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(untrusted_block.header.validators_hash.encode_vec()));
-    let trusted_next_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_block.header.next_validators_hash.encode_vec()));
+    let untrusted_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block.header.validators_hash.encode_vec(),
+    ));
+    let trusted_next_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.header.next_validators_hash.encode_vec(),
+    ));
 
     let mut untrusted_validators_padded: Vec<Vec<bool>> = Vec::new();
     for i in 0..untrusted_validators.len() {
-        untrusted_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(untrusted_validators[i].hash_bytes())))
+        untrusted_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(
+            untrusted_validators[i].hash_bytes(),
+        )))
     }
 
     let mut trusted_next_validators_padded: Vec<Vec<bool>> = Vec::new();
     for i in 0..trusted_next_validators.len() {
-        trusted_next_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(trusted_next_validators[i].hash_bytes())))
+        trusted_next_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(
+            trusted_next_validators[i].hash_bytes(),
+        )))
     }
 
-    let untrusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(untrusted_block.clone().header.chain_id.encode_vec()));
-    let untrusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(untrusted_block.clone().header.version)));
+    let untrusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block.clone().header.chain_id.encode_vec(),
+    ));
+    let untrusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+        tendermint_proto::version::Consensus,
+    >::encode_vec(
+        untrusted_block.clone().header.version,
+    )));
 
     let mut untrusted_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
     for i in 0..untrusted_validators.len() {
-        untrusted_validator_pub_keys.push(bytes_to_bool(untrusted_validators[i].pub_key.to_bytes()));
+        untrusted_validator_pub_keys
+            .push(bytes_to_bool(untrusted_validators[i].pub_key.to_bytes()));
     }
 
     let mut trusted_next_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
     for i in 0..trusted_next_validators.len() {
-        trusted_next_validator_pub_keys.push(bytes_to_bool(trusted_next_validators[i].pub_key.to_bytes()));
+        trusted_next_validator_pub_keys
+            .push(bytes_to_bool(trusted_next_validators[i].pub_key.to_bytes()));
     }
-
 
     let mut untrusted_validator_vp: Vec<u64> = Vec::new();
     for i in 0..untrusted_validators.len() {
@@ -228,20 +229,16 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     // Since RandomAccess cant go >= 64,and we need one index reserved for Null so 63rd index
     // is reserved
     for i in 0..untrusted_validators.len() {
-        let untrusted_sig  = untrusted_commit.signatures.clone()[i].clone();
-        let sig_check  = match untrusted_sig {
-            CommitSig::BlockIdFlagCommit {
-                signature, ..
-            } => Some(signature),
-            CommitSig::BlockIdFlagNil {
-                signature, ..
-            } => None,
+        let untrusted_sig = untrusted_commit.signatures.clone()[i].clone();
+        let sig_check = match untrusted_sig {
+            CommitSig::BlockIdFlagCommit { signature, .. } => Some(signature),
+            CommitSig::BlockIdFlagNil { signature, .. } => None,
             _ => None,
         };
         for j in 0..trusted_next_validators.len() {
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
-                && i<63
-                && j<63
+                && i < 63
+                && j < 63
                 && signatures_45_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
@@ -266,17 +263,13 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         let i = signatures_45_indices[idx] as usize;
 
         let timestamp_x = match signatures[i].clone() {
-            CommitSig::BlockIdFlagCommit {
-                timestamp, ..
-            } => Some(timestamp),
-            CommitSig::BlockIdFlagNil {
-                timestamp, ..
-            } => None,
+            CommitSig::BlockIdFlagCommit { timestamp, .. } => Some(timestamp),
+            CommitSig::BlockIdFlagNil { timestamp, .. } => None,
             _ => None,
         };
 
         if timestamp_x.is_none() {
-            continue
+            continue;
         }
 
         let val_x = match signatures[i].clone() {
@@ -290,7 +283,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         };
 
         if val_x.is_none() {
-            continue
+            continue;
         }
 
         let v = Vote {
@@ -301,7 +294,9 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
             timestamp: timestamp_x,
             validator_address: val_x.unwrap(),
             validator_index: ValidatorIndex::try_from(i).unwrap(),
-            signature: Some(Signature::try_from(bool_to_bytes(signatures_45[idx].to_vec())).unwrap()),
+            signature: Some(
+                Signature::try_from(bool_to_bytes(signatures_45[idx].to_vec())).unwrap(),
+            ),
             extension: vec![0u8; 8],
             extension_signature: None,
         };
@@ -343,8 +338,14 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
     let untrusted_validators_hash_proof = mt_untrusted.prove_inclusion(7);
     let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
 
-    let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_block.clone().header.chain_id.encode_vec()));
-    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<tendermint_proto::version::Consensus>::encode_vec(trusted_block.header.version)));
+    let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.chain_id.encode_vec(),
+    ));
+    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+        tendermint_proto::version::Consensus,
+    >::encode_vec(
+        trusted_block.header.version,
+    )));
     // let td = get_test_data();
 
     Inputs {
@@ -361,7 +362,9 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         untrusted_chain_id_padded,
         untrusted_version_proof: get_merkle_proof_byte_vec(&untrusted_version_mt_proof),
         untrusted_version_padded,
-        untrusted_validators_hash_proof: get_merkle_proof_byte_vec(&untrusted_validators_hash_proof),
+        untrusted_validators_hash_proof: get_merkle_proof_byte_vec(
+            &untrusted_validators_hash_proof,
+        ),
         untrusted_validator_pub_keys,
         untrusted_validator_vp,
         trusted_hash,
@@ -369,7 +372,9 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         trusted_time_padded,
         trusted_time_proof: get_merkle_proof_byte_vec(&trusted_time_mt_proof),
         trusted_timestamp: trusted_time.unix_timestamp() as u64,
-        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(&trusted_next_validators_hash_proof),
+        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
+            &trusted_next_validators_hash_proof,
+        ),
         trusted_next_validators_hash_padded,
         trusted_next_validators_padded,
         trusted_next_validator_pub_keys,
@@ -380,19 +385,18 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64)  
         trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
         trusted_chain_id_padded,
         trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
-        trusted_version_padded
+        trusted_version_padded,
     }
 }
 
-
 #[cfg(test)]
 mod tests {
+    use crate::input_types::CURRENT_HEIGHT;
+    use crate::input_types::{get_inputs_for_height, RPC_ENDPOINT, TRUSTED_HEIGHT};
     use std::fs::File;
     use std::io::{BufWriter, Write};
     use tendermint::block::Height;
     use tendermint_rpc::{Client, HttpClient};
-    use crate::input_types::CURRENT_HEIGHT;
-    use crate::input_types::{get_inputs_for_height, RPC_ENDPOINT, TRUSTED_HEIGHT};
 
     #[tokio::test]
     #[ignore]
