@@ -1,5 +1,3 @@
 [workspace]
 
-members = [
-    "tendermint-lc-plonky2",
-]
+members = ["tendermint-lc-plonky2"]

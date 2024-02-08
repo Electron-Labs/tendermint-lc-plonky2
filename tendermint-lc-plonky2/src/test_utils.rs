@@ -19,22 +19,22 @@ pub fn get_test_data() -> Inputs {
 }
 
 pub fn get_sha512_preprocessed_input(message: Vec<bool>) -> Vec<bool> {
-    let mut preprocessed: Vec<bool> = message.iter().map(|x| {
-        if *x {true} else {false}
-    }).collect();
+    let mut preprocessed: Vec<bool> = message
+        .iter()
+        .map(|x| if *x { true } else { false })
+        .collect();
     let message_len = message.len();
     // add one necessary padding bit
     preprocessed.push(true);
     while preprocessed.len() % 1024 != 896 {
         preprocessed.push(false);
     }
-    for i in 0..128{
+    for i in 0..128 {
         let len_bit = ((message_len as u128) >> (127 - i)) & 1;
-        preprocessed.push(if len_bit == 1  {true} else {false});
+        preprocessed.push(if len_bit == 1 { true } else { false });
     }
     preprocessed
 }
-
 
 // prefix with a 0 byte, then proceed towards sha512 padding, outputing 1 sha block
 pub fn get_sha_block_for_leaf(input: Vec<bool>) -> Vec<bool> {
@@ -69,7 +69,7 @@ pub fn get_sha_block_for_leaf(input: Vec<bool>) -> Vec<bool> {
 
 // prefix with a 1 byte, then proceed towards sha512 padding, outputting 2 blocks
 pub fn get_sha_block_for_inner(leaf1: Vec<bool>, leaf2: Vec<bool>) -> Vec<bool> {
-    let mut block = [false; 512*2];
+    let mut block = [false; 512 * 2];
     let mut input_len = 8 + leaf1.len() + leaf2.len(); // prefix `0x01`
 
     (0..7).for_each(|i| block[i] = false);
@@ -88,7 +88,7 @@ pub fn get_sha_block_for_inner(leaf1: Vec<bool>, leaf2: Vec<bool>) -> Vec<bool> 
     block[idx] = true;
     idx += 1;
 
-    (idx..(512*2) - 64).for_each(|i| {
+    (idx..(512 * 2) - 64).for_each(|i| {
         block[i] = false;
         idx += 1;
     });
@@ -101,10 +101,4 @@ pub fn get_sha_block_for_inner(leaf1: Vec<bool>, leaf2: Vec<bool>) -> Vec<bool> 
     // println!("idx {:?}", idx);
     // println!("block {:?}", block);
     block.to_vec()
-}
-
-// TODO:
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Validators {
-    pub leaves: Vec<Vec<bool>>,
 }
