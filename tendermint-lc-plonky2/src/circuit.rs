@@ -203,7 +203,7 @@ pub fn generate_proof<
     recursive_storage_dir: &str,
     inputs: Inputs,
     tag: &str,
-) where
+) -> Vec<u8> where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
@@ -248,13 +248,15 @@ pub fn generate_proof<
     .unwrap();
     let rec_proof_with_pis_bytes = rec_proof_with_pis.to_bytes();
     dump_bytes_to_json(
-        rec_proof_with_pis_bytes,
+        rec_proof_with_pis_bytes.clone(),
         format!("{recursive_storage_dir}/proof_data/proof_with_pis_{tag}.json").as_str(),
     );
     println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
     recursive_data
         .verify(rec_proof_with_pis)
         .expect("verify error");
+
+    return rec_proof_with_pis_bytes;
 }
 
 pub fn run_circuit() {
