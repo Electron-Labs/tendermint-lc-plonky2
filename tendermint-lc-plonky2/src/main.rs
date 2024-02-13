@@ -1,8 +1,9 @@
-pub mod constants;
 pub mod input_types;
 pub mod merkle_targets;
 pub mod targets;
 pub mod test_utils;
+pub mod config_data;
+pub mod test_data;
 
 use dotenv::dotenv;
 

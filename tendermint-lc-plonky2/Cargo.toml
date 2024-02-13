@@ -23,3 +23,5 @@ log = { version = "0.4.14", default-features = false }
 env_logger = { version = "0.9.0", default-features = false }
 plonky2-circuit-serializer = { git = "https://github.com/Electron-Labs/plonky2-circuit-serializer" }
 dotenv = "0.15.0"
+serde_yaml = "0.9.31"
+lazy_static = "1.4.0"

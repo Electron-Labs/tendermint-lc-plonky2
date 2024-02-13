@@ -1,4 +1,3 @@
-use crate::constants::N_INTERSECTION_INDICES;
 use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
 use ct_merkle::inclusion::InclusionProof;
@@ -11,9 +10,11 @@ use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
 
-pub const RPC_ENDPOINT: &str = "https://osmosis-rpc.quickapi.com";
-pub const CURRENT_HEIGHT: u64 = 12975357;
-pub const TRUSTED_HEIGHT: u64 = 12960957;
+use crate::config_data::{N_INTERSECTION_INDICES, RPC_ENDPOINT};
+use crate::test_data::*;
+
+pub const CURRENT_HEIGHT: u64 = tendermint_untrusted_height;
+pub const TRUSTED_HEIGHT: u64 = tendermint_trusted_height;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -87,7 +88,7 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
 }
 
 pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -> Inputs {
-    let client = HttpClient::new(RPC_ENDPOINT).unwrap();
+    let client = HttpClient::new(RPC_ENDPOINT.as_str()).unwrap();
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
     let untrusted_commit_response = client.commit(u_height).await;
@@ -244,15 +245,15 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
             }
-            if untrusted_intersect_indices.len() == N_INTERSECTION_INDICES {
+            if untrusted_intersect_indices.len() == *N_INTERSECTION_INDICES {
                 break;
             }
         }
-        if untrusted_intersect_indices.len() == N_INTERSECTION_INDICES {
+        if untrusted_intersect_indices.len() == *N_INTERSECTION_INDICES {
             break;
         }
     }
-    while untrusted_intersect_indices.len() != N_INTERSECTION_INDICES {
+    while untrusted_intersect_indices.len() != *N_INTERSECTION_INDICES {
         untrusted_intersect_indices.push(63u8);
         trusted_next_intersect_indices.push(63u8);
     }
@@ -392,11 +393,9 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
 #[cfg(test)]
 mod tests {
     use crate::input_types::CURRENT_HEIGHT;
-    use crate::input_types::{get_inputs_for_height, RPC_ENDPOINT, TRUSTED_HEIGHT};
+    use crate::input_types::{get_inputs_for_height, TRUSTED_HEIGHT};
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    use tendermint::block::Height;
-    use tendermint_rpc::{Client, HttpClient};
 
     #[tokio::test]
     #[ignore]
