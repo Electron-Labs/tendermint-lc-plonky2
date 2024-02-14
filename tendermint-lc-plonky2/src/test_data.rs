@@ -1,11 +1,14 @@
-pub const tendermint_trusted_height: u64 = 12960957;
-pub const tendermint_untrusted_height: u64 = 12975357;
+pub const TENDERMINT_TRUSTED_HEIGHT: u64 = 12960957;
+pub const TENDERMINT_UNTRUSTED_HEIGHT: u64 = 12975357;
 
-pub const celestia_trusted_height: u64 = 765797;
-pub const celestia_untrusted_height: u64 = 771557;
+pub const CELESTIA_TRUSTED_HEIGHT: u64 = 765797;
+pub const CELESTIA_UNTRUSTED_HEIGHT: u64 = 771557;
 
-pub const injective_trusted_height: u64 = 60319429;
-pub const injective_untrusted_height: u64 = 60427429;
+pub const INJECTIVE_TRUSTED_HEIGHT: u64 = 60319429;
+pub const INJECTIVE_UNTRUSTED_HEIGHT: u64 = 60427429;
 
-pub const dydx_trusted_height: u64 = 8411557;
-pub const dydx_untrusted_height: u64 = 8414437;
+pub const DYDX_TRUSTED_HEIGHT: u64 = 8411557;
+pub const DYDX_UNTRUSTED_HEIGHT: u64 = 8414437;
+
+pub const SOMMELIER_TRUSTED_HEIGHT: u64 = 13110390;
+pub const SOMMELIER_UNTRUSTED_HEIGHT: u64 = 13110790;

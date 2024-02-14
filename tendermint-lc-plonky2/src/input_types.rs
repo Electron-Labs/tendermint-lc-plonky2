@@ -13,8 +13,8 @@ use tendermint_rpc::{Client, HttpClient, Paging};
 use crate::config_data::{N_INTERSECTION_INDICES, RPC_ENDPOINT};
 use crate::test_data::*;
 
-pub const CURRENT_HEIGHT: u64 = dydx_untrusted_height;
-pub const TRUSTED_HEIGHT: u64 = dydx_trusted_height;
+pub const CURRENT_HEIGHT: u64 = SOMMELIER_UNTRUSTED_HEIGHT;
+pub const TRUSTED_HEIGHT: u64 = SOMMELIER_TRUSTED_HEIGHT;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
