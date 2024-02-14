@@ -13,8 +13,8 @@ use tendermint_rpc::{Client, HttpClient, Paging};
 use crate::config_data::{N_INTERSECTION_INDICES, RPC_ENDPOINT};
 use crate::test_data::*;
 
-pub const CURRENT_HEIGHT: u64 = tendermint_untrusted_height;
-pub const TRUSTED_HEIGHT: u64 = tendermint_trusted_height;
+pub const CURRENT_HEIGHT: u64 = dydx_untrusted_height;
+pub const TRUSTED_HEIGHT: u64 = dydx_trusted_height;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -401,7 +401,7 @@ mod tests {
     #[ignore]
     pub async fn test() {
         // let file = File::create("/Users/utsavjain/Desktop/electron_labs/tendermint_aggregate/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/12960957_12975357_v2.json").unwrap();
-        let file = File::create(format!("/home/ubuntu/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/{TRUSTED_HEIGHT}_{CURRENT_HEIGHT}_v2.json")).unwrap();
+        let file = File::create(format!("/home/ubuntu/work/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/{TRUSTED_HEIGHT}_{CURRENT_HEIGHT}_v2.json")).unwrap();
         let input = get_inputs_for_height(CURRENT_HEIGHT, TRUSTED_HEIGHT).await;
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();

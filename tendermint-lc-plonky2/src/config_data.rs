@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
 use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Config{
+pub struct Config {
     pub RPC_ENDPOINT: String,
     pub VP_BITS: usize,
     pub SIGNATURE_BITS: usize,
@@ -21,15 +21,15 @@ pub struct Config{
     pub TOP_N_SIGNATURES: usize,
     pub LEB128_GROUP_SIZE: usize,
     pub N_VALIDATORS_LEAVES: usize,
-    pub CHAIN_ID:Vec<bool>,
-    pub VERSION_BLOCK: Vec<bool>
+    pub CHAIN_ID: Vec<bool>,
+    pub VERSION_BLOCK: Vec<bool>,
 }
 
-lazy_static!{
+lazy_static! {
     static ref CONFIG_STRUCT: Config = {
         // Read the config file and deserialize it into a Config struct
         let file_content =
-            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/tendermint.yaml").expect("Unable to read config yaml file");
+            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/dydx.yaml").expect("Unable to read config yaml file");
         serde_yaml::from_str(file_content.as_str()).unwrap()
     };
 
@@ -53,5 +53,5 @@ lazy_static!{
     pub static ref N_VALIDATORS_LEAVES: usize = CONFIG_STRUCT.N_VALIDATORS_LEAVES;
     pub static ref CHAIN_ID: Vec<bool> = CONFIG_STRUCT.CHAIN_ID.clone();
     pub static ref VERSION_BLOCK: Vec<bool> = CONFIG_STRUCT.VERSION_BLOCK.clone();
-    
+
 }

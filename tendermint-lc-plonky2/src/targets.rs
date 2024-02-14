@@ -134,11 +134,10 @@ pub struct ProofTarget {
 pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> TrustedValidatorsQuorumTarget {
-    // we pickup first 64 untrusted_validator_pub_keys mainly because random_access doesnt work >= 64
-    let untrusted_validator_pub_keys = (0..64)
+    let untrusted_validator_pub_keys = (0..*TOP_N_SIGNATURES)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validator_pub_keys = (0..64)
+    let trusted_next_validator_pub_keys = (0..*TOP_N_SIGNATURES)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_next_validator_vp = (0..*N_VALIDATORS)
@@ -185,11 +184,11 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
     // prepares voting power columns
     // because random_access_index wont work on BigUintTarget so need to split it into limbs
     let trusted_validator_vp_columns = vec![
-        trusted_next_validator_vp[..64]
+        trusted_next_validator_vp[..*TOP_N_VALIDATORS_FOR_INTERSECTION]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        trusted_next_validator_vp[..64]
+        trusted_next_validator_vp[..*TOP_N_VALIDATORS_FOR_INTERSECTION]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -201,7 +200,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
     (0..256).for_each(|i| {
         let mut untrusted_pub_key_column: Vec<Target> = vec![];
         let mut trusted_pub_key_column: Vec<Target> = vec![];
-        (0..64).for_each(|j| {
+        (0..*TOP_N_SIGNATURES).for_each(|j| {
             untrusted_pub_key_column.push(untrusted_validator_pub_keys[j][i].target);
             trusted_pub_key_column.push(trusted_next_validator_pub_keys[j][i].target);
         });
