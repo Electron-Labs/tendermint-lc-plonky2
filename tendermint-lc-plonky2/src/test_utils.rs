@@ -8,8 +8,8 @@ pub fn get_test_data() -> Inputs {
     let cur_dir = env::current_dir().unwrap();
     let is_test = cur_dir.ends_with("tendermint-lc-plonky2/tendermint-lc-plonky2");
     let file = match is_test {
-        true => PathBuf::from("./src/test_data/13110390_13110790_v2.json"),
-        false => PathBuf::from("./tendermint-lc-plonky2/src/test_data/13110390_13110790_v2.json"),
+        true => PathBuf::from("./src/test_data/2557871_2573300_v2.json"),
+        false => PathBuf::from("./tendermint-lc-plonky2/src/test_data/2557871_2573300_v2.json"),
     };
     let file_path = cur_dir.join(file);
     let data_str = std::fs::read_to_string(file_path.as_path()).unwrap();

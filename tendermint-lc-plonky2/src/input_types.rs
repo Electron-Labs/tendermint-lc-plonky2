@@ -10,11 +10,11 @@ use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
 
-use crate::config_data::{N_INTERSECTION_INDICES, RPC_ENDPOINT};
+use crate::config_data::{N_INTERSECTION_INDICES, N_SIGNATURE_INDICES, RPC_ENDPOINT};
 use crate::test_data::*;
 
-pub const CURRENT_HEIGHT: u64 = SOMMELIER_UNTRUSTED_HEIGHT;
-pub const TRUSTED_HEIGHT: u64 = SOMMELIER_TRUSTED_HEIGHT;
+pub const CURRENT_HEIGHT: u64 = DYMENSION_UNTRUSTED_HEIGHT;
+pub const TRUSTED_HEIGHT: u64 = DYMENSION_TRUSTED_HEIGHT;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -148,7 +148,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
 
     let signatures = untrusted_commit.clone().signatures;
     for i in 0..signatures.len() {
-        if signatures_45_indices.len() == 45 {
+        if signatures_45_indices.len() == *N_SIGNATURE_INDICES {
             break;
         }
         let sig = match signatures[i].clone() {
@@ -350,7 +350,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
     // let td = get_test_data();
 
     Inputs {
-        sign_messages_padded, // 45 messages
+        sign_messages_padded,
         signatures: signatures_45,
         untrusted_hash,
         untrusted_height,

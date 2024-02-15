@@ -29,7 +29,7 @@ lazy_static! {
     static ref CONFIG_STRUCT: Config = {
         // Read the config file and deserialize it into a Config struct
         let file_content =
-            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/sommelier.yaml").expect("Unable to read config yaml file");
+            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/dymension.yaml").expect("Unable to read config yaml file");
         serde_yaml::from_str(file_content.as_str()).unwrap()
     };
 
