@@ -17,8 +17,8 @@ pub struct Config {
     pub TRUSTING_PERIOD: usize,
     pub N_SIGNATURE_INDICES: usize,
     pub N_INTERSECTION_INDICES: usize,
-    pub TOP_N_VALIDATORS_FOR_INTERSECTION: usize,
-    pub TOP_N_SIGNATURES: usize,
+    pub INTERSECTION_INDICES_DOMAIN_SIZE: usize,
+    pub SIGNATURE_INDICES_DOMAIN_SIZE: usize,
     pub LEB128_GROUP_SIZE: usize,
     pub N_VALIDATORS_LEAVES: usize,
     pub CHAIN_ID: Vec<bool>,
@@ -29,7 +29,7 @@ lazy_static! {
     static ref CONFIG_STRUCT: Config = {
         // Read the config file and deserialize it into a Config struct
         let file_content =
-            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/dymension.yaml").expect("Unable to read config yaml file");
+            std::fs::read_to_string("tendermint-lc-plonky2/src/chain_config/osmosis.yaml").expect("Unable to read config yaml file");
         serde_yaml::from_str(file_content.as_str()).unwrap()
     };
 
@@ -47,11 +47,23 @@ lazy_static! {
     pub static ref TRUSTING_PERIOD: usize = CONFIG_STRUCT.TRUSTING_PERIOD;
     pub static ref N_SIGNATURE_INDICES: usize = CONFIG_STRUCT.N_SIGNATURE_INDICES;
     pub static ref N_INTERSECTION_INDICES: usize = CONFIG_STRUCT.N_INTERSECTION_INDICES;
-    pub static ref TOP_N_VALIDATORS_FOR_INTERSECTION: usize = CONFIG_STRUCT.TOP_N_VALIDATORS_FOR_INTERSECTION;
-    pub static ref TOP_N_SIGNATURES: usize = CONFIG_STRUCT.TOP_N_SIGNATURES;
+    pub static ref INTERSECTION_INDICES_DOMAIN_SIZE: usize = CONFIG_STRUCT.INTERSECTION_INDICES_DOMAIN_SIZE;
+    pub static ref SIGNATURE_INDICES_DOMAIN_SIZE: usize = CONFIG_STRUCT.SIGNATURE_INDICES_DOMAIN_SIZE;
     pub static ref LEB128_GROUP_SIZE: usize = CONFIG_STRUCT.LEB128_GROUP_SIZE;
     pub static ref N_VALIDATORS_LEAVES: usize = CONFIG_STRUCT.N_VALIDATORS_LEAVES;
     pub static ref CHAIN_ID: Vec<bool> = CONFIG_STRUCT.CHAIN_ID.clone();
     pub static ref VERSION_BLOCK: Vec<bool> = CONFIG_STRUCT.VERSION_BLOCK.clone();
+    pub static ref N_VALIDATOR_TARGETS_FOR_INTERSECTION:usize = std::cmp::min(CONFIG_STRUCT.N_VALIDATORS, CONFIG_STRUCT.INTERSECTION_INDICES_DOMAIN_SIZE);
+    pub static ref NULL_INDEX_FOR_INTERSECTION: usize = *N_VALIDATOR_TARGETS_FOR_INTERSECTION - 1 as usize;
+    pub static ref N_SIGNATURE_TARGETS_FOR_INTERSECTION: usize = std::cmp::min(CONFIG_STRUCT.N_VALIDATORS, CONFIG_STRUCT.SIGNATURE_INDICES_DOMAIN_SIZE);
+    // INTERSECTION_INDICES_DOMAIN_SIZE = 32
+    // N_INTERSECTION_INDICES = 16 // TODO: verify on colab
+    // N_VALIDATOR_TARGETS_FOR_INTERSECTION = MIN(N_VALIDATORS, INTERSECTION_INDICES_DOMAIN_SIZE)
+    // NULL_INDEX_FOR_INTERSECTION = N_VALIDATOR_TARGETS_FOR_INTERSECTION - 1
+
+    // SIGNATURE_INDICES_DOMAIN_SIZE = 32
+    // N_SIGNATURE_INDICES = 16 // TODO: verify on colab
+    // N_SIGNATURE_TARGETS_FOR_INTERSECTION = MIN(N_VALIDATORS, SIGNATURE_INDICES_DOMAIN_SIZE)
+
 
 }

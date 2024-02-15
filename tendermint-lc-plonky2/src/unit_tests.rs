@@ -629,7 +629,7 @@ mod tests {
 
         let data = get_test_data();
 
-        (0..*TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+        (0..*N_VALIDATOR_TARGETS_FOR_INTERSECTION).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_validator_pub_keys[i][j],
@@ -637,7 +637,7 @@ mod tests {
                 )
             })
         });
-        (0..*TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+        (0..*N_VALIDATOR_TARGETS_FOR_INTERSECTION).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.trusted_next_validator_pub_keys[i][j],

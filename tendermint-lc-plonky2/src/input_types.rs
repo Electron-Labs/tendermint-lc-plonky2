@@ -10,11 +10,13 @@ use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
 
-use crate::config_data::{N_INTERSECTION_INDICES, N_SIGNATURE_INDICES, RPC_ENDPOINT};
+use crate::config_data::{
+    NULL_INDEX_FOR_INTERSECTION, N_INTERSECTION_INDICES, N_SIGNATURE_INDICES, RPC_ENDPOINT,
+};
 use crate::test_data::*;
 
-pub const CURRENT_HEIGHT: u64 = DYMENSION_UNTRUSTED_HEIGHT;
-pub const TRUSTED_HEIGHT: u64 = DYMENSION_TRUSTED_HEIGHT;
+pub const CURRENT_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
+pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -238,8 +240,8 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
         };
         for j in 0..trusted_next_validators.len() {
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
-                && i < 63
-                && j < 63
+                && i < *NULL_INDEX_FOR_INTERSECTION
+                && j < *NULL_INDEX_FOR_INTERSECTION
                 && signatures_45_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
@@ -254,8 +256,8 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
         }
     }
     while untrusted_intersect_indices.len() != *N_INTERSECTION_INDICES {
-        untrusted_intersect_indices.push(63u8);
-        trusted_next_intersect_indices.push(63u8);
+        untrusted_intersect_indices.push(*NULL_INDEX_FOR_INTERSECTION as u8);
+        trusted_next_intersect_indices.push(*NULL_INDEX_FOR_INTERSECTION as u8);
     }
 
     let mut sign_messages_padded: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
