@@ -1,66 +1,37 @@
+use crate::config_data::{get_chain_config, Config};
 use crate::input_types::Inputs;
 use crate::targets::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::test_utils::get_test_data;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::{
-    target::Target,
-    witness::{PartialWitness, Witness, WitnessWrite},
-};
+use plonky2::iop::{witness::{PartialWitness, Witness, WitnessWrite}};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::{
-    CircuitConfig, CircuitData, CommonCircuitData, ProverOnlyCircuitData, VerifierCircuitData,
-    VerifierCircuitTarget, VerifierOnlyCircuitData,
+    CircuitConfig, CommonCircuitData, VerifierCircuitTarget
 };
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig, Hasher, PoseidonGoldilocksConfig};
-use plonky2::plonk::proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget};
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 use plonky2::plonk::prover::prove;
 use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
     dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
-use serde::Serialize;
-use std::fs::File;
-use std::io::{BufWriter, Write};
 use std::time::Instant;
 
-pub fn save_proof_data<
-    F: RichField + Extendable<D>,
-    C: GenericConfig<D, F = F> + Serialize,
-    const D: usize,
->(
-    data: CircuitData<F, C, D>,
-    proof: ProofWithPublicInputs<F, C, D>,
-) {
-    let common_data = data.common;
-    let verifier_only_data = data.verifier_only;
-    let pub_inputs = proof.public_inputs.clone();
-
-    let file = File::create("tendermint-lc-plonky2/src/proof_data/common_data.json").unwrap();
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &common_data).unwrap();
-    writer.flush().unwrap();
-
-    let file = File::create("tendermint-lc-plonky2/src/proof_data/proof_with_pis.json").unwrap();
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &proof.proof).unwrap();
-    writer.flush().unwrap();
-
-    let file = File::create("tendermint-lc-plonky2/src/proof_data/verifier_only.json").unwrap();
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &verifier_only_data).unwrap();
-    writer.flush().unwrap();
-
-    let file = File::create("tendermint-lc-plonky2/src/proof_data/pub_inputs.json").unwrap();
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &pub_inputs).unwrap();
-    writer.flush().unwrap();
+pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
+    format!("{storage_dir}/{chain_name}/lc_circuit")
 }
+
+pub fn get_recursive_storage_dir(chain_name: &str, storage_dir: &str) -> String {
+    format!("{storage_dir}/{chain_name}/recursion_circuit")
+}
+
 
 pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    config: &Config
 ) -> ProofTarget {
-    let target = add_virtual_proof_target(builder);
+    let target = add_virtual_proof_target(builder, config);
     // register public inputs - {trusted_height, trusted_hash, untrusted_hash, untrusted_height}
     (0..target.trusted_hash.len())
         .for_each(|i| builder.register_public_input(target.trusted_hash[i].0));
@@ -102,6 +73,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
     pw: &mut W,
     inputs: Inputs,
     proof_target: &ProofTarget,
+    config: &Config
 ) {
     set_proof_target::<F, W>(
         pw,
@@ -139,6 +111,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_chain_id_padded,
         &inputs.trusted_version_padded,
         proof_target,
+        config
     );
 }
 
@@ -148,19 +121,25 @@ pub fn build_tendermint_lc_circuit<
     C: GenericConfig<D, F = F> + 'static,
     const D: usize,
 >(
+    chains_config_path: &str,
+    chain_name: &str,
     storage_dir: &str,
 ) where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
+    let config = get_chain_config(chains_config_path, chain_name);
+
+    let lc_storage_dir = &get_lc_storage_dir(chain_name, storage_dir);
+
     println!("Building Tendermint lc circuit");
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
-    let _target = generate_circuit::<F, D>(&mut builder);
+    let _target = generate_circuit::<F, D>(&mut builder, &config);
     println!("Building circuit with {:?} gates", builder.num_gates());
     let t = Instant::now();
     let data = builder.build::<C>();
     println!("Time taken to build the circuit : {:?}", t.elapsed());
-    dump_circuit_data::<F, C, D>(&data, storage_dir);
+    dump_circuit_data::<F, C, D>(&data, lc_storage_dir);
 }
 
 // build and dump circuit data for recursion circuit
@@ -170,13 +149,17 @@ pub fn build_recursion_circuit<
     InnerC: GenericConfig<D, F = F>,
     const D: usize,
 >(
-    inner_common_data_path: &str,
+    chain_name: &str,
     storage_dir: &str,
 ) where
     InnerC::Hasher: AlgebraicHasher<F>,
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
+    let lc_storage_dir = get_lc_storage_dir(chain_name, storage_dir);
+    let inner_common_data_path = &format!("{lc_storage_dir}/circuit_data/common_data.json");
+    let recursive_storage_dir = &get_recursive_storage_dir(chain_name, storage_dir);
+
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
     println!("Reconstructing inner common data");
@@ -191,7 +174,7 @@ pub fn build_recursion_circuit<
 
     let data = builder.build::<C>();
     println!("Recursive circuit build complete");
-    dump_circuit_data::<F, C, D>(&data, storage_dir);
+    dump_circuit_data::<F, C, D>(&data, recursive_storage_dir);
 }
 
 pub fn generate_proof<
@@ -199,22 +182,27 @@ pub fn generate_proof<
     C: GenericConfig<D, F = F> + 'static,
     const D: usize,
 >(
-    lc_storage_dir: &str,
-    recursive_storage_dir: &str,
+    chains_config_path: &str,
+    chain_name: &str,
+    storage_dir: &str,
     inputs: Inputs,
     tag: &str,
 ) -> Vec<u8> where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
+    let config = get_chain_config(chains_config_path, chain_name);
+    let lc_storage_dir = &get_lc_storage_dir(chain_name, storage_dir);
+    let recursive_storage_dir = &get_recursive_storage_dir(chain_name, storage_dir);
+
     println!("--- Light Client circuit ---");
     let data = load_circuit_data_from_dir::<F, C, D>(lc_storage_dir);
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
-    let target = generate_circuit::<F, D>(&mut builder);
+    let target = generate_circuit::<F, D>(&mut builder, &config);
     println!("Starting lc proof generation");
     let t_pg = Instant::now();
     let mut pw = PartialWitness::new();
-    set_proof_targets::<F, D, PartialWitness<F>>(&mut pw, inputs, &target);
+    set_proof_targets::<F, D, PartialWitness<F>>(&mut pw, inputs, &target, &config);
     let proof_with_pis =
         prove::<F, C, D>(&data.prover_only, &data.common, pw, &mut Default::default()).unwrap();
     println!("Proof generated in {:?}", t_pg.elapsed());
@@ -260,9 +248,10 @@ pub fn generate_proof<
 }
 
 pub fn run_circuit() {
-    // TODO: move this stuff to yaml
-    let light_client_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/lc_circuit";
-    let recursion_path = "/home/ubuntu/tendermint-lc-plonky2/data_store/recursion_circuit";
+    // TODO: read from env
+    let chain_name = "osmosis";
+    let storage_dir = "./storage";
+    let chain_configs_path = "./tendermint-lc-plonky2/src/chain_config";
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -274,17 +263,14 @@ pub fn run_circuit() {
 
     // Build tendermint light client circuit
     if x == "1" {
-        build_tendermint_lc_circuit::<F, C, D>(light_client_path);
+        build_tendermint_lc_circuit::<F, C, D>(chain_configs_path, chain_name, storage_dir);
     }
     // Build recursive circuit
     if x == "2" {
-        build_recursion_circuit::<F, C, C, D>(
-            format!("{light_client_path}/circuit_data/common_data.json").as_str(),
-            recursion_path,
-        );
+        build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
     }
     // Generate proof for lc and recursion both
     if x == "3" {
-        generate_proof::<F, C, D>(light_client_path, recursion_path, t, "xyz");
+        generate_proof::<F, C, D>(chain_configs_path, chain_name, storage_dir, t, "xyz");
     }
 }

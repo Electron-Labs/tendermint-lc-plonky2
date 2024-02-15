@@ -1,4 +1,3 @@
 /target
 Cargo.lock
-proof_data/
-data_store/
+storage/**/*.json

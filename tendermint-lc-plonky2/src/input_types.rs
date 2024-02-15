@@ -1,5 +1,6 @@
 use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf, get_test_data};
+use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
+use crate::config_data::*;
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
@@ -9,14 +10,7 @@ use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
-
-use crate::config_data::{
-    NULL_INDEX_FOR_INTERSECTION, N_INTERSECTION_INDICES, N_SIGNATURE_INDICES, RPC_ENDPOINT,
-};
 use crate::test_data::*;
-
-pub const CURRENT_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
-pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -89,8 +83,8 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
     proof_elms
 }
 
-pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -> Inputs {
-    let client = HttpClient::new(RPC_ENDPOINT.as_str()).unwrap();
+pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64, c: &Config) -> Inputs {
+    let client = HttpClient::new(c.RPC_ENDPOINT.as_str()).unwrap();
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
     let untrusted_commit_response = client.commit(u_height).await;
@@ -150,7 +144,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
 
     let signatures = untrusted_commit.clone().signatures;
     for i in 0..signatures.len() {
-        if signatures_45_indices.len() == *N_SIGNATURE_INDICES {
+        if signatures_45_indices.len() == c.N_SIGNATURE_INDICES {
             break;
         }
         let sig = match signatures[i].clone() {
@@ -229,7 +223,7 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
     let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
     let mut trusted_next_intersect_indices: Vec<u8> = Vec::new();
 
-    // Since RandomAccess cant go >= 64,and we need one index reserved for Null so 63rd index
+    // Since RandomAccess index cant go >= `null_index_for_intersection`, and we need one index reserved for Null so `null_index_for_intersection` index
     // is reserved
     for i in 0..untrusted_validators.len() {
         let untrusted_sig = untrusted_commit.signatures.clone()[i].clone();
@@ -240,24 +234,24 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
         };
         for j in 0..trusted_next_validators.len() {
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
-                && i < *NULL_INDEX_FOR_INTERSECTION
-                && j < *NULL_INDEX_FOR_INTERSECTION
+                && i < get_null_index_for_intersection(c)
+                && j < get_null_index_for_intersection(c)
                 && signatures_45_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
             }
-            if untrusted_intersect_indices.len() == *N_INTERSECTION_INDICES {
+            if untrusted_intersect_indices.len() == c.N_INTERSECTION_INDICES {
                 break;
             }
         }
-        if untrusted_intersect_indices.len() == *N_INTERSECTION_INDICES {
+        if untrusted_intersect_indices.len() == c.N_INTERSECTION_INDICES {
             break;
         }
     }
-    while untrusted_intersect_indices.len() != *N_INTERSECTION_INDICES {
-        untrusted_intersect_indices.push(*NULL_INDEX_FOR_INTERSECTION as u8);
-        trusted_next_intersect_indices.push(*NULL_INDEX_FOR_INTERSECTION as u8);
+    while untrusted_intersect_indices.len() != c.N_INTERSECTION_INDICES {
+        untrusted_intersect_indices.push(get_null_index_for_intersection(c) as u8);
+        trusted_next_intersect_indices.push(get_null_index_for_intersection(c) as u8);
     }
 
     let mut sign_messages_padded: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
@@ -394,17 +388,24 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64) -
 
 #[cfg(test)]
 mod tests {
-    use crate::input_types::CURRENT_HEIGHT;
-    use crate::input_types::{get_inputs_for_height, TRUSTED_HEIGHT};
+    use crate::input_types::{get_inputs_for_height, ARCHWAY_TRUSTED_HEIGHT, ARCHWAY_UNTRUSTED_HEIGHT};
     use std::fs::File;
     use std::io::{BufWriter, Write};
+    use crate::config_data::get_chain_config;
 
     #[tokio::test]
-    #[ignore]
     pub async fn test() {
-        // let file = File::create("/Users/utsavjain/Desktop/electron_labs/tendermint_aggregate/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/12960957_12975357_v2.json").unwrap();
-        let file = File::create(format!("/home/ubuntu/work/tendermint-lc-plonky2/tendermint-lc-plonky2/src/test_data/{TRUSTED_HEIGHT}_{CURRENT_HEIGHT}_v2.json")).unwrap();
-        let input = get_inputs_for_height(CURRENT_HEIGHT, TRUSTED_HEIGHT).await;
+        // pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
+        // pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
+
+        pub const TRUSTED_HEIGHT: u64 = 12960957;
+        pub const UNTRUSTED_HEIGHT: u64 = 12975357;
+        let chain_name = "osmosis";
+        // TODO: read from env
+        let chains_config_path = "/home/ubuntu/tendermint-lc-plonky2/tendermint-lc-plonky2/src/chain_config";
+        let config = get_chain_config(chains_config_path, chain_name);
+        let file = File::create(format!("./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}_v2.json")).unwrap();
+        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
         writer.flush().unwrap();
