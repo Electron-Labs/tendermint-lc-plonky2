@@ -32,15 +32,3 @@ pub fn get_chain_config(chains_config_path: &str, chain_name: &str) -> Config {
             .expect(&format!("Unable to read config yaml file for {chain_name}"));
     serde_yaml::from_str(file_content.as_str()).unwrap()
 }
-
-pub fn get_n_signature_targets_for_intersection(c: &Config) -> usize {
-     min(c.N_VALIDATORS, c.SIGNATURE_INDICES_DOMAIN_SIZE)
-}
-
-pub fn get_n_validator_targets_for_intersection(c: &Config) -> usize {
-    min(c.N_VALIDATORS, c.INTERSECTION_INDICES_DOMAIN_SIZE)
-}
-
-pub fn get_null_index_for_intersection(c: &Config) -> usize {
-    get_n_validator_targets_for_intersection(c) - 1
-}

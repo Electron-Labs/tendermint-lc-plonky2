@@ -219,9 +219,17 @@ pub async fn get_inputs_for_height(
         untrusted_validator_vp.push(untrusted_validators[i].power.value());
     }
 
+    for _ in trusted_next_validators.len()..c.INTERSECTION_INDICES_DOMAIN_SIZE {
+        untrusted_validator_vp.push(0);
+    }
+
     let mut trusted_next_validator_vp: Vec<u64> = Vec::new();
     for i in 0..trusted_next_validators.len() {
         trusted_next_validator_vp.push(trusted_next_validators[i].power.value());
+    }
+
+    for _ in trusted_next_validators.len()..c.INTERSECTION_INDICES_DOMAIN_SIZE {
+        trusted_next_validator_vp.push(0);
     }
 
     let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
@@ -238,8 +246,8 @@ pub async fn get_inputs_for_height(
         };
         for j in 0..trusted_next_validators.len() {
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
-                && i < get_null_index_for_intersection(c)
-                && j < get_null_index_for_intersection(c)
+                && i < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
+                && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && signatures_45_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
@@ -254,8 +262,8 @@ pub async fn get_inputs_for_height(
         }
     }
     while untrusted_intersect_indices.len() != c.N_INTERSECTION_INDICES {
-        untrusted_intersect_indices.push(get_null_index_for_intersection(c) as u8);
-        trusted_next_intersect_indices.push(get_null_index_for_intersection(c) as u8);
+        untrusted_intersect_indices.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
+        trusted_next_intersect_indices.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
     }
 
     let mut sign_messages_padded: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
@@ -394,7 +402,7 @@ pub async fn get_inputs_for_height(
 mod tests {
     use crate::config_data::get_chain_config;
     use crate::input_types::{
-        get_inputs_for_height, PERSISTENCE_TRUSTED_HEIGHT, PERSISTENCE_UNTRUSTED_HEIGHT,
+        get_inputs_for_height, NIBIRU_TRUSTED_HEIGHT, NIBIRU_UNTRUSTED_HEIGHT,
     };
     use std::fs::File;
     use std::io::{BufWriter, Write};
@@ -404,9 +412,9 @@ mod tests {
         // pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
         // pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
 
-        pub const TRUSTED_HEIGHT: u64 = PERSISTENCE_TRUSTED_HEIGHT;
-        pub const UNTRUSTED_HEIGHT: u64 = PERSISTENCE_UNTRUSTED_HEIGHT;
-        let chain_name = "persistence";
+        pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
+        pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
+        let chain_name = "nibiru";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);

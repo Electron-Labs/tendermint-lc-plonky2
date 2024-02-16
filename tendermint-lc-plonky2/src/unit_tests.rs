@@ -660,7 +660,7 @@ mod tests {
 
         let data = get_test_data();
 
-        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+        (0..cc.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_validator_pub_keys[i][j],
@@ -668,7 +668,7 @@ mod tests {
                 )
             })
         });
-        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+        (0..cc.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.trusted_next_validator_pub_keys[i][j],
