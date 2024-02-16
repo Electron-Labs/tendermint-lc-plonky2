@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use lazy_static::lazy_static;
+    use crate::config_data::*;
     use crate::merkle_targets::{
-        bytes_to_bool, get_formatted_hash_256_bools,
-        get_sha_block_target, hash256_to_bool_targets,
+        bytes_to_bool, get_formatted_hash_256_bools, get_sha_block_target, hash256_to_bool_targets,
         merkle_1_block_leaf_root, SHA_BLOCK_BITS,
     };
-    use crate::config_data::*;
     use crate::targets::{
         add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
         add_virtual_connect_timestamp_target, add_virtual_header_chain_id_merkle_proof_target,
@@ -17,6 +15,7 @@ mod tests {
         add_virtual_validators_hash_merkle_proof_target, UpdateValidityTarget,
     };
     use crate::test_utils::*;
+    use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;
     use plonky2::{
@@ -701,7 +700,324 @@ mod tests {
                 F::from_canonical_u8(data.trusted_next_intersect_indices[i]),
             )
         });
+    }
 
+    #[test]
+    fn test_sufficient_border_trusted_quorum_target() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let mut witness = PartialWitness::new();
+
+        let target = add_virtual_trusted_quorum_target(&mut builder, cc);
+
+        let mut data = get_test_data();
+
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.untrusted_validator_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.trusted_next_validator_pub_keys[i][j],
+                    data.trusted_next_validator_pub_keys[i][j],
+                )
+            })
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
+            )
+        });
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
+        // first find the index where 3 * one_third > total in
+        // trusted_next_intersect_indices
+
+        let mut total = 0;
+        for i in data.trusted_next_validator_vp.clone() {
+            total += i;
+        }
+
+        let mut one_third = 0;
+        let mut idx = 0;
+
+        for i in 0..data.trusted_next_intersect_indices.clone().len() {
+            one_third += data.trusted_next_validator_vp.clone()
+                [data.trusted_next_intersect_indices.clone()[i] as usize];
+            if 3 * one_third > total {
+                idx = i;
+                break;
+            }
+        }
+
+        // so at idx the condition should be statisfied
+        // meaning if we give correct indices till idx
+        // the condition should still pass
+
+        let mut trusted_next_intersect_indices = data.trusted_next_intersect_indices.clone();
+        let mut untrusted_intersect_indices = data.untrusted_intersect_indices.clone();
+
+        (idx + 1..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            trusted_next_intersect_indices[i] = 63;
+            untrusted_intersect_indices[i] = 63;
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.untrusted_intersect_indices[i],
+                F::from_canonical_u8(untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.trusted_next_intersect_indices[i],
+                F::from_canonical_u8(trusted_next_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_insufficient_trusted_quorum_target() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let mut witness = PartialWitness::new();
+
+        let target = add_virtual_trusted_quorum_target(&mut builder, cc);
+
+        let mut data = get_test_data();
+
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.untrusted_validator_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.trusted_next_validator_pub_keys[i][j],
+                    data.trusted_next_validator_pub_keys[i][j],
+                )
+            })
+        });
+
+        // Voting power of intersection is less than 1/3rd of total voting power
+        // in trusted_next_validators
+
+        let mut trusted_vp = data.trusted_next_validator_vp.clone();
+        (1..45).for_each(|i| {
+            trusted_vp[i] = 0;
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(trusted_vp[i]).unwrap(),
+            )
+        });
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.untrusted_intersect_indices[i],
+                F::from_canonical_u8(data.untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.trusted_next_intersect_indices[i],
+                F::from_canonical_u8(data.trusted_next_intersect_indices[i]),
+            )
+        });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_null_count_indices_votes_trusted_quorum_target() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let mut witness = PartialWitness::new();
+
+        let target = add_virtual_trusted_quorum_target(&mut builder, cc);
+
+        let mut data = get_test_data();
+
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.untrusted_validator_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.trusted_next_validator_pub_keys[i][j],
+                    data.trusted_next_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
+            )
+        });
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
+
+        let mut trusted_next_intersect_indices = data.trusted_next_intersect_indices.clone();
+        let mut untrusted_intersect_indices = data.untrusted_intersect_indices.clone();
+
+        (1..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            trusted_next_intersect_indices[i] = 63;
+            untrusted_intersect_indices[i] = 63;
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.untrusted_intersect_indices[i],
+                F::from_canonical_u8(untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.trusted_next_intersect_indices[i],
+                F::from_canonical_u8(trusted_next_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_insufficient_border_trusted_quorum_target() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let mut witness = PartialWitness::new();
+
+        let target = add_virtual_trusted_quorum_target(&mut builder, cc);
+
+        let mut data = get_test_data();
+
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.untrusted_validator_pub_keys[i][j],
+                    data.untrusted_validator_pub_keys[i][j],
+                )
+            })
+        });
+        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    target.trusted_next_validator_pub_keys[i][j],
+                    data.trusted_next_validator_pub_keys[i][j],
+                )
+            })
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
+            )
+        });
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                target.signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
+        // first find the index where 3 * one_third > total in
+        // trusted_next_intersect_indices
+
+        let mut total = 0;
+        for i in data.trusted_next_validator_vp.clone() {
+            total += i;
+        }
+
+        let mut one_third = 0;
+        let mut idx = 0;
+
+        for i in 0..data.trusted_next_intersect_indices.clone().len() {
+            one_third += data.trusted_next_validator_vp.clone()
+                [data.trusted_next_intersect_indices.clone()[i] as usize];
+            if 3 * one_third > total {
+                idx = i;
+                break;
+            }
+        }
+
+        // so at idx - 1  should not satisfy the 1/3 rd condition
+        // meaning if we give incorrect indices after idx - 1
+        // the condition should fail
+
+        let mut trusted_next_intersect_indices = data.trusted_next_intersect_indices.clone();
+        let mut untrusted_intersect_indices = data.untrusted_intersect_indices.clone();
+
+        (idx..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            trusted_next_intersect_indices[i] = 63;
+            untrusted_intersect_indices[i] = 63;
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.untrusted_intersect_indices[i],
+                F::from_canonical_u8(untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                target.trusted_next_intersect_indices[i],
+                F::from_canonical_u8(trusted_next_intersect_indices[i]),
+            )
+        });
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
