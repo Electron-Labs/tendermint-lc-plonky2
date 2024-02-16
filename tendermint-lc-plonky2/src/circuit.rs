@@ -4,11 +4,9 @@ use crate::targets::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::test_utils::get_test_data;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::{witness::{PartialWitness, Witness, WitnessWrite}};
+use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{
-    CircuitConfig, CommonCircuitData, VerifierCircuitTarget
-};
+use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData, VerifierCircuitTarget};
 use plonky2::plonk::config::{AlgebraicHasher, GenericConfig, Hasher, PoseidonGoldilocksConfig};
 use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 use plonky2::plonk::prover::prove;
@@ -26,10 +24,9 @@ pub fn get_recursive_storage_dir(chain_name: &str, storage_dir: &str) -> String 
     format!("{storage_dir}/{chain_name}/recursion_circuit")
 }
 
-
 pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    config: &Config
+    config: &Config,
 ) -> ProofTarget {
     let target = add_virtual_proof_target(builder, config);
     // register public inputs - {trusted_height, trusted_hash, untrusted_hash, untrusted_height}
@@ -73,7 +70,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
     pw: &mut W,
     inputs: Inputs,
     proof_target: &ProofTarget,
-    config: &Config
+    config: &Config,
 ) {
     set_proof_target::<F, W>(
         pw,
@@ -111,7 +108,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_chain_id_padded,
         &inputs.trusted_version_padded,
         proof_target,
-        config
+        config,
     );
 }
 
@@ -187,7 +184,8 @@ pub fn generate_proof<
     storage_dir: &str,
     inputs: Inputs,
     tag: &str,
-) -> Vec<u8> where
+) -> Vec<u8>
+where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
@@ -249,7 +247,7 @@ pub fn generate_proof<
 
 pub fn run_circuit() {
     // TODO: read from env
-    let chain_name = "osmosis";
+    let chain_name = "sommelier";
     let storage_dir = "./storage";
     let chain_configs_path = "./tendermint-lc-plonky2/src/chain_config";
 
