@@ -247,7 +247,7 @@ where
 
 pub fn run_circuit() {
     // TODO: read from env
-    let chain_name = "sommelier";
+    let chain_name = "persistence";
     let storage_dir = "./storage";
     let chain_configs_path = "./tendermint-lc-plonky2/src/chain_config";
 

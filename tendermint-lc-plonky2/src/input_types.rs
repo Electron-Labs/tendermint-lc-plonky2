@@ -1,6 +1,7 @@
-use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
 use crate::config_data::*;
+use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use crate::test_data::*;
+use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
@@ -10,7 +11,6 @@ use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
-use crate::test_data::*;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
@@ -83,7 +83,11 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
     proof_elms
 }
 
-pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64, c: &Config) -> Inputs {
+pub async fn get_inputs_for_height(
+    untrusted_height: u64,
+    trusted_height: u64,
+    c: &Config,
+) -> Inputs {
     let client = HttpClient::new(c.RPC_ENDPOINT.as_str()).unwrap();
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
@@ -388,23 +392,28 @@ pub async fn get_inputs_for_height(untrusted_height: u64, trusted_height: u64, c
 
 #[cfg(test)]
 mod tests {
-    use crate::input_types::{get_inputs_for_height, ARCHWAY_TRUSTED_HEIGHT, ARCHWAY_UNTRUSTED_HEIGHT};
+    use crate::config_data::get_chain_config;
+    use crate::input_types::{
+        get_inputs_for_height, PERSISTENCE_TRUSTED_HEIGHT, PERSISTENCE_UNTRUSTED_HEIGHT,
+    };
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    use crate::config_data::get_chain_config;
 
     #[tokio::test]
     pub async fn test() {
         // pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
         // pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
 
-        pub const TRUSTED_HEIGHT: u64 = 12960957;
-        pub const UNTRUSTED_HEIGHT: u64 = 12975357;
-        let chain_name = "osmosis";
+        pub const TRUSTED_HEIGHT: u64 = PERSISTENCE_TRUSTED_HEIGHT;
+        pub const UNTRUSTED_HEIGHT: u64 = PERSISTENCE_UNTRUSTED_HEIGHT;
+        let chain_name = "persistence";
         // TODO: read from env
-        let chains_config_path = "/home/ubuntu/tendermint-lc-plonky2/tendermint-lc-plonky2/src/chain_config";
+        let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);
-        let file = File::create(format!("./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}_v2.json")).unwrap();
+        let file = File::create(format!(
+            "./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}_v2.json"
+        ))
+        .unwrap();
         let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
