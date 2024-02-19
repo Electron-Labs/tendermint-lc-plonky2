@@ -164,7 +164,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
 
     let zero_bool_target = builder._false();
     let three_big_target = builder.constant_biguint(&BigUint::from_u64(3).unwrap());
-    let sixty_three = builder.constant(F::from_canonical_u16(
+    let null_idx = builder.constant(F::from_canonical_u16(
         (c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u16,
     ));
 
@@ -175,7 +175,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
     untrusted_intersect_indices
         .iter()
         .for_each(|&untrusted_idx| {
-            let is_reserved_index = builder.is_equal(untrusted_idx, sixty_three);
+            let is_reserved_index = builder.is_equal(untrusted_idx, null_idx);
             // constrain only if its a non-reserved index
             let enable_constraint = builder.not(is_reserved_index);
 
@@ -221,7 +221,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
 
     (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         let random_access_index = trusted_next_intersect_indices[i];
-        let is_reserved_index = builder.is_equal(random_access_index, sixty_three);
+        let is_reserved_index = builder.is_equal(random_access_index, null_idx);
         // constrain only if its a non-reserved index
         let enable_constraint = builder.not(is_reserved_index);
 

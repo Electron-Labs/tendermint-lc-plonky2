@@ -247,9 +247,9 @@ where
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "nibiru";
-    let untrusted_height = NIBIRU_UNTRUSTED_HEIGHT;
-    let trusted_height = NIBIRU_TRUSTED_HEIGHT;
+    let chain_name = "osmosis";
+    let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
+    let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
 

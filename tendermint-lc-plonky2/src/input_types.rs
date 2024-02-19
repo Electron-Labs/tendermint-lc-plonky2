@@ -239,7 +239,7 @@ pub async fn get_inputs_for_height(
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
                 && i < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
-                && signatures_indices.contains(&(j as u8))
+                && signatures_indices.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
