@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::cmp::min;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(non_snake_case)]

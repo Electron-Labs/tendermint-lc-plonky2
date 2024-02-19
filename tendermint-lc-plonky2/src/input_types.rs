@@ -1,6 +1,5 @@
 use crate::config_data::*;
 use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_data::*;
 use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
@@ -144,11 +143,11 @@ pub async fn get_inputs_for_height(
     };
 
     let mut signatures_45: Vec<Vec<bool>> = vec![];
-    let mut signatures_45_indices: Vec<u8> = vec![];
+    let mut signatures_indices: Vec<u8> = vec![];
 
     let signatures = untrusted_commit.clone().signatures;
     for i in 0..signatures.len() {
-        if signatures_45_indices.len() == c.N_SIGNATURE_INDICES {
+        if signatures_indices.len() == c.N_SIGNATURE_INDICES {
             break;
         }
         let sig = match signatures[i].clone() {
@@ -159,7 +158,7 @@ pub async fn get_inputs_for_height(
 
         if !sig.is_none() {
             signatures_45.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
-            signatures_45_indices.push(i as u8);
+            signatures_indices.push(i as u8);
         }
     }
 
@@ -219,17 +218,9 @@ pub async fn get_inputs_for_height(
         untrusted_validator_vp.push(untrusted_validators[i].power.value());
     }
 
-    for _ in trusted_next_validators.len()..c.INTERSECTION_INDICES_DOMAIN_SIZE {
-        untrusted_validator_vp.push(0);
-    }
-
     let mut trusted_next_validator_vp: Vec<u64> = Vec::new();
     for i in 0..trusted_next_validators.len() {
         trusted_next_validator_vp.push(trusted_next_validators[i].power.value());
-    }
-
-    for _ in trusted_next_validators.len()..c.INTERSECTION_INDICES_DOMAIN_SIZE {
-        trusted_next_validator_vp.push(0);
     }
 
     let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
@@ -248,7 +239,7 @@ pub async fn get_inputs_for_height(
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
                 && i < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
-                && signatures_45_indices.contains(&(i as u8))
+                && signatures_indices.contains(&(j as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
@@ -268,8 +259,8 @@ pub async fn get_inputs_for_height(
 
     let mut sign_messages_padded: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
 
-    for idx in 0..signatures_45_indices.len() {
-        let i = signatures_45_indices[idx] as usize;
+    for idx in 0..signatures_indices.len() {
+        let i = signatures_indices[idx] as usize;
 
         let timestamp_x = match signatures[i].clone() {
             CommitSig::BlockIdFlagCommit { timestamp, .. } => Some(timestamp),
@@ -388,7 +379,7 @@ pub async fn get_inputs_for_height(
         trusted_next_validators_padded,
         trusted_next_validator_pub_keys,
         trusted_next_validator_vp,
-        signature_indices: signatures_45_indices,
+        signature_indices: signatures_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
         trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
@@ -401,20 +392,19 @@ pub async fn get_inputs_for_height(
 #[cfg(test)]
 mod tests {
     use crate::config_data::get_chain_config;
-    use crate::input_types::{
-        get_inputs_for_height, NIBIRU_TRUSTED_HEIGHT, NIBIRU_UNTRUSTED_HEIGHT,
-    };
+    use crate::input_types::get_inputs_for_height;
     use std::fs::File;
     use std::io::{BufWriter, Write};
+    use crate::test_heights::*;
 
     #[tokio::test]
     pub async fn test() {
-        // pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
-        // pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
+        // pub const UNTRUSTED_HEIGHT: u64 = 12975357;
+        // pub const TRUSTED_HEIGHT: u64 = 12960957;
 
-        pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
-        pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
-        let chain_name = "nibiru";
+        pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
+        pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
+        let chain_name = "archway";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);

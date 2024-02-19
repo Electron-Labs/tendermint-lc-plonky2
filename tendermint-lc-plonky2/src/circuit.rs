@@ -1,7 +1,7 @@
 use crate::config_data::{get_chain_config, Config};
-use crate::input_types::Inputs;
+use crate::input_types::{get_inputs_for_height, Inputs};
 use crate::targets::{add_virtual_proof_target, set_proof_target, ProofTarget};
-use crate::test_utils::get_test_data;
+use crate::test_heights::*;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
@@ -118,8 +118,8 @@ pub fn build_tendermint_lc_circuit<
     C: GenericConfig<D, F = F> + 'static,
     const D: usize,
 >(
-    chains_config_path: &str,
     chain_name: &str,
+    chains_config_path: &str,
     storage_dir: &str,
 ) where
     [(); C::Hasher::HASH_SIZE]:,
@@ -245,23 +245,26 @@ where
     return rec_proof_with_pis_bytes;
 }
 
-pub fn run_circuit() {
+pub async fn run_circuit() {
     // TODO: read from env
     let chain_name = "nibiru";
+    let untrusted_height = NIBIRU_UNTRUSTED_HEIGHT;
+    let trusted_height = NIBIRU_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
-    let chain_configs_path = "./tendermint-lc-plonky2/src/chain_config";
+    let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    let t: Inputs = get_test_data();
+    let config = get_chain_config(chains_config_path, chain_name);
+    let t: Inputs = get_inputs_for_height(trusted_height, untrusted_height, &config).await;
 
     let x = std::env::var("X").expect("`X` env variable must be set");
 
     // Build tendermint light client circuit
     if x == "1" {
-        build_tendermint_lc_circuit::<F, C, D>(chain_configs_path, chain_name, storage_dir);
+        build_tendermint_lc_circuit::<F, C, D>(chain_name, chains_config_path, storage_dir);
     }
     // Build recursive circuit
     if x == "2" {
@@ -269,6 +272,6 @@ pub fn run_circuit() {
     }
     // Generate proof for lc and recursion both
     if x == "3" {
-        generate_proof::<F, C, D>(chain_configs_path, chain_name, storage_dir, t, "xyz");
+        generate_proof::<F, C, D>(chains_config_path, chain_name, storage_dir, t, "xyz");
     }
 }
