@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use lazy_static::lazy_static;
+    use crate::config_data::*;
     use crate::merkle_targets::{
-        bytes_to_bool, get_formatted_hash_256_bools,
-        get_sha_block_target, hash256_to_bool_targets,
+        bytes_to_bool, get_formatted_hash_256_bools, get_sha_block_target, hash256_to_bool_targets,
         merkle_1_block_leaf_root, SHA_BLOCK_BITS,
     };
-    use crate::config_data::*;
     use crate::targets::{
         add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
         add_virtual_connect_timestamp_target, add_virtual_header_chain_id_merkle_proof_target,
@@ -17,6 +15,7 @@ mod tests {
         add_virtual_validators_hash_merkle_proof_target, UpdateValidityTarget,
     };
     use crate::test_utils::*;
+    use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;
     use plonky2::{
@@ -35,12 +34,12 @@ mod tests {
         hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},
         u32::binary_u32::{Bin32Target, CircuitBuilderBU32},
     };
+    use std::cmp::min;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    use crate::config_data::*;
     // TODO: load all test data only once
 
     // for osmosis
@@ -323,21 +322,28 @@ mod tests {
                 witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
             })
         });
-        // connect signature indexes
+        // connect signature indices
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
                 target.signature_indexes[i],
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
-        // connect untrusted validators
+        // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
-                )
-            })
+                );
+            });
+        });
+        // in case when the indices domain size is greator than n validators
+        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+            (0..256).for_each(|j| {
+                (0..256)
+                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+            });
         });
 
         let data = builder.build::<C>();
@@ -397,14 +403,21 @@ mod tests {
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
-        // connect untrusted validators
+        // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
-                )
-            })
+                );
+            });
+        });
+        // in case when the indices domain size is greator than n validators
+        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+            (0..256).for_each(|j| {
+                (0..256)
+                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+            });
         });
 
         let data = builder.build::<C>();
@@ -461,14 +474,21 @@ mod tests {
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
-        // connect untrusted validators
+        // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
-                )
-            })
+                );
+            });
+        });
+        // in case when the indices domain size is greator than n validators
+        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+            (0..256).for_each(|j| {
+                (0..256)
+                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+            });
         });
 
         let data = builder.build::<C>();
@@ -660,7 +680,7 @@ mod tests {
 
         let data = get_test_data();
 
-        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+        (0..min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.untrusted_validator_pub_keys[i][j],
@@ -668,7 +688,16 @@ mod tests {
                 )
             })
         });
-        (0..get_n_validator_targets_for_intersection(cc)).for_each(|i| {
+        // in case if n_validators are less than the indices domain size
+        (min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)
+            ..cc.INTERSECTION_INDICES_DOMAIN_SIZE)
+            .for_each(|i| {
+                (0..256).for_each(|j| {
+                    witness.set_bool_target(target.untrusted_validator_pub_keys[i][j], false)
+                })
+            });
+
+        (0..min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     target.trusted_next_validator_pub_keys[i][j],
@@ -676,10 +705,25 @@ mod tests {
                 )
             })
         });
+        // in case if n_validators are less than the indices domain size
+        (min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)
+            ..cc.INTERSECTION_INDICES_DOMAIN_SIZE)
+            .for_each(|i| {
+                (0..256).for_each(|j| {
+                    witness.set_bool_target(target.trusted_next_validator_pub_keys[i][j], false)
+                })
+            });
+
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &target.trusted_next_validator_vp[i],
                 &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
+            )
+        });
+        (cc.N_VALIDATORS..cc.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
+            witness.set_biguint_target(
+                &target.trusted_next_validator_vp[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -719,12 +763,21 @@ mod tests {
 
         let data = get_test_data();
 
+        // in case if the indices domain size is gretor than n validators
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &target.untrusted_validator_vp[i],
                 &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
             )
         });
+
+        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+            witness.set_biguint_target(
+                &target.untrusted_validator_vp[i],
+                &BigUint::from_u64(0).unwrap(),
+            )
+        });
+
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
                 target.signature_indices[i],
@@ -736,6 +789,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    // only for osmosis
     #[test]
     fn test_sufficient_untrusted_quorum_target_border() {
         let config = CircuitConfig::standard_recursion_config();
@@ -771,6 +825,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    // only for osmosis
     #[test]
     #[should_panic]
     fn test_insufficient_untrusted_quorum_target() {

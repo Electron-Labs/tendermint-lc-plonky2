@@ -4,12 +4,15 @@ pub mod merkle_targets;
 pub mod targets;
 pub mod test_data;
 pub mod test_utils;
+pub mod test_heights;
 
 use dotenv::dotenv;
 
 use tendermint_lc_plonky2::circuit::run_circuit;
 
-fn main() {
+#[tokio::main]
+
+async fn main() {
     dotenv().ok();
-    run_circuit();
+    run_circuit().await;
 }
