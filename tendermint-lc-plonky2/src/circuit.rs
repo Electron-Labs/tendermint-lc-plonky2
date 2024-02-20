@@ -258,7 +258,7 @@ pub async fn run_circuit() {
     type F = <C as GenericConfig<D>>::F;
 
     let config = get_chain_config(chains_config_path, chain_name);
-    let t: Inputs = get_inputs_for_height(trusted_height, untrusted_height, &config).await;
+    let t: Inputs = get_inputs_for_height(untrusted_height, trusted_height, &config).await;
 
     let x = std::env::var("X").expect("`X` env variable must be set");
 
