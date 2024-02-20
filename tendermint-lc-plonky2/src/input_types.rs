@@ -398,18 +398,19 @@ mod tests {
     use crate::test_heights::*;
 
     #[tokio::test]
+    #[ignore]
     pub async fn test() {
         // pub const UNTRUSTED_HEIGHT: u64 = 12975357;
         // pub const TRUSTED_HEIGHT: u64 = 12960957;
 
-        pub const TRUSTED_HEIGHT: u64 = ARCHWAY_TRUSTED_HEIGHT;
-        pub const UNTRUSTED_HEIGHT: u64 = ARCHWAY_UNTRUSTED_HEIGHT;
-        let chain_name = "archway";
+        pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
+        pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
+        let chain_name = "nibiru";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);
         let file = File::create(format!(
-            "./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}_v2.json"
+            "./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
         ))
         .unwrap();
         let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;
