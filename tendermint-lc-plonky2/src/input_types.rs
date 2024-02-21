@@ -29,6 +29,16 @@ pub struct Inputs {
     pub untrusted_validators_hash_proof: Vec<Vec<bool>>,
     pub untrusted_validator_pub_keys: Vec<Vec<bool>>,
     pub untrusted_validator_vp: Vec<u64>,
+    pub untrusted_height_padded: Vec<bool>,
+    pub untrusted_last_block_id_padded: Vec<bool>,
+    pub untrusted_last_commit_hash_padded: Vec<bool>,
+    pub untrusted_data_hash_padded: Vec<bool>,
+    pub untrusted_next_validators_hash_padded: Vec<bool>,
+    pub untrusted_consensus_hash_padded: Vec<bool>,
+    pub untrusted_app_hash_padded: Vec<bool>,
+    pub untrusted_last_results_hash_padded: Vec<bool>,
+    pub untrusted_evidence_hash_padded: Vec<bool>,
+    pub untrusted_proposer_address_padded: Vec<bool>,
     pub trusted_hash: Vec<u8>,
     pub trusted_height: u64,
     pub trusted_time_padded: Vec<bool>,
@@ -46,6 +56,16 @@ pub struct Inputs {
     pub trusted_chain_id_padded: Vec<bool>,
     pub trusted_version_proof: Vec<Vec<bool>>, //TODO add to Proof target
     pub trusted_version_padded: Vec<bool>,
+    pub trusted_height_padded: Vec<bool>,
+    pub trusted_last_block_id_padded: Vec<bool>,
+    pub trusted_last_commit_hash_padded: Vec<bool>,
+    pub trusted_data_hash_padded: Vec<bool>,
+    pub trusted_validators_hash_padded: Vec<bool>,
+    pub trusted_consensus_hash_padded: Vec<bool>,
+    pub trusted_app_hash_padded: Vec<bool>,
+    pub trusted_last_results_hash_padded: Vec<bool>,
+    pub trusted_evidence_hash_padded: Vec<bool>,
+    pub trusted_proposer_address_padded: Vec<bool>,
 }
 
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
@@ -324,7 +344,7 @@ pub async fn get_inputs_for_height(
         sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
     }
 
-    let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
+    let mt_untrusted = get_block_header_merkle_tree(untrusted_block.clone().header);
     let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
 
     let untrusted_time_mt_proof = mt_untrusted.prove_inclusion(3);
@@ -348,6 +368,118 @@ pub async fn get_inputs_for_height(
     )));
     // let td = get_test_data();
 
+    let untrusted_height_padded =
+        get_sha_block_for_leaf(bytes_to_bool(untrusted_height.to_le_bytes().to_vec()));
+    let trusted_height_padded =
+        get_sha_block_for_leaf(bytes_to_bool(trusted_height.to_le_bytes().to_vec()));
+
+    let untrusted_last_block_id_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+        tendermint_proto::types::BlockId,
+    >::encode_vec(
+        untrusted_block.clone().header.last_block_id.unwrap(),
+    )));
+    let trusted_last_block_id_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+        tendermint_proto::types::BlockId,
+    >::encode_vec(
+        trusted_block.clone().header.last_block_id.unwrap(),
+    )));
+
+    let untrusted_last_commit_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block
+            .clone()
+            .header
+            .last_commit_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+    let trusted_last_commit_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block
+            .clone()
+            .header
+            .last_commit_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+
+    let untrusted_data_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block
+            .clone()
+            .header
+            .data_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+    let trusted_data_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.data_hash.unwrap().encode_vec(),
+    ));
+
+    let trusted_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.validators_hash.encode_vec(),
+    ));
+
+    let untrusted_next_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block
+            .clone()
+            .header
+            .next_validators_hash
+            .encode_vec(),
+    ));
+
+    let untrusted_consensus_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block.clone().header.consensus_hash.encode_vec(),
+    ));
+    let trusted_consensus_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.consensus_hash.encode_vec(),
+    ));
+
+    let untrusted_app_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block.clone().header.app_hash.encode_vec(),
+    ));
+    let trusted_app_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.app_hash.encode_vec(),
+    ));
+
+    let untrusted_last_results_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block
+            .clone()
+            .header
+            .last_results_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+    let trusted_last_results_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block
+            .clone()
+            .header
+            .last_results_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+
+    let untrusted_evidence_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block
+            .clone()
+            .header
+            .evidence_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+    let trusted_evidence_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block
+            .clone()
+            .header
+            .evidence_hash
+            .unwrap()
+            .encode_vec(),
+    ));
+
+    let untrusted_proposer_address_padded = get_sha_block_for_leaf(bytes_to_bool(
+        untrusted_block.clone().header.proposer_address.encode_vec(),
+    ));
+    let trusted_proposer_address_padded = get_sha_block_for_leaf(bytes_to_bool(
+        trusted_block.clone().header.proposer_address.encode_vec(),
+    ));
+
     Inputs {
         sign_messages_padded,
         signatures: signatures_45,
@@ -367,6 +499,16 @@ pub async fn get_inputs_for_height(
         ),
         untrusted_validator_pub_keys,
         untrusted_validator_vp,
+        untrusted_height_padded,
+        untrusted_last_block_id_padded,
+        untrusted_last_commit_hash_padded,
+        untrusted_data_hash_padded,
+        untrusted_next_validators_hash_padded,
+        untrusted_consensus_hash_padded,
+        untrusted_app_hash_padded,
+        untrusted_last_results_hash_padded,
+        untrusted_evidence_hash_padded,
+        untrusted_proposer_address_padded,
         trusted_hash,
         trusted_height,
         trusted_time_padded,
@@ -386,6 +528,16 @@ pub async fn get_inputs_for_height(
         trusted_chain_id_padded,
         trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
         trusted_version_padded,
+        trusted_height_padded,
+        trusted_last_block_id_padded,
+        trusted_last_commit_hash_padded,
+        trusted_data_hash_padded,
+        trusted_validators_hash_padded,
+        trusted_consensus_hash_padded,
+        trusted_app_hash_padded,
+        trusted_last_results_hash_padded,
+        trusted_evidence_hash_padded,
+        trusted_proposer_address_padded,
     }
 }
 
@@ -393,9 +545,9 @@ pub async fn get_inputs_for_height(
 mod tests {
     use crate::config_data::get_chain_config;
     use crate::input_types::get_inputs_for_height;
+    use crate::test_heights::*;
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    use crate::test_heights::*;
 
     #[tokio::test]
     #[ignore]
