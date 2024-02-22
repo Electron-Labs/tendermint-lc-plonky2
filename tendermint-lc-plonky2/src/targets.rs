@@ -1,4 +1,3 @@
-use super::constants::*;
 use super::merkle_targets::{
     biguint_hash_to_bool_targets, get_256_bool_target, get_512_bool_target,
     get_formatted_hash_256_bools, get_sha_512_2_block_target, get_sha_block_target,
@@ -18,10 +17,19 @@ use plonky2::{
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
 use plonky2_crypto::hash::{CircuitBuilderHash, Hash256Target, WitnessHash};
 use plonky2_crypto::u32::arithmetic_u32::CircuitBuilderU32;
-use plonky2_ed25519::gadgets::eddsa::{make_verify_circuits, verify_using_preprocessed_sha_block};
+use plonky2_ed25519::gadgets::eddsa::verify_using_preprocessed_sha_block;
+use std::cmp::{max, min};
 
+use crate::config_data::*;
 // TODO: remove all merkle proofs against header and add header merkle tree instead
-// TODO: construct and connect merkle tree of old state
+// TODO: constrain non-repetition of indices
+
+// TODO: pass reference of targets instead of connecting to the struct
+// TODO: restructure
+// * validators_quorum.rs
+// * update_validity.rs
+// * connect.rs
+
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -82,15 +90,15 @@ pub struct ConnectPubKeysVPsTarget {
 
 /* indices */
 /* `signature_indices` */
-// - first 45 indices of non-null signatures, where 63 >= index >=0, for each index
-// - unlike intersect indices, no reserved index here (assuming there will always be atleast 45 non-null signatures)
+// - first `N_SIGNATURE_INDICES` indices of non-null signatures, where `SIGNATURE_INDICES_DOMAIN_SIZE-1` >= index >=0, for each index
+// - unlike intersect indices, no reserved index here (assuming there will always be atleast `N_SIGNATURE_INDICES` non-null signatures)
 
 /* `untrusted_intersect_indices` and `trusted_next_intersect_indices `*/
 // - contains indices for common public keys in untrusted_validators and trusted_mext_validators
 // - For instance, an index pair (i, j) suggests ith pub key in untrusted vals == jth pub key in trusted next_vals
-// - arrays of length 45, where 62 >= index >=0, for each index
-// - index `63` is reserved to represent null
-// - `untrusted_intersect_indices` must be a subset of `signature_indices`, except for index `63`
+// - arrays of length `N_INTERSECTION_INDICES`, where `INTERSECTION_INDICES_DOMAIN_SIZE-2` >= index >=0, for each index
+// - index `INTERSECTION_INDICES_DOMAIN_SIZE-1` is reserved to represent null
+// - `untrusted_intersect_indices` must be a subset of `signature_indices`, except for index `INTERSECTION_INDICES_DOMAIN_SIZE-1`
 
 // TODO: need multiple arrays in case 1 array fails to accomodate for sufficient common vals?
 
@@ -133,39 +141,41 @@ pub struct ProofTarget {
 // Checks trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals) signed correctly
 pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> TrustedValidatorsQuorumTarget {
-    // we pickup first 64 untrusted_validator_pub_keys mainly because random_access doesnt work >= 64
-    let untrusted_validator_pub_keys = (0..64)
+    let untrusted_validator_pub_keys = (0..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validator_pub_keys = (0..64)
+    let trusted_next_validator_pub_keys = (0..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validator_vp = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(VP_BITS.div_ceil(32)))
+    let trusted_next_validator_vp = (0..max(c.N_VALIDATORS, c.INTERSECTION_INDICES_DOMAIN_SIZE))
+        .map(|_| builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
-    let signature_indices = (0..N_SIGNATURE_INDICES)
+    let signature_indices = (0..c.N_SIGNATURE_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let untrusted_intersect_indices = (0..N_INTERSECTION_INDICES)
+    let untrusted_intersect_indices = (0..c.N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let trusted_next_intersect_indices = (0..N_INTERSECTION_INDICES)
+    let trusted_next_intersect_indices = (0..c.N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
 
     let zero_bool_target = builder._false();
     let three_big_target = builder.constant_biguint(&BigUint::from_u64(3).unwrap());
-    let sixty_three = builder.constant(F::from_canonical_u16(63));
+    let null_idx = builder.constant(F::from_canonical_u16(
+        (c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u16,
+    ));
 
     let mut total_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
-    // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for index `63`
+    // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for reserved index
     untrusted_intersect_indices
         .iter()
         .for_each(|&untrusted_idx| {
-            let is_reserved_index = builder.is_equal(untrusted_idx, sixty_three);
+            let is_reserved_index = builder.is_equal(untrusted_idx, null_idx);
             // constrain only if its a non-reserved index
             let enable_constraint = builder.not(is_reserved_index);
 
@@ -179,17 +189,17 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         });
 
     // compute total voting power
-    (0..N_VALIDATORS)
+    (0..c.N_VALIDATORS)
         .for_each(|i| total_vp = builder.add_biguint(&total_vp, &trusted_next_validator_vp[i]));
 
     // prepares voting power columns
     // because random_access_index wont work on BigUintTarget so need to split it into limbs
     let trusted_validator_vp_columns = vec![
-        trusted_next_validator_vp[..64]
+        trusted_next_validator_vp[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        trusted_next_validator_vp[..64]
+        trusted_next_validator_vp[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -201,7 +211,7 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
     (0..256).for_each(|i| {
         let mut untrusted_pub_key_column: Vec<Target> = vec![];
         let mut trusted_pub_key_column: Vec<Target> = vec![];
-        (0..64).for_each(|j| {
+        (0..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|j| {
             untrusted_pub_key_column.push(untrusted_validator_pub_keys[j][i].target);
             trusted_pub_key_column.push(trusted_next_validator_pub_keys[j][i].target);
         });
@@ -209,14 +219,14 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
         trusted_pub_keys_columns.push(trusted_pub_key_column);
     });
 
-    (0..N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         let random_access_index = trusted_next_intersect_indices[i];
-        let is_reserved_index = builder.is_equal(random_access_index, sixty_three);
+        let is_reserved_index = builder.is_equal(random_access_index, null_idx);
         // constrain only if its a non-reserved index
         let enable_constraint = builder.not(is_reserved_index);
 
         // compute intersection voting power in trusted
-        let mut vp = builder.add_virtual_biguint_target(VP_BITS.div_ceil(32));
+        let mut vp = builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32));
         let vp_c0 =
             builder.random_access(random_access_index, trusted_validator_vp_columns[0].clone());
         let vp_c1 =
@@ -260,11 +270,12 @@ pub fn add_virtual_trusted_quorum_target<F: RichField + Extendable<D>, const D: 
 // Ensure that +2/3 of new validators signed correctly.
 pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> UntrustedValidatorsQuorumTarget {
-    let untrusted_validator_vp = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(VP_BITS.div_ceil(32)))
+    let untrusted_validator_vp = (0..max(c.N_VALIDATORS, c.SIGNATURE_INDICES_DOMAIN_SIZE))
+        .map(|_| builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
-    let signature_indices = (0..N_SIGNATURE_INDICES)
+    let signature_indices = (0..c.N_SIGNATURE_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
 
@@ -275,26 +286,26 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
     let zero_bool_target = builder._false();
 
     // compute total voting power
-    (0..N_VALIDATORS)
+    (0..c.N_VALIDATORS)
         .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_validator_vp[i]));
 
     // prepares voting power columns
     let untrusted_validator_vp_columns = vec![
-        untrusted_validator_vp[..TOP_N_SIGNATURES]
+        untrusted_validator_vp[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        untrusted_validator_vp[..TOP_N_SIGNATURES]
+        untrusted_validator_vp[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
     ];
 
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         let random_access_index = signature_indices[i];
 
         // compute intersection voting power in trusted
-        let mut vp = builder.add_virtual_biguint_target(VP_BITS.div_ceil(32));
+        let vp = builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32));
         let vp_c0 = builder.random_access(
             random_access_index,
             untrusted_validator_vp_columns[0].clone(),
@@ -320,25 +331,27 @@ pub fn add_virtual_untrusted_quorum_target<F: RichField + Extendable<D>, const D
     }
 }
 
-// returns pub_keys corresponding to top 45 signatures in constrained manner (to be used for signature verification)
+// returns pub_keys corresponding to top `N_SIGNATURE_INDICES` signatures in constrained manner (to be used for signature verification)
 pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     pub_keys: &Vec<Vec<BoolTarget>>,
     signature_indices: &Vec<Target>,
+    c: &Config,
 ) -> Vec<Vec<BoolTarget>> {
     // prepares pub_keys columns
     let mut pub_keys_columns: Vec<Vec<Target>> = vec![];
     (0..256).for_each(|i| {
         let mut pub_keys_column: Vec<Target> = vec![];
-        (0..TOP_N_SIGNATURES).for_each(|j| {
+        (0..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|j| {
             pub_keys_column.push(pub_keys[j][i].target);
         });
         pub_keys_columns.push(pub_keys_column);
     });
 
-    let mut random_access_pub_keys: Vec<Vec<BoolTarget>> = Vec::with_capacity(TOP_N_SIGNATURES);
+    let mut random_access_pub_keys: Vec<Vec<BoolTarget>> =
+        Vec::with_capacity(c.SIGNATURE_INDICES_DOMAIN_SIZE);
 
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         let mut random_access_pub_key: Vec<BoolTarget> = Vec::with_capacity(256);
         (0..256).for_each(|j| {
             let value = builder.random_access(signature_indices[i], pub_keys_columns[j].clone());
@@ -357,14 +370,14 @@ pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
 // pub fn add_virtual_verify_signatures_target<F: RichField + Extendable<D>, const D: usize>(
 //     builder: &mut CircuitBuilder<F, D>,
 // ) -> VerifySignatures {
-//     let signatures = (0..N_VALIDATORS)
+//     let signatures = (0..c.N_VALIDATORS)
 //         .map(|_| {
 //             (0..SIGNATURE_BITS)
 //                 .map(|_| builder.add_virtual_bool_target_unsafe())
 //                 .collect()
 //         })
 //         .collect::<Vec<Vec<BoolTarget>>>();
-//     let verify = (0..N_VALIDATORS)
+//     let verify = (0..c.N_VALIDATORS)
 //         .map(|_| builder.add_virtual_bool_target_unsafe())
 //         .collect::<Vec<BoolTarget>>();
 
@@ -376,9 +389,10 @@ pub fn add_virtual_validators_hash_merkle_proof_target<
     const D: usize,
 >(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> MerkleProofTarget {
     let root = builder.add_virtual_hash256_target();
-    let proof = (0..HEADER_VALIDATORS_HASH_PROOF_SIZE)
+    let proof = (0..c.HEADER_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -424,9 +438,10 @@ pub fn add_virtual_next_validators_hash_merkle_proof_target<
     const D: usize,
 >(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> MerkleProofTarget {
     let root = builder.add_virtual_hash256_target();
-    let proof = (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
+    let proof = (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -469,9 +484,10 @@ pub fn add_virtual_next_validators_hash_merkle_proof_target<
 
 pub fn add_virtual_header_time_merkle_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> MerkleProofTarget {
     let root = builder.add_virtual_hash256_target();
-    let proof = (0..HEADER_TIME_PROOF_SIZE)
+    let proof = (0..c.HEADER_TIME_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -517,9 +533,10 @@ pub fn add_virtual_header_chain_id_merkle_proof_target<
     const D: usize,
 >(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> MerkleProofTarget {
     let root = builder.add_virtual_hash256_target();
-    let proof = (0..HEADER_CHAIN_ID_PROOF_SIZE)
+    let proof = (0..c.HEADER_CHAIN_ID_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -565,9 +582,10 @@ pub fn add_virtual_header_version_merkle_proof_target<
     const D: usize,
 >(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> MerkleProofTarget {
     let root = builder.add_virtual_hash256_target();
-    let proof = (0..HEADER_VERSION_PROOF_SIZE)
+    let proof = (0..c.HEADER_VERSION_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let leaf_padded = get_sha_block_target(builder);
@@ -610,13 +628,16 @@ pub fn add_virtual_header_version_merkle_proof_target<
 
 pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> UpdateValidityTarget {
-    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
-    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
-    let untrusted_timestamp = builder
-        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
-    let trusted_timestamp = builder
-        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
+    let untrusted_height = builder.add_virtual_biguint_target(c.HEIGHT_BITS.div_ceil(32));
+    let trusted_height = builder.add_virtual_biguint_target(c.HEIGHT_BITS.div_ceil(32));
+    let untrusted_timestamp = builder.add_virtual_biguint_target(
+        (c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+    );
+    let trusted_timestamp = builder.add_virtual_biguint_target(
+        (c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+    );
     let untrusted_version_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
 
@@ -630,14 +651,15 @@ pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D:
 
     // ensures trusted height + trusting period >= untrusted height
     let trusting_period_seconds =
-        builder.constant_biguint(&BigUint::from_usize(TRUSTING_PERIOD).unwrap());
+        builder.constant_biguint(&BigUint::from_usize(c.TRUSTING_PERIOD).unwrap());
     let untrusted_max_allowed_timestamp =
         builder.add_biguint(&trusted_timestamp, &trusting_period_seconds);
     let result = builder.cmp_biguint(&untrusted_timestamp, &untrusted_max_allowed_timestamp);
     builder.connect(result.target, one_bool_target.target);
 
     // ensure correct version block
-    let version_block = VERSION_BLOCK
+    let version_block = c
+        .VERSION_BLOCK
         .iter()
         .map(|&elm| builder.constant_bool(elm))
         .collect::<Vec<BoolTarget>>();
@@ -649,7 +671,8 @@ pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D:
     });
 
     // ensure correct chain id
-    let chain_id = CHAIN_ID
+    let chain_id = c
+        .CHAIN_ID
         .iter()
         .map(|&elm| builder.constant_bool(elm))
         .collect::<Vec<BoolTarget>>();
@@ -669,23 +692,24 @@ pub fn add_virtual_update_validity_target<F: RichField + Extendable<D>, const D:
 
 pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> ConnectSignMessageTarget {
-    let messages_padded = (0..N_SIGNATURE_INDICES)
+    let messages_padded = (0..c.N_SIGNATURE_INDICES)
         .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let header_hash = get_256_bool_target(builder);
-    let signatures = (0..N_SIGNATURE_INDICES)
+    let signatures = (0..c.N_SIGNATURE_INDICES)
         .map(|_| get_512_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let signature_indexes = (0..N_SIGNATURE_INDICES)
+    let signature_indexes = (0..c.N_SIGNATURE_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
-    let untrusted_pub_keys = (0..N_VALIDATORS)
+    let height = builder.add_virtual_biguint_target(c.HEIGHT_BITS.div_ceil(32));
+    let untrusted_pub_keys = (0..max(c.N_VALIDATORS, c.SIGNATURE_INDICES_DOMAIN_SIZE))
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
-    let pub_keys = get_random_access_pub_keys(builder, &untrusted_pub_keys, &signature_indexes);
+    let pub_keys = get_random_access_pub_keys(builder, &untrusted_pub_keys, &signature_indexes, c);
 
     for j in 0..messages_padded.len() {
         let message = &messages_padded[j];
@@ -733,10 +757,12 @@ pub fn add_virtual_connect_sign_message_target<F: RichField + Extendable<D>, con
 
 pub fn add_virtual_connect_timestamp_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> ConnectTimestampTarget {
     let header_time_padded = get_sha_block_target(builder);
-    let header_timestamp = builder
-        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
+    let header_timestamp = builder.add_virtual_biguint_target(
+        (c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+    );
 
     let mut header_timestamp_bits = builder.split_le_base::<2>(header_timestamp.get_limb(0).0, 32);
     let next_bits = builder.split_le_base::<2>(header_timestamp.get_limb(1).0, 32);
@@ -745,7 +771,7 @@ pub fn add_virtual_connect_timestamp_target<F: RichField + Extendable<D>, const 
     // 7 bits from each of 5 consecutive bytes in `header_time_padded` starting from the 3rd byte makes up the `header_timestamp_bits`
     // `header_time_padded` contains timestamp in LEB128 format
     let offset = 16;
-    (0..TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE)).for_each(|j| {
+    (0..c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE)).for_each(|j| {
         (0..7).for_each(|k| {
             builder.connect(
                 header_time_padded[offset + j * 8 + k + 1].target,
@@ -762,23 +788,25 @@ pub fn add_virtual_connect_timestamp_target<F: RichField + Extendable<D>, const 
 
 pub fn add_virtual_connect_pub_keys_vps_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> ConnectPubKeysVPsTarget {
-    let pub_keys = (0..N_VALIDATORS)
+    let pub_keys = (0..c.N_VALIDATORS)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let vps = (0..N_VALIDATORS)
+    let vps = (0..c.N_VALIDATORS)
         .map(|_| {
-            builder
-                .add_virtual_biguint_target((VP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32))
+            builder.add_virtual_biguint_target(
+                (c.VP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+            )
         })
         .collect::<Vec<BigUintTarget>>();
-    let validators_padded = (0..N_VALIDATORS)
+    let validators_padded = (0..c.N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
     // 7 bits from each of 10 consecutive bytes in `validators_padded[i]` starting from the 39th byte makes up the `vp_bits`
     // `validators_padded[i]` contains voting power in LEB128 format
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(validators_padded[i][40 + j].target, pub_keys[i][j].target)
         });
@@ -790,7 +818,7 @@ pub fn add_virtual_connect_pub_keys_vps_target<F: RichField + Extendable<D>, con
         (0..32).for_each(|i| vp_bits.push(next_bits[i]));
 
         let offset = (37 + 1) * 8; // add 1 for 0 byte prefix
-        (0..VP_BITS.div_ceil(LEB128_GROUP_SIZE)).for_each(|j| {
+        (0..c.VP_BITS.div_ceil(c.LEB128_GROUP_SIZE)).for_each(|j| {
             (0..7).for_each(|k| {
                 builder.connect(
                     validators_padded[i][offset + j * 8 + k + 1].target,
@@ -809,13 +837,14 @@ pub fn add_virtual_connect_pub_keys_vps_target<F: RichField + Extendable<D>, con
 
 pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
+    c: &Config,
 ) -> ProofTarget {
-    let sign_messages_padded = (0..N_SIGNATURE_INDICES)
+    let sign_messages_padded = (0..c.N_SIGNATURE_INDICES)
         .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let signatures = (0..N_VALIDATORS)
+    let signatures = (0..c.N_VALIDATORS)
         .map(|_| {
-            (0..SIGNATURE_BITS)
+            (0..c.SIGNATURE_BITS)
                 .map(|_| builder.add_virtual_bool_target_unsafe())
                 .collect()
         })
@@ -823,71 +852,77 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_hash = builder.add_virtual_hash256_target();
     let untrusted_version_padded = get_sha_block_target(builder);
     let untrusted_chain_id_padded = get_sha_block_target(builder);
-    let untrusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+    let untrusted_height = builder.add_virtual_biguint_target(c.HEIGHT_BITS.div_ceil(32));
     let untrusted_time_padded = get_sha_block_target(builder);
-    let untrusted_timestamp = builder
-        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
+    let untrusted_timestamp = builder.add_virtual_biguint_target(
+        (c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+    );
     let untrusted_validators_hash_padded = get_sha_block_target(builder);
-    let untrusted_validator_pub_keys = (0..N_VALIDATORS)
+    let untrusted_validator_pub_keys = (0..c.N_VALIDATORS)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_validator_vp = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(VP_BITS.div_ceil(32)))
+    let untrusted_validator_vp = (0..c.N_VALIDATORS)
+        .map(|_| builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
-    let untrusted_validators_padded = (0..N_VALIDATORS)
+    let untrusted_validators_padded = (0..c.N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_version_proof = (0..HEADER_VERSION_PROOF_SIZE)
+    let untrusted_version_proof = (0..c.HEADER_VERSION_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_chain_id_proof = (0..HEADER_CHAIN_ID_PROOF_SIZE)
+    let untrusted_chain_id_proof = (0..c.HEADER_CHAIN_ID_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
+    let untrusted_time_proof = (0..c.HEADER_TIME_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let untrusted_validators_hash_proof = (0..HEADER_VALIDATORS_HASH_PROOF_SIZE)
+    let untrusted_validators_hash_proof = (0..c.HEADER_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
     let trusted_hash = builder.add_virtual_hash256_target();
-    let trusted_height = builder.add_virtual_biguint_target(HEIGHT_BITS.div_ceil(32));
+    let trusted_height = builder.add_virtual_biguint_target(c.HEIGHT_BITS.div_ceil(32));
     let trusted_time_padded = get_sha_block_target(builder);
-    let trusted_timestamp = builder
-        .add_virtual_biguint_target((TIMESTAMP_BITS.div_ceil(LEB128_GROUP_SIZE) * 8).div_ceil(32));
+    let trusted_timestamp = builder.add_virtual_biguint_target(
+        (c.TIMESTAMP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+    );
     let trusted_next_validators_hash_padded = get_sha_block_target(builder);
-    let trusted_next_validator_pub_keys = (0..N_VALIDATORS)
+    let trusted_next_validator_pub_keys = (0..c.N_VALIDATORS)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validator_vp = (0..N_VALIDATORS)
-        .map(|_| builder.add_virtual_biguint_target(VP_BITS.div_ceil(32)))
+    let trusted_next_validator_vp = (0..c.N_VALIDATORS)
+        .map(|_| builder.add_virtual_biguint_target(c.VP_BITS.div_ceil(32)))
         .collect::<Vec<BigUintTarget>>();
-    let trusted_next_validators_padded = (0..N_VALIDATORS)
+    let trusted_next_validators_padded = (0..c.N_VALIDATORS)
         .map(|_| get_sha_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_time_proof = (0..HEADER_TIME_PROOF_SIZE)
+    let trusted_time_proof = (0..c.HEADER_TIME_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_next_validators_hash_proof = (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
+    let trusted_next_validators_hash_proof = (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_version_proof = (0..HEADER_VERSION_PROOF_SIZE)
+    let trusted_version_proof = (0..c.HEADER_VERSION_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let trusted_chain_id_proof = (0..HEADER_CHAIN_ID_PROOF_SIZE)
+    let trusted_chain_id_proof = (0..c.HEADER_CHAIN_ID_PROOF_SIZE)
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
     let trusted_version_padded = get_sha_block_target(builder);
     let trusted_chain_id_padded = get_sha_block_target(builder);
-    let signature_indices = (0..N_SIGNATURE_INDICES)
+    let signature_indices = (0..c.N_SIGNATURE_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let untrusted_intersect_indices = (0..N_INTERSECTION_INDICES)
+    let untrusted_intersect_indices = (0..c.N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let trusted_next_intersect_indices = (0..N_INTERSECTION_INDICES)
+    let trusted_next_intersect_indices = (0..c.N_INTERSECTION_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
+    let zero_pub_key = (0..256)
+        .map(|_| builder._false())
+        .collect::<Vec<BoolTarget>>();
+    let zero_vp = builder.constant_biguint(&BigUint::from_i8(0).unwrap());
 
     // *** sub circuits ***
     let untrusted_validators_hash = get_formatted_hash_256_bools(&merkle_1_block_leaf_root(
@@ -898,33 +933,35 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         builder,
         &trusted_next_validators_padded.clone(),
     ));
-    let trusted_quorum_target = add_virtual_trusted_quorum_target(builder);
-    let untrusted_quorum_target = add_virtual_untrusted_quorum_target(builder);
+    let trusted_quorum_target = add_virtual_trusted_quorum_target(builder, c);
+    let untrusted_quorum_target = add_virtual_untrusted_quorum_target(builder, c);
     // TODO: Later on than checking so many merkle proofs we can just reconstruct the whole header root
     let untrusted_version_merkle_proof_target =
-        add_virtual_header_version_merkle_proof_target(builder);
+        add_virtual_header_version_merkle_proof_target(builder, c);
     let untrusted_chain_id_merkle_proof_target =
-        add_virtual_header_chain_id_merkle_proof_target(builder);
-    let untrusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
+        add_virtual_header_chain_id_merkle_proof_target(builder, c);
+    let untrusted_time_merkle_proof_target =
+        add_virtual_header_time_merkle_proof_target(builder, c);
     let untrusted_validators_hash_merkle_proof_target =
-        add_virtual_validators_hash_merkle_proof_target(builder);
-    let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder);
+        add_virtual_validators_hash_merkle_proof_target(builder, c);
+    let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder, c);
     let trusted_next_validators_hash_merkle_proof_target =
-        add_virtual_next_validators_hash_merkle_proof_target(builder);
+        add_virtual_next_validators_hash_merkle_proof_target(builder, c);
     let trusted_version_merkle_proof_target =
-        add_virtual_header_version_merkle_proof_target(builder);
+        add_virtual_header_version_merkle_proof_target(builder, c);
     let trusted_chain_id_merkle_proof_target =
-        add_virtual_header_chain_id_merkle_proof_target(builder);
-    let update_validity_target = add_virtual_update_validity_target(builder);
-    let connect_message_target = add_virtual_connect_sign_message_target(builder);
-    let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
-    let connect_trusted_timestamp_target = add_virtual_connect_timestamp_target(builder);
-    let connect_untrusted_pub_keys_vps_target = add_virtual_connect_pub_keys_vps_target(builder);
-    let connect_trusted_next_pub_keys_vps_target = add_virtual_connect_pub_keys_vps_target(builder);
-    // TODO: connect approval message height to header root leaf and verify the merkle proof
+        add_virtual_header_chain_id_merkle_proof_target(builder, c);
+    let update_validity_target = add_virtual_update_validity_target(builder, c);
+    let connect_message_target = add_virtual_connect_sign_message_target(builder, c);
+    let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder, c);
+    let connect_trusted_timestamp_target = add_virtual_connect_timestamp_target(builder, c);
+    let connect_untrusted_pub_keys_vps_target = add_virtual_connect_pub_keys_vps_target(builder, c);
+    let connect_trusted_next_pub_keys_vps_target =
+        add_virtual_connect_pub_keys_vps_target(builder, c);
+    // TODO: add merkle proof for both heights or reconstruct header both header hash
 
     // *** TrustedValidatorsQuorumTarget ***
-    (0..TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+    (0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_quorum_target.untrusted_validator_pub_keys[i][j].target,
@@ -932,7 +969,18 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..TOP_N_VALIDATORS_FOR_INTERSECTION).for_each(|i| {
+    // in case if n_validators are less than the indices domain size
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+        .for_each(|i| {
+            (0..256).for_each(|j| {
+                builder.connect(
+                    trusted_quorum_target.untrusted_validator_pub_keys[i][j].target,
+                    zero_pub_key[j].target,
+                )
+            });
+        });
+
+    (0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_quorum_target.trusted_next_validator_pub_keys[i][j].target,
@@ -940,25 +988,43 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    // in case if n_validators are less than the indices domain size
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+        .for_each(|i| {
+            (0..256).for_each(|j| {
+                builder.connect(
+                    trusted_quorum_target.trusted_next_validator_pub_keys[i][j].target,
+                    zero_pub_key[j].target,
+                )
+            });
+        });
+
+    (0..c.N_VALIDATORS).for_each(|i| {
         builder.connect_biguint(
             &trusted_quorum_target.trusted_next_validator_vp[i],
             &trusted_next_validator_vp[i],
         )
     });
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
+        builder.connect_biguint(
+            &trusted_quorum_target.trusted_next_validator_vp[i],
+            &zero_vp,
+        )
+    });
+
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         builder.connect(
             trusted_quorum_target.signature_indices[i],
             signature_indices[i],
         )
     });
-    (0..N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         builder.connect(
             trusted_quorum_target.untrusted_intersect_indices[i],
             untrusted_intersect_indices[i],
         )
     });
-    (0..N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         builder.connect(
             trusted_quorum_target.trusted_next_intersect_indices[i],
             trusted_next_intersect_indices[i],
@@ -966,13 +1032,18 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     });
 
     // *** UntrustedValidatorsQuorumTarget ***
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         builder.connect_biguint(
             &untrusted_quorum_target.untrusted_validator_vp[i],
             &untrusted_validator_vp[i],
         )
     });
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    // in case if the indices domain size is gretor than n validators
+    (c.N_VALIDATORS..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+        builder.connect_biguint(&untrusted_quorum_target.untrusted_validator_vp[i], &zero_vp)
+    });
+
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         builder.connect(
             untrusted_quorum_target.signature_indices[i],
             signature_indices[i],
@@ -986,7 +1057,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             untrusted_version_padded[i].target,
         )
     });
-    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 untrusted_version_merkle_proof_target.proof[i][j].target,
@@ -1003,7 +1074,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             untrusted_chain_id_padded[i].target,
         )
     });
-    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 untrusted_chain_id_merkle_proof_target.proof[i][j].target,
@@ -1020,7 +1091,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             untrusted_time_padded[i].target,
         )
     });
-    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_TIME_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 untrusted_time_merkle_proof_target.proof[i][j].target,
@@ -1037,7 +1108,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             untrusted_validators_hash_padded[i].target,
         )
     });
-    (0..HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 untrusted_validators_hash_merkle_proof_target.proof[i][j].target,
@@ -1057,7 +1128,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             trusted_time_padded[i].target,
         )
     });
-    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_TIME_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_time_merkle_proof_target.proof[i][j].target,
@@ -1074,7 +1145,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             trusted_next_validators_hash_padded[i].target,
         )
     });
-    (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_next_validators_hash_merkle_proof_target.proof[i][j].target,
@@ -1094,7 +1165,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             trusted_version_padded[i].target,
         )
     });
-    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_version_merkle_proof_target.proof[i][j].target,
@@ -1111,7 +1182,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             trusted_chain_id_padded[i].target,
         )
     });
-    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 trusted_chain_id_merkle_proof_target.proof[i][j].target,
@@ -1146,7 +1217,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     });
 
     // *** ConnectSignMessageTarget ***
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         (0..SHA_BLOCK_BITS * 4).for_each(|j| {
             builder.connect(
                 connect_message_target.messages_padded[i][j].target,
@@ -1166,7 +1237,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     // connect height
     builder.connect_biguint(&connect_message_target.height, &untrusted_height);
     // connect signatures
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         (0..512).for_each(|j| {
             builder.connect(
                 connect_message_target.signatures[i][j].target,
@@ -1175,18 +1246,27 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         })
     });
     // connect signature indexes
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         builder.connect(
             connect_message_target.signature_indexes[i],
             signature_indices[i],
         )
     });
     // connect untrusted_pub_key
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 connect_message_target.untrusted_pub_keys[i][j].target,
                 untrusted_validator_pub_keys[i][j].target,
+            )
+        })
+    });
+    // in case when the indices domain size is greator than n validators
+    (c.N_VALIDATORS..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            builder.connect(
+                connect_message_target.untrusted_pub_keys[i][j].target,
+                zero_pub_key[j].target,
             )
         })
     });
@@ -1232,7 +1312,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     });
 
     // *** ConnectPubKeysVPsTarget - untrusted ***
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 connect_untrusted_pub_keys_vps_target.pub_keys[i][j].target,
@@ -1240,13 +1320,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         builder.connect_biguint(
             &connect_untrusted_pub_keys_vps_target.vps[i],
             &untrusted_validator_vp[i],
         )
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..SHA_BLOCK_BITS).for_each(|j| {
             builder.connect(
                 connect_untrusted_pub_keys_vps_target.validators_padded[i][j].target,
@@ -1256,7 +1336,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     });
 
     // *** ConnectPubKeysVPsTarget - trusted ***
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(
                 connect_trusted_next_pub_keys_vps_target.pub_keys[i][j].target,
@@ -1264,13 +1344,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             )
         })
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         builder.connect_biguint(
             &connect_trusted_next_pub_keys_vps_target.vps[i],
             &trusted_next_validator_vp[i],
         )
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..SHA_BLOCK_BITS).for_each(|j| {
             builder.connect(
                 connect_trusted_next_pub_keys_vps_target.validators_padded[i][j].target,
@@ -1352,9 +1432,10 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     trusted_chain_id_padded: &Vec<bool>,
     trusted_version_padded: &Vec<bool>,
     target: &ProofTarget,
+    c: &Config,
 ) {
     // Set N_SIGNATURE_INDICES signed messages (each message is already padded as sha512 - 2 block)
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         (0..SHA_BLOCK_BITS * 4).for_each(|j| {
             witness.set_bool_target(
                 target.sign_messages_padded[i][j],
@@ -1363,8 +1444,8 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         });
     });
     // Set N_SIGNATURE_INDICES signatures
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
-        (0..SIGNATURE_BITS)
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..c.SIGNATURE_BITS)
             .for_each(|j| witness.set_bool_target(target.signatures[i][j], signatures[i][j]))
     });
 
@@ -1416,8 +1497,8 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     });
 
     // Set N_VALIDATORS (total vals of block) pub keys as target to reconstruct untrusted_validators_hash
-    // TODO: will break with N_VALIDATORS != 150
-    (0..N_VALIDATORS).for_each(|i| {
+    // TODO: will break with c.N_VALIDATORS != 150
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_validator_pub_keys[i][j],
@@ -1427,7 +1508,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     });
     // Set N_VALIDATORS (total vals of block) voting powers as target to reconstruct untrusted_validators_hash
     // To verify 2/3rd majority
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         witness.set_biguint_target(
             &target.untrusted_validator_vp[i],
             &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
@@ -1436,7 +1517,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     // We take already padded N_VALIDATORS untrusted validator and then connect untrusted_validator_vp
     // and untrusted_validator_pub_keys
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..SHA_BLOCK_BITS).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_validators_padded[i][j],
@@ -1447,7 +1528,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     // HEADER_VERSION_PROOF_SIZE != 4 will break
     // merkle inclusion proof of header version in header root
-    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_version_proof[i][j],
@@ -1458,7 +1539,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     // HEADER_CHAIN_ID_PROOF_SIZE != 4 will break
     // merkle inclusion proof of header chain id in header root
-    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_chain_id_proof[i][j],
@@ -1469,7 +1550,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     // HEADER_TIME_PROOF_SIZE != 4 will break
     // merkle inclusion proof of time in header root
-    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_TIME_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_time_proof[i][j],
@@ -1480,7 +1561,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     // HEADER_TIME_PROOF_SIZE != 4 will break
     // merkle inclusion proof of validators hash in header root
-    (0..HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.untrusted_validators_hash_proof[i][j],
@@ -1530,7 +1611,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         )
     });
 
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.trusted_next_validator_pub_keys[i][j],
@@ -1539,13 +1620,13 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         })
     });
 
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         witness.set_biguint_target(
             &target.trusted_next_validator_vp[i],
             &BigUint::from_u64(trusted_next_validator_vp[i]).unwrap(),
         )
     });
-    (0..N_VALIDATORS).for_each(|i| {
+    (0..c.N_VALIDATORS).for_each(|i| {
         (0..SHA_BLOCK_BITS).for_each(|j| {
             witness.set_bool_target(
                 target.trusted_next_validators_padded[i][j],
@@ -1553,12 +1634,12 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             )
         })
     });
-    (0..HEADER_TIME_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_TIME_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(target.trusted_time_proof[i][j], trusted_time_proof[i][j])
         })
     });
-    (0..HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.trusted_next_validators_hash_proof[i][j],
@@ -1566,7 +1647,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             )
         })
     });
-    (0..HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.trusted_version_proof[i][j],
@@ -1574,7 +1655,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             )
         })
     });
-    (0..HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
+    (0..c.HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
         (0..256).for_each(|j| {
             witness.set_bool_target(
                 target.trusted_chain_id_proof[i][j],
@@ -1582,19 +1663,19 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             )
         })
     });
-    (0..N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         witness.set_target(
             target.signature_indices[i],
             F::from_canonical_u8(signature_indices[i]),
         )
     });
-    (0..N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         witness.set_target(
             target.untrusted_intersect_indices[i],
             F::from_canonical_u8(untrusted_intersect_indices[i]),
         )
     });
-    (0..N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
         witness.set_target(
             target.trusted_next_intersect_indices[i],
             F::from_canonical_u8(trusted_next_intersect_indices[i]),

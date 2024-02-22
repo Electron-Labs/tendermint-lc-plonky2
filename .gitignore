@@ -1,4 +1,5 @@
 /target
 Cargo.lock
-proof_data/
-data_store/
+storage/**/*.json
+/data_store
+tendermint-lc-plonky2/src/proof_data

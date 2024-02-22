@@ -1,0 +1,29 @@
+RPC_ENDPOINT: https://rpc-dydx.ecostake.com
+VP_BITS: 64 # VOTING POWER
+SIGNATURE_BITS: 512
+N_VALIDATORS: &N_VALIDATORS_REF 60
+HEADER_VALIDATORS_HASH_PROOF_SIZE: 4
+HEADER_TIME_PROOF_SIZE: 4
+HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
+HEADER_CHAIN_ID_PROOF_SIZE: 4
+HEADER_VERSION_PROOF_SIZE: 4
+HEIGHT_BITS: 64
+TIMESTAMP_BITS: 35
+TRUSTING_PERIOD: 1209600 # 2 weeks in seconds
+N_SIGNATURE_INDICES: 15
+N_INTERSECTION_INDICES: 15
+INTERSECTION_INDICES_DOMAIN_SIZE: 32
+SIGNATURE_INDICES_DOMAIN_SIZE: 32
+LEB128_GROUP_SIZE: 7
+N_VALIDATORS_LEAVES: *N_VALIDATORS_REF
+CHAIN_ID: [false, true, true, false, false, true, false, false, false, true, true,
+          true, true, false, false, true, false, true, true, false, false, true, false,
+          false, false, true, true, true, true, false, false, false, false, false, true,
+          false, true, true, false, true, false, true, true, false, true, true, false, true,
+          false, true, true, false, false, false, false, true, false, true, true, false, 
+          true, false, false, true, false, true, true, false, true, true, true, false, false, 
+          true, true, false, true, true, true, false, false, true, true, false, false, true, 
+          false, true, false, true, true, true, false, true, false, false, false, false, true, 
+          false, true, true, false, true, false, false, true, true, false, false, false, true]
+
+VERSION_BLOCK: [false, false, false, false, true, false, true, true]
