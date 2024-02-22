@@ -14,7 +14,7 @@ use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
     dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/lc_circuit")
@@ -176,8 +176,8 @@ pub fn build_recursion_circuit<
 
 pub struct GeneratedProofInfo {
     pub proof_with_pis: Vec<u8>,
-    pub proof_generate_time: Instant,
-    pub recursive_proof_generation_time: Instant
+    pub proof_generate_time_duration: Duration,
+    pub recursive_proof_generation_time_duration: Duration
 }
 pub fn generate_proof<
     F: RichField + Extendable<D>,
@@ -249,8 +249,8 @@ where
 
     GeneratedProofInfo{
         proof_with_pis: rec_proof_with_pis_bytes,
-        proof_generate_time: t_pg,
-        recursive_proof_generation_time: t_pg_rec
+        proof_generate_time_duration: t_pg.elapsed(),
+        recursive_proof_generation_time_duration: t_pg_rec.elapsed()
     }
 }
 
