@@ -136,7 +136,7 @@ pub fn build_tendermint_lc_circuit<
     let t = Instant::now();
     let data = builder.build::<C>();
     println!("Time taken to build the circuit : {:?}", t.elapsed());
-    dump_circuit_data::<F, C, D>(&data, lc_storage_dir);
+    dump_circuit_data::<F, C, D>(&data, &format!("{lc_storage_dir}/circuit_data/"));
 }
 
 // build and dump circuit data for recursion circuit
@@ -171,7 +171,7 @@ pub fn build_recursion_circuit<
 
     let data = builder.build::<C>();
     println!("Recursive circuit build complete");
-    dump_circuit_data::<F, C, D>(&data, recursive_storage_dir);
+    dump_circuit_data::<F, C, D>(&data, &format!("{recursive_storage_dir}/circuit_data/"));
 }
 
 pub struct GeneratedProofInfo {
@@ -256,7 +256,7 @@ where
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "osmosis";
+    let chain_name = "OSMOSIS";
     let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
     let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
