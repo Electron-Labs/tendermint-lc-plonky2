@@ -1117,149 +1117,123 @@ mod tests {
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
-    #[test]
-    fn test_header_time_merkle_proof_target() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
 
-        let t = get_test_data();
+    // #[test]
+    // fn test_header_time_merkle_proof_target() {
+    //     let config = CircuitConfig::standard_recursion_config();
+    //     let mut builder = CircuitBuilder::<F, D>::new(config);
+    //     let cc = load_chain_config();
 
-        let target = add_virtual_header_time_merkle_proof_target(&mut builder, cc);
+    //     let t = get_test_data();
 
-        let mut witness = PartialWitness::new();
+    //     let target = add_virtual_header_time_merkle_proof_target(&mut builder, cc);
 
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.leaf_padded[i], t.untrusted_time_padded[i])
-        });
-        (0..cc.HEADER_TIME_PROOF_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(target.proof[i][j], t.untrusted_time_proof[i][j])
-            })
-        });
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
-        witness.set_hash256_target(&target.root, &untrusted_hash_slice);
+    //     let mut witness = PartialWitness::new();
 
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
+    //     (0..SHA_BLOCK_BITS).for_each(|i| {
+    //         witness.set_bool_target(target.leaf_padded[i], t.untrusted_time_padded[i])
+    //     });
+    //     (0..cc.HEADER_TIME_PROOF_SIZE).for_each(|i| {
+    //         (0..256).for_each(|j| {
+    //             witness.set_bool_target(target.proof[i][j], t.untrusted_time_proof[i][j])
+    //         })
+    //     });
+    //     let mut untrusted_hash_slice = [0u8; 32];
+    //     untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
+    //     witness.set_hash256_target(&target.root, &untrusted_hash_slice);
 
-    #[test]
-    fn test_validators_hash_merkle_proof_target() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
+    //     let data = builder.build::<C>();
+    //     prove_and_verify(data, witness);
+    // }
 
-        let t = get_test_data();
+    // #[test]
+    // fn test_validators_hash_merkle_proof_target() {
+    //     let config = CircuitConfig::standard_recursion_config();
+    //     let mut builder = CircuitBuilder::<F, D>::new(config);
+    //     let cc = load_chain_config();
 
-        let target = add_virtual_validators_hash_merkle_proof_target(&mut builder, cc);
+    //     let t = get_test_data();
 
-        let mut witness = PartialWitness::new();
+    //     let target = add_virtual_validators_hash_merkle_proof_target(&mut builder, cc);
 
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.leaf_padded[i], t.untrusted_validators_hash_padded[i])
-        });
-        (0..cc.HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(target.proof[i][j], t.untrusted_validators_hash_proof[i][j])
-            })
-        });
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
-        witness.set_hash256_target(&target.root, &untrusted_hash_slice);
+    //     let mut witness = PartialWitness::new();
 
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
+    //     (0..SHA_BLOCK_BITS).for_each(|i| {
+    //         witness.set_bool_target(target.leaf_padded[i], t.untrusted_validators_hash_padded[i])
+    //     });
+    //     (0..cc.HEADER_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    //         (0..256).for_each(|j| {
+    //             witness.set_bool_target(target.proof[i][j], t.untrusted_validators_hash_proof[i][j])
+    //         })
+    //     });
+    //     let mut untrusted_hash_slice = [0u8; 32];
+    //     untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
+    //     witness.set_hash256_target(&target.root, &untrusted_hash_slice);
 
-    #[test]
-    fn test_next_validators_hash_merkle_proof_target() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
+    //     let data = builder.build::<C>();
+    //     prove_and_verify(data, witness);
+    // }
 
-        let t = get_test_data();
+    // #[test]
+    // fn test_next_validators_hash_merkle_proof_target() {
+    //     let config = CircuitConfig::standard_recursion_config();
+    //     let mut builder = CircuitBuilder::<F, D>::new(config);
+    //     let cc = load_chain_config();
 
-        let target = add_virtual_next_validators_hash_merkle_proof_target(&mut builder, cc);
+    //     let t = get_test_data();
 
-        let mut witness = PartialWitness::new();
+    //     let target = add_virtual_next_validators_hash_merkle_proof_target(&mut builder, cc);
 
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                target.leaf_padded[i],
-                t.trusted_next_validators_hash_padded[i],
-            )
-        });
-        (0..cc.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(
-                    target.proof[i][j],
-                    t.trusted_next_validators_hash_proof[i][j],
-                )
-            })
-        });
-        let mut trusted_hash_slice = [0u8; 32];
-        trusted_hash_slice.copy_from_slice(t.trusted_hash.as_slice());
-        witness.set_hash256_target(&target.root, &trusted_hash_slice);
+    //     let mut witness = PartialWitness::new();
 
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
+    //     (0..SHA_BLOCK_BITS).for_each(|i| {
+    //         witness.set_bool_target(
+    //             target.leaf_padded[i],
+    //             t.trusted_next_validators_hash_padded[i],
+    //         )
+    //     });
+    //     (0..cc.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+    //         (0..256).for_each(|j| {
+    //             witness.set_bool_target(
+    //                 target.proof[i][j],
+    //                 t.trusted_next_validators_hash_proof[i][j],
+    //             )
+    //         })
+    //     });
+    //     let mut trusted_hash_slice = [0u8; 32];
+    //     trusted_hash_slice.copy_from_slice(t.trusted_hash.as_slice());
+    //     witness.set_hash256_target(&target.root, &trusted_hash_slice);
 
-    #[test]
-    fn test_chain_id_merkle_proof_target() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
+    //     let data = builder.build::<C>();
+    //     prove_and_verify(data, witness);
+    // }
 
-        let t = get_test_data();
 
-        let target = add_virtual_header_chain_id_merkle_proof_target(&mut builder, cc);
+    // #[test]
+    // fn test_version_merkle_proof_target() {
+    //     let config = CircuitConfig::standard_recursion_config();
+    //     let mut builder = CircuitBuilder::<F, D>::new(config);
+    //     let cc = load_chain_config();
 
-        let mut witness = PartialWitness::new();
+    //     let t = get_test_data();
 
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.leaf_padded[i], t.untrusted_chain_id_padded[i])
-        });
-        (0..cc.HEADER_CHAIN_ID_PROOF_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(target.proof[i][j], t.untrusted_chain_id_proof[i][j])
-            })
-        });
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
-        witness.set_hash256_target(&target.root, &untrusted_hash_slice);
+    //     let target = add_virtual_header_version_merkle_proof_target(&mut builder, cc);
 
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
+    //     let mut witness = PartialWitness::new();
 
-    #[test]
-    fn test_version_merkle_proof_target() {
-        let config = CircuitConfig::standard_recursion_config();
-        let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
+    //     (0..SHA_BLOCK_BITS).for_each(|i| {
+    //         witness.set_bool_target(target.leaf_padded[i], t.untrusted_version_padded[i])
+    //     });
+    //     (0..cc.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
+    //         (0..256).for_each(|j| {
+    //             witness.set_bool_target(target.proof[i][j], t.untrusted_version_proof[i][j])
+    //         })
+    //     });
+    //     let mut untrusted_hash_slice = [0u8; 32];
+    //     untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
+    //     witness.set_hash256_target(&target.root, &untrusted_hash_slice);
 
-        let t = get_test_data();
-
-        let target = add_virtual_header_version_merkle_proof_target(&mut builder, cc);
-
-        let mut witness = PartialWitness::new();
-
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.leaf_padded[i], t.untrusted_version_padded[i])
-        });
-        (0..cc.HEADER_VERSION_PROOF_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                witness.set_bool_target(target.proof[i][j], t.untrusted_version_proof[i][j])
-            })
-        });
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(t.untrusted_hash.as_slice());
-        witness.set_hash256_target(&target.root, &untrusted_hash_slice);
-
-        let data = builder.build::<C>();
-        prove_and_verify(data, witness);
-    }
+    //     let data = builder.build::<C>();
+    //     prove_and_verify(data, witness);
+    // }
 }

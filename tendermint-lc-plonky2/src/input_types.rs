@@ -21,15 +21,11 @@ pub struct Inputs {
     pub untrusted_hash: Vec<u8>,
     pub untrusted_height: u64,
     pub untrusted_time_padded: Vec<bool>,
-    pub untrusted_time_proof: Vec<Vec<bool>>,
     pub untrusted_timestamp: u64,
     pub untrusted_validators_hash_padded: Vec<bool>,
     pub untrusted_validators_padded: Vec<Vec<bool>>,
-    pub untrusted_chain_id_proof: Vec<Vec<bool>>,
     pub untrusted_chain_id_padded: Vec<bool>,
-    pub untrusted_version_proof: Vec<Vec<bool>>,
     pub untrusted_version_padded: Vec<bool>,
-    pub untrusted_validators_hash_proof: Vec<Vec<bool>>,
     pub untrusted_validator_pub_keys: Vec<Vec<bool>>,
     pub untrusted_validator_vp: Vec<u64>,
     pub untrusted_height_padded: Vec<bool>,
@@ -45,9 +41,7 @@ pub struct Inputs {
     pub trusted_hash: Vec<u8>,
     pub trusted_height: u64,
     pub trusted_time_padded: Vec<bool>,
-    pub trusted_time_proof: Vec<Vec<bool>>,
     pub trusted_timestamp: u64,
-    pub trusted_next_validators_hash_proof: Vec<Vec<bool>>,
     pub trusted_next_validators_hash_padded: Vec<bool>,
     pub trusted_next_validators_padded: Vec<Vec<bool>>,
     pub trusted_next_validator_pub_keys: Vec<Vec<bool>>,
@@ -55,9 +49,7 @@ pub struct Inputs {
     pub signature_indices: Vec<u8>,
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
-    pub trusted_chain_id_proof: Vec<Vec<bool>>, //TODO add to Proof target
     pub trusted_chain_id_padded: Vec<bool>,
-    pub trusted_version_proof: Vec<Vec<bool>>, //TODO add to Proof target
     pub trusted_version_padded: Vec<bool>,
     pub trusted_height_padded: Vec<bool>,
     pub trusted_last_block_id_padded: Vec<bool>,
@@ -349,18 +341,7 @@ pub async fn get_inputs_for_height(
 
     let mt_untrusted = get_block_header_merkle_tree(untrusted_block.clone().header);
     let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
-
-    let untrusted_time_mt_proof = mt_untrusted.prove_inclusion(3);
-    let trusted_time_mt_proof = mt_trusted.prove_inclusion(3);
-
-    let untrusted_chain_id_mt_proof = mt_untrusted.prove_inclusion(1);
-    let trusted_chain_id_mt_proof = mt_trusted.prove_inclusion(1);
-    let untrusted_version_mt_proof = mt_untrusted.prove_inclusion(0);
-    let trusted_version_mt_proof = mt_trusted.prove_inclusion(0);
-
-    let untrusted_validators_hash_proof = mt_untrusted.prove_inclusion(7);
-    let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
-
+   
     let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(
         trusted_block.clone().header.chain_id.encode_vec(),
     ));
@@ -489,17 +470,11 @@ pub async fn get_inputs_for_height(
         untrusted_hash,
         untrusted_height,
         untrusted_time_padded,
-        untrusted_time_proof: get_merkle_proof_byte_vec(&untrusted_time_mt_proof),
         untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
         untrusted_validators_hash_padded,
         untrusted_validators_padded,
-        untrusted_chain_id_proof: get_merkle_proof_byte_vec(&untrusted_chain_id_mt_proof),
         untrusted_chain_id_padded,
-        untrusted_version_proof: get_merkle_proof_byte_vec(&untrusted_version_mt_proof),
         untrusted_version_padded,
-        untrusted_validators_hash_proof: get_merkle_proof_byte_vec(
-            &untrusted_validators_hash_proof,
-        ),
         untrusted_validator_pub_keys,
         untrusted_validator_vp,
         untrusted_height_padded,
@@ -515,11 +490,7 @@ pub async fn get_inputs_for_height(
         trusted_hash,
         trusted_height,
         trusted_time_padded,
-        trusted_time_proof: get_merkle_proof_byte_vec(&trusted_time_mt_proof),
         trusted_timestamp: trusted_time.unix_timestamp() as u64,
-        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
-            &trusted_next_validators_hash_proof,
-        ),
         trusted_next_validators_hash_padded,
         trusted_next_validators_padded,
         trusted_next_validator_pub_keys,
@@ -527,9 +498,7 @@ pub async fn get_inputs_for_height(
         signature_indices: signatures_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
-        trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
         trusted_chain_id_padded,
-        trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
         trusted_version_padded,
         trusted_height_padded,
         trusted_last_block_id_padded,
