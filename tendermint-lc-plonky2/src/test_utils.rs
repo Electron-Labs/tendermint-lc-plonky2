@@ -1,5 +1,5 @@
-use crate::input_types::Inputs;
 use crate::config_data::get_chain_config;
+use crate::input_types::Inputs;
 use bitvec::prelude::*;
 use std::env;
 use std::path::PathBuf;
@@ -9,8 +9,8 @@ pub fn get_test_data() -> Inputs {
     let cur_dir = env::current_dir().unwrap();
     let is_test = cur_dir.ends_with("tendermint-lc-plonky2/tendermint-lc-plonky2");
     let file = match is_test {
-        true => PathBuf::from("./src/test_data/12960957_12975357_v3.json"),
-        false => PathBuf::from("./tendermint-lc-plonky2/src/test_data/12960957_12975357_v3.json"),
+        true => PathBuf::from("./src/test_data/12960957_12975357.json"),
+        false => PathBuf::from("./tendermint-lc-plonky2/src/test_data/12960957_12975357.json"),
     };
     let file_path = cur_dir.join(file);
     let data_str = std::fs::read_to_string(file_path.as_path()).unwrap();
@@ -54,6 +54,36 @@ pub fn get_sha_block_for_leaf(input: Vec<bool>) -> Vec<bool> {
     idx += 1;
 
     (idx..512 - 64).for_each(|i| {
+        block[i] = false;
+        idx += 1;
+    });
+
+    let input_len_bits = input_len.view_bits_mut::<Msb0>();
+    input_len_bits.iter().for_each(|elm| {
+        block[idx] = *elm;
+        idx += 1;
+    });
+    // println!("idx {:?}", idx);
+    // println!("block {:?}", block);
+    block.to_vec()
+}
+
+pub fn get_sha_2_block_for_leaf(input: Vec<bool>) -> Vec<bool> {
+    let mut block = [false; 1024];
+    let mut input_len = input.len() + 8; // prefix `0x00`
+
+    (0..8).for_each(|i| block[i] = false);
+
+    let mut idx = 8;
+    for x in input {
+        block[idx] = x;
+        idx += 1;
+    }
+
+    block[idx] = true;
+    idx += 1;
+
+    (idx..1024 - 64).for_each(|i| {
         block[i] = false;
         idx += 1;
     });

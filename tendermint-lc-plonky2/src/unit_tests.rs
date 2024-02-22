@@ -2,8 +2,9 @@
 mod tests {
     use crate::config_data::*;
     use crate::merkle_targets::{
-        bytes_to_bool, get_formatted_hash_256_bools, get_sha_block_target, hash256_to_bool_targets,
-        merkle_1_block_leaf_root, SHA_BLOCK_BITS,
+        bytes_to_bool, get_formatted_hash_256_bools, get_sha_2_block_target, get_sha_block_target,
+        hash256_to_bool_targets, header_hash_merkle_root, merkle_1_block_leaf_root,
+        sha256_1_block_hash_target, sha256_2_block_hash_target, SHA_BLOCK_BITS,
     };
     use crate::targets::{
         add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
@@ -34,7 +35,10 @@ mod tests {
         hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},
         u32::binary_u32::{Bin32Target, CircuitBuilderBU32},
     };
+    use sha2::digest::FixedOutput;
     use std::cmp::min;
+
+    use sha2::{Digest, Sha256};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -917,6 +921,202 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[test]
+    fn test_header_hash() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+
+        let t = get_test_data();
+
+        let mut witness = PartialWitness::new();
+
+        let header_leaves_padded_target = (0..14)
+            .map(|i| {
+                if i == 4 {
+                    return get_sha_2_block_target(&mut builder);
+                } else {
+                    return get_sha_block_target(&mut builder);
+                }
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+        // set header version
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[0][i],
+                t.untrusted_version_padded[i],
+            )
+        });
+
+        // set chain id
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[1][i],
+                t.untrusted_chain_id_padded[i],
+            )
+        });
+
+        // set height
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[2][i],
+                t.untrusted_height_padded[i],
+            )
+        });
+
+        // set time
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[3][i],
+                t.untrusted_time_padded[i],
+            )
+        });
+
+        // set last_block_id
+        (0..SHA_BLOCK_BITS * 2).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[4][i],
+                t.untrusted_last_block_id_padded[i],
+            )
+        });
+
+        // set last_commit_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[5][i],
+                t.untrusted_last_commit_hash_padded[i],
+            )
+        });
+
+        // set data_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[6][i],
+                t.untrusted_data_hash_padded[i],
+            )
+        });
+
+        // set validators_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[7][i],
+                t.untrusted_validators_hash_padded[i],
+            )
+        });
+
+        // set next_validators_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[8][i],
+                t.untrusted_next_validators_hash_padded[i],
+            )
+        });
+
+        // set consensus hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[9][i],
+                t.untrusted_consensus_hash_padded[i],
+            )
+        });
+
+        // set app_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[10][i],
+                t.untrusted_app_hash_padded[i],
+            )
+        });
+
+        // set last_results_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[11][i],
+                t.untrusted_last_results_hash_padded[i],
+            )
+        });
+
+        // set evidence_hash
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[12][i],
+                t.untrusted_evidence_hash_padded[i],
+            )
+        });
+
+        // set proposer_address
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                header_leaves_padded_target[13][i],
+                t.untrusted_proposer_address_padded[i],
+            )
+        });
+
+        let computed = header_hash_merkle_root(&mut builder, &header_leaves_padded_target);
+        let expected_hash = [
+            122, 142, 192, 235, 60, 200, 129, 138, 195, 28, 210, 246, 239, 120, 205, 133, 142, 55,
+            139, 49, 122, 88, 39, 159, 168, 141, 149, 188, 97, 173, 187, 96,
+        ];
+
+        // // checking if first element hash is done correctly -> Error is coming
+
+        // let computed = header_hash_merkle_root(&mut builder, &header_leaves_padded_target);
+        // let expected_hash = [17, 108, 61, 227, 1, 152, 64, 6, 137, 249, 81, 191, 188, 103, 200, 53, 120, 86, 12, 150, 217, 90, 236, 12, 100, 206, 199, 113, 45, 38, 127, 78];
+
+        println!("Expected hash: {:?}", expected_hash);
+
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(computed[i * 32 + j].target, bin32_target.bits[j].target)
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_sha256_2_block_hash_target() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let t = get_test_data();
+
+        let mut witness = PartialWitness::new();
+        let last_block_id_target = get_sha_2_block_target(&mut builder);
+        (0..SHA_BLOCK_BITS * 2).for_each(|i| {
+            witness.set_bool_target(last_block_id_target[i], t.untrusted_last_block_id_padded[i])
+        });
+
+        let computed = sha256_2_block_hash_target(&mut builder, &last_block_id_target);
+
+        let expected_hash = [
+            74, 80, 141, 164, 102, 195, 37, 198, 28, 154, 188, 145, 132, 242, 240, 115, 132, 85,
+            238, 254, 108, 86, 33, 242, 76, 246, 104, 198, 46, 45, 61, 247,
+        ];
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(computed[i * 32 + j].target, bin32_target.bits[j].target)
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
     #[test]
     fn test_header_time_merkle_proof_target() {
         let config = CircuitConfig::standard_recursion_config();

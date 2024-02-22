@@ -54,6 +54,14 @@ pub fn get_sha_block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
+pub fn get_sha_2_block_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> Vec<BoolTarget> {
+    (0..SHA_BLOCK_BITS * 2)
+        .map(|_| builder.add_virtual_bool_target_unsafe())
+        .collect::<Vec<BoolTarget>>()
+}
+
 pub fn get_sha_2block_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> Vec<BoolTarget> {
@@ -231,6 +239,33 @@ pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     biguint_hash_to_bool_targets(builder, &hash)
 }
 
+pub fn sha256_2_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    input_padded: &Vec<BoolTarget>,
+) -> Vec<BoolTarget> {
+    assert_eq!(input_padded.len(), SHA_BLOCK_BITS * 2);
+
+    let hash_input_target = builder.add_virtual_hash_input_target(2, SHA_BLOCK_BITS);
+
+    input_padded
+        .chunks(32)
+        .enumerate()
+        .for_each(|(i, bits_32)| {
+            let mut bits: Vec<BoolTarget> = vec![];
+            bits_32.chunks(8).rev().for_each(|bits_8| {
+                assert_eq!(bits_8.len(), 8);
+                (0..8).for_each(|k| bits.push(bits_8[7 - k]));
+            });
+            let bin32 = Bin32Target { bits };
+            let u32_target = builder.convert_bin32_u32(bin32);
+            builder.connect_u32(hash_input_target.input.get_limb(i), u32_target);
+        });
+
+    let hash = builder.hash_sha256(&hash_input_target);
+
+    biguint_hash_to_bool_targets(builder, &hash)
+}
+
 // left - 256bits, where all bits are in the same order as in Hash256Target
 // right - 256bits, where all bits are in the same order as in Hash256Target
 // order of bits in Hash256Target:
@@ -306,6 +341,45 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
         .map(|elm| sha256_1_block_hash_target(builder, &elm))
         .collect::<Vec<Vec<BoolTarget>>>();
 
+    let mut size = items.len();
+
+    while size != 1 {
+        let mut rp = 0; // read position
+        let mut wp = 0; // write position
+        while rp < size {
+            if rp + 1 < size {
+                let hash = &sha256_2_block_two_to_one_hash_target(
+                    builder,
+                    &items[rp].clone(),
+                    &items[rp + 1].clone(),
+                );
+                items[wp] = biguint_hash_to_bool_targets(builder, hash);
+                rp += 2;
+            } else {
+                items[wp] = items[rp].clone();
+                rp += 1;
+            }
+            wp += 1;
+        }
+        size = wp;
+    }
+
+    items[0].clone()
+}
+
+pub fn header_hash_merkle_root<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves_padded: &Vec<Vec<BoolTarget>>,
+) -> Vec<BoolTarget> {
+    let mut items = (0..leaves_padded.len())
+        .map(|i| {
+            if i != 4 {
+                return sha256_1_block_hash_target(builder, &leaves_padded[i]);
+            } else {
+                return sha256_2_block_hash_target(builder, &leaves_padded[i]);
+            }
+        })
+        .collect::<Vec<Vec<BoolTarget>>>();
     let mut size = items.len();
 
     while size != 1 {

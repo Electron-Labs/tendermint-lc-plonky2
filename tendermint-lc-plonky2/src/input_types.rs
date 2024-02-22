@@ -1,9 +1,12 @@
 use crate::config_data::*;
 use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
+use crate::test_utils::{
+    get_sha512_preprocessed_input, get_sha_2_block_for_leaf, get_sha_block_for_leaf,
+};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use sha2::Sha256;
 use tendermint::block::{CommitSig, Header, Height};
 use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
@@ -367,18 +370,18 @@ pub async fn get_inputs_for_height(
         trusted_block.header.version,
     )));
     // let td = get_test_data();
-
     let untrusted_height_padded =
-        get_sha_block_for_leaf(bytes_to_bool(untrusted_height.to_le_bytes().to_vec()));
+        get_sha_block_for_leaf(bytes_to_bool(untrusted_block.clone().header.height.encode_vec()));
+    println!("untrusted_height: {:?} ",untrusted_block.clone().header.height.encode_vec());
     let trusted_height_padded =
-        get_sha_block_for_leaf(bytes_to_bool(trusted_height.to_le_bytes().to_vec()));
+        get_sha_block_for_leaf(bytes_to_bool(trusted_block.clone().header.height.encode_vec()));
 
-    let untrusted_last_block_id_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+    let untrusted_last_block_id_padded = get_sha_2_block_for_leaf(bytes_to_bool(Protobuf::<
         tendermint_proto::types::BlockId,
     >::encode_vec(
         untrusted_block.clone().header.last_block_id.unwrap(),
     )));
-    let trusted_last_block_id_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
+    let trusted_last_block_id_padded = get_sha_2_block_for_leaf(bytes_to_bool(Protobuf::<
         tendermint_proto::types::BlockId,
     >::encode_vec(
         trusted_block.clone().header.last_block_id.unwrap(),
@@ -552,12 +555,12 @@ mod tests {
     #[tokio::test]
     #[ignore]
     pub async fn test() {
-        // pub const UNTRUSTED_HEIGHT: u64 = 12975357;
-        // pub const TRUSTED_HEIGHT: u64 = 12960957;
+        pub const UNTRUSTED_HEIGHT: u64 = 12975357;
+        pub const TRUSTED_HEIGHT: u64 = 12960957;
 
-        pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
-        pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
-        let chain_name = "nibiru";
+        // pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
+        // pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
+        let chain_name = "osmosis";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);
