@@ -174,6 +174,11 @@ pub fn build_recursion_circuit<
     dump_circuit_data::<F, C, D>(&data, recursive_storage_dir);
 }
 
+pub struct GeneratedProofInfo {
+    pub proof_with_pis: Vec<u8>,
+    pub proof_generate_time: Instant,
+    pub recursive_proof_generation_time: Instant
+}
 pub fn generate_proof<
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F> + 'static,
@@ -184,7 +189,7 @@ pub fn generate_proof<
     storage_dir: &str,
     inputs: Inputs,
     tag: &str,
-) -> Vec<u8>
+) -> GeneratedProofInfo
 where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
@@ -242,7 +247,11 @@ where
         .verify(rec_proof_with_pis)
         .expect("verify error");
 
-    return rec_proof_with_pis_bytes;
+    GeneratedProofInfo{
+        proof_with_pis: rec_proof_with_pis_bytes,
+        proof_generate_time: t_pg,
+        recursive_proof_generation_time: t_pg_rec
+    }
 }
 
 pub async fn run_circuit() {
