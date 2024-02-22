@@ -193,8 +193,8 @@ where
     let lc_storage_dir = &get_lc_storage_dir(chain_name, storage_dir);
     let recursive_storage_dir = &get_recursive_storage_dir(chain_name, storage_dir);
 
-    println!("--- Light Client circuit ---");
-    let data = load_circuit_data_from_dir::<F, C, D>(lc_storage_dir);
+    println!("--- Light Client circuit --- {:?}", lc_storage_dir);
+    let data = load_circuit_data_from_dir::<F, C, D>(&format!("{lc_storage_dir}/circuit_data"));
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let target = generate_circuit::<F, D>(&mut builder, &config);
     println!("Starting lc proof generation");
@@ -212,9 +212,9 @@ where
 
     data.verify(proof_with_pis.clone()).expect("verify error");
 
-    println!("--- Recursion Circuit ---");
+    println!("--- Recursion Circuit --- {:?}", recursive_storage_dir);
     // Add one more recursion proof generation layer
-    let recursive_data = load_circuit_data_from_dir::<F, C, D>(recursive_storage_dir);
+    let recursive_data = load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
     let mut recursive_builder =
         CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
     // Config for both outer and inner circuit are same for now
@@ -251,7 +251,7 @@ pub async fn run_circuit() {
     let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
     let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
-    let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
+    let chains_config_path = "tendermint-lc-plonky2/src/chain_config";
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
