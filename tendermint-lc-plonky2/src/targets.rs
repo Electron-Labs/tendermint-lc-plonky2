@@ -905,21 +905,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let trusted_quorum_target = add_virtual_trusted_quorum_target(builder, c);
     let untrusted_quorum_target = add_virtual_untrusted_quorum_target(builder, c);
     // TODO: Later on than checking so many merkle proofs we can just reconstruct the whole header root
-    let untrusted_version_merkle_proof_target =
-        add_virtual_header_version_merkle_proof_target(builder, c);
-    let untrusted_chain_id_merkle_proof_target =
-        add_virtual_header_chain_id_merkle_proof_target(builder, c);
-    let untrusted_time_merkle_proof_target =
-        add_virtual_header_time_merkle_proof_target(builder, c);
-    let untrusted_validators_hash_merkle_proof_target =
-        add_virtual_validators_hash_merkle_proof_target(builder, c);
-    let trusted_time_merkle_proof_target = add_virtual_header_time_merkle_proof_target(builder, c);
-    let trusted_next_validators_hash_merkle_proof_target =
-        add_virtual_next_validators_hash_merkle_proof_target(builder, c);
-    let trusted_version_merkle_proof_target =
-        add_virtual_header_version_merkle_proof_target(builder, c);
-    let trusted_chain_id_merkle_proof_target =
-        add_virtual_header_chain_id_merkle_proof_target(builder, c);
     let update_validity_target = add_virtual_update_validity_target(builder, c);
     let connect_message_target = add_virtual_connect_sign_message_target(builder, c);
     let connect_untrusted_timestamp_target = add_virtual_connect_timestamp_target(builder, c);
@@ -1018,91 +1003,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
             signature_indices[i],
         )
     });
-
-    // *** MerkleProofTarget - untrusted_version ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            untrusted_version_merkle_proof_target.leaf_padded[i].target,
-            untrusted_version_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(untrusted_version_merkle_proof_target.root, untrusted_hash);
-
-    // *** MerkleProofTarget - chain id ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            untrusted_chain_id_merkle_proof_target.leaf_padded[i].target,
-            untrusted_chain_id_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(untrusted_chain_id_merkle_proof_target.root, untrusted_hash);
-
-    // *** MerkleProofTarget - untrusted time ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            untrusted_time_merkle_proof_target.leaf_padded[i].target,
-            untrusted_time_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(untrusted_time_merkle_proof_target.root, untrusted_hash);
-
-    // *** MerkleProofTarget - untrusted_validators_hash ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            untrusted_validators_hash_merkle_proof_target.leaf_padded[i].target,
-            untrusted_validators_hash_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(
-        untrusted_validators_hash_merkle_proof_target.root,
-        untrusted_hash,
-    );
-
-    // *** MerkleProofTarget - trusted time ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_time_merkle_proof_target.leaf_padded[i].target,
-            trusted_time_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(trusted_time_merkle_proof_target.root, trusted_hash);
-
-    // *** MerkleProofTarget - trusted_next_validators_hash ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_next_validators_hash_merkle_proof_target.leaf_padded[i].target,
-            trusted_next_validators_hash_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(
-        trusted_next_validators_hash_merkle_proof_target.root,
-        trusted_hash,
-    );
-
-    // *** MerkleProofTarget - trusted_version ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_version_merkle_proof_target.leaf_padded[i].target,
-            trusted_version_padded[i].target,
-        )
-    });
-    builder.connect_hash256(trusted_version_merkle_proof_target.root, trusted_hash);
-
-    // *** MerkleProofTarget - trusted chain id ***
-    (0..SHA_BLOCK_BITS).for_each(|i| {
-        builder.connect(
-            trusted_chain_id_merkle_proof_target.leaf_padded[i].target,
-            trusted_chain_id_padded[i].target,
-        )
-    });
-
-    builder.connect_hash256(trusted_chain_id_merkle_proof_target.root, trusted_hash);
 
     // *** UpdateValidityTarget ***
     builder.connect_biguint(&update_validity_target.untrusted_height, &untrusted_height);
