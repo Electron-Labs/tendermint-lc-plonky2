@@ -29,7 +29,7 @@ pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(
     config: &Config,
 ) -> ProofTarget {
     let target = add_virtual_proof_target(builder, config);
-    // register public inputs - {trusted_height, trusted_hash, untrusted_hash, untrusted_height}
+    // register public inputs - {trusted_hash, trusted_height, untrusted_hash, untrusted_height}
     (0..target.trusted_hash.len())
         .for_each(|i| builder.register_public_input(target.trusted_hash[i].0));
     (0..target.untrusted_height.num_limbs())
@@ -76,29 +76,27 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         pw,
         &inputs.sign_messages_padded,
         &inputs.signatures,
+
         &inputs.untrusted_hash,
-        &inputs.untrusted_version_padded,
-        &inputs.untrusted_chain_id_padded,
         inputs.untrusted_height,
-        &inputs.untrusted_time_padded,
         inputs.untrusted_timestamp,
-        &inputs.untrusted_validators_hash_padded,
         &inputs.untrusted_validators_padded,
         &inputs.untrusted_validator_pub_keys,
-        &inputs.untrusted_validator_vp,
+        &inputs.untrusted_validator_vps,
+        &inputs.untrusted_header_padded,
+
         &inputs.trusted_hash,
         inputs.trusted_height,
-        &inputs.trusted_time_padded,
         inputs.trusted_timestamp,
-        &inputs.trusted_next_validators_hash_padded,
         &inputs.trusted_next_validators_padded,
         &inputs.trusted_next_validator_pub_keys,
-        &inputs.trusted_next_validator_vp,
+        &inputs.trusted_next_validator_vps,
+        &inputs.trusted_header_padded,
+
         &inputs.signature_indices,
         &inputs.untrusted_intersect_indices,
         &inputs.trusted_next_intersect_indices,
-        &inputs.trusted_chain_id_padded,
-        &inputs.trusted_version_padded,
+
         proof_target,
         config,
     );
@@ -128,7 +126,7 @@ pub fn build_tendermint_lc_circuit<
     let t = Instant::now();
     let data = builder.build::<C>();
     println!("Time taken to build the circuit : {:?}", t.elapsed());
-    dump_circuit_data::<F, C, D>(&data, lc_storage_dir);
+    dump_circuit_data::<F, C, D>(&data, &format!("{lc_storage_dir}/circuit_data/"));
 }
 
 // build and dump circuit data for recursion circuit
@@ -163,7 +161,7 @@ pub fn build_recursion_circuit<
 
     let data = builder.build::<C>();
     println!("Recursive circuit build complete");
-    dump_circuit_data::<F, C, D>(&data, recursive_storage_dir);
+    dump_circuit_data::<F, C, D>(&data, &format!("{recursive_storage_dir}/circuit_data/"));
 }
 
 pub fn generate_proof<
@@ -186,7 +184,7 @@ where
     let recursive_storage_dir = &get_recursive_storage_dir(chain_name, storage_dir);
 
     println!("--- Light Client circuit ---");
-    let data = load_circuit_data_from_dir::<F, C, D>(lc_storage_dir);
+    let data = load_circuit_data_from_dir::<F, C, D>(&format!("{lc_storage_dir}/circuit_data"));
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let target = generate_circuit::<F, D>(&mut builder, &config);
     println!("Starting lc proof generation");
@@ -206,7 +204,7 @@ where
 
     println!("--- Recursion Circuit ---");
     // Add one more recursion proof generation layer
-    let recursive_data = load_circuit_data_from_dir::<F, C, D>(recursive_storage_dir);
+    let recursive_data = load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
     let mut recursive_builder =
         CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
     // Config for both outer and inner circuit are same for now
@@ -239,9 +237,9 @@ where
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "osmosis";
-    let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
-    let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
+    let chain_name = "sommelier";
+    let untrusted_height = SOMMELIER_UNTRUSTED_HEIGHT;
+    let trusted_height = SOMMELIER_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
 

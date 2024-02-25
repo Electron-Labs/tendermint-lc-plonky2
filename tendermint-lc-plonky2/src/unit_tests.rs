@@ -3,13 +3,14 @@ mod tests {
     use crate::config_data::*;
     use crate::merkle_targets::{
         bytes_to_bool, get_formatted_hash_256_bools, get_sha_2_block_target, get_sha_block_target,
-        hash256_to_bool_targets, header_hash_merkle_root, merkle_1_block_leaf_root,
-        sha256_1_block_hash_target, sha256_2_block_hash_target, SHA_BLOCK_BITS,
+        hash256_to_bool_targets, header_merkle_root, merkle_1_block_leaf_root,
+        sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
     use crate::targets::{
         add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
         add_virtual_connect_timestamp_target, add_virtual_trusted_quorum_target,
-        add_virtual_untrusted_quorum_target, add_virtual_update_validity_target, UpdateValidityTarget,
+        add_virtual_untrusted_quorum_target, add_virtual_update_validity_target, add_virtual_header_padded_target, set_header_padded_target,
+        UpdateValidityTarget,
     };
     use crate::test_utils::*;
     use lazy_static::lazy_static;
@@ -28,13 +29,10 @@ mod tests {
     };
     use plonky2_crypto::{
         biguint::WitnessBigUint,
-        hash::{CircuitBuilderHash, HashInputTarget, WitnessHash},
-        u32::binary_u32::{Bin32Target, CircuitBuilderBU32},
+        hash::{CircuitBuilderHash, WitnessHash},
+        u32::binary_u32::CircuitBuilderBU32,
     };
-    use sha2::digest::FixedOutput;
     use std::cmp::min;
-
-    use sha2::{Digest, Sha256};
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -122,8 +120,8 @@ mod tests {
             data.trusted_height,
             data.untrusted_timestamp,
             data.trusted_timestamp,
-            data.untrusted_version_padded,
-            data.untrusted_chain_id_padded,
+            data.untrusted_header_padded.version,
+            data.untrusted_header_padded.chain_id,
             &target,
         );
 
@@ -149,8 +147,8 @@ mod tests {
             12975356,
             data.untrusted_timestamp,
             data.trusted_timestamp,
-            data.untrusted_version_padded,
-            data.untrusted_chain_id_padded,
+            data.untrusted_header_padded.version,
+            data.untrusted_header_padded.chain_id,
             &target,
         );
 
@@ -176,8 +174,8 @@ mod tests {
             12975357,
             data.untrusted_timestamp,
             data.trusted_timestamp,
-            data.untrusted_version_padded,
-            data.untrusted_chain_id_padded,
+            data.untrusted_header_padded.version,
+            data.untrusted_header_padded.chain_id,
             &target,
         );
 
@@ -206,8 +204,8 @@ mod tests {
             data.trusted_height,
             untrusted_timestamp,
             data.trusted_timestamp,
-            data.untrusted_version_padded,
-            data.untrusted_chain_id_padded,
+            data.untrusted_header_padded.version,
+            data.untrusted_header_padded.chain_id,
             &target,
         );
 
@@ -228,7 +226,7 @@ mod tests {
 
         let data = get_test_data();
 
-        let mut untrusted_chain_id_padded = data.untrusted_chain_id_padded;
+        let mut untrusted_chain_id_padded = data.untrusted_header_padded.chain_id;
         untrusted_chain_id_padded[25] = false;
 
         set_update_validity_target(
@@ -237,7 +235,7 @@ mod tests {
             data.trusted_height,
             data.untrusted_timestamp,
             data.trusted_timestamp,
-            data.untrusted_version_padded,
+            data.untrusted_header_padded.version,
             untrusted_chain_id_padded,
             &target,
         );
@@ -259,7 +257,7 @@ mod tests {
 
         let data = get_test_data();
 
-        let mut untrusted_version_padded = data.untrusted_version_padded;
+        let mut untrusted_version_padded = data.untrusted_header_padded.version;
         untrusted_version_padded[18] = true;
 
         set_update_validity_target(
@@ -269,7 +267,7 @@ mod tests {
             data.untrusted_timestamp,
             data.trusted_timestamp,
             untrusted_version_padded,
-            data.untrusted_chain_id_padded,
+            data.untrusted_header_padded.chain_id,
             &target,
         );
 
@@ -508,7 +506,10 @@ mod tests {
         let data = get_test_data();
 
         (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.header_time_padded[i], data.untrusted_time_padded[i])
+            witness.set_bool_target(
+                target.header_time_padded[i],
+                data.untrusted_header_padded.time[i],
+            )
         });
         witness.set_biguint_target(
             &target.header_timestamp,
@@ -533,7 +534,10 @@ mod tests {
         let data = get_test_data();
 
         (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(target.header_time_padded[i], data.untrusted_time_padded[i])
+            witness.set_bool_target(
+                target.header_time_padded[i],
+                data.untrusted_header_padded.time[i],
+            )
         });
         witness.set_biguint_target(
             &target.header_timestamp,
@@ -567,7 +571,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &target.vps[i],
-                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
+                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
             )
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -607,7 +611,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &target.vps[i],
-                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
+                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
             )
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -636,8 +640,8 @@ mod tests {
 
         let data = get_test_data();
 
-        let mut untrusted_validator_vp = data.untrusted_validator_vp;
-        untrusted_validator_vp[3] = 14141431 + 1;
+        let mut untrusted_validator_vps = data.untrusted_validator_vps;
+        untrusted_validator_vps[3] = 14141431 + 1;
 
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
@@ -650,7 +654,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &target.vps[i],
-                &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
+                &BigUint::from_u64(untrusted_validator_vps[i]).unwrap(),
             )
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -716,13 +720,13 @@ mod tests {
 
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.trusted_next_validator_vp[i],
-                &BigUint::from_u64(data.trusted_next_validator_vp[i]).unwrap(),
+                &target.trusted_next_validator_vps[i],
+                &BigUint::from_u64(data.trusted_next_validator_vps[i]).unwrap(),
             )
         });
         (cc.N_VALIDATORS..cc.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
             witness.set_biguint_target(
-                &target.trusted_next_validator_vp[i],
+                &target.trusted_next_validator_vps[i],
                 &BigUint::from_u64(0).unwrap(),
             )
         });
@@ -766,14 +770,14 @@ mod tests {
         // in case if the indices domain size is gretor than n validators
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vp[i],
-                &BigUint::from_u64(data.untrusted_validator_vp[i]).unwrap(),
+                &target.untrusted_validator_vps[i],
+                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
             )
         });
 
         (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vp[i],
+                &target.untrusted_validator_vps[i],
                 &BigUint::from_u64(0).unwrap(),
             )
         });
@@ -810,7 +814,7 @@ mod tests {
         vp.extend([45; 1].to_vec());
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vp[i],
+                &target.untrusted_validator_vps[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
@@ -846,7 +850,7 @@ mod tests {
         vp.extend([45; 1].to_vec());
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vp[i],
+                &target.untrusted_validator_vps[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
@@ -918,7 +922,7 @@ mod tests {
     }
 
     #[test]
-    fn test_header_hash() {
+    fn test_header_merkle_root() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
 
@@ -926,139 +930,14 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let header_leaves_padded_target = (0..14)
-            .map(|i| {
-                if i == 4 {
-                    return get_sha_2_block_target(&mut builder);
-                } else {
-                    return get_sha_block_target(&mut builder);
-                }
-            })
-            .collect::<Vec<Vec<BoolTarget>>>();
-        // set header version
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[0][i],
-                t.untrusted_version_padded[i],
-            )
-        });
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+        set_header_padded_target(&mut witness, &t.untrusted_header_padded, &untrusted_header_padded);
 
-        // set chain id
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[1][i],
-                t.untrusted_chain_id_padded[i],
-            )
-        });
-
-        // set height
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[2][i],
-                t.untrusted_height_padded[i],
-            )
-        });
-
-        // set time
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[3][i],
-                t.untrusted_time_padded[i],
-            )
-        });
-
-        // set last_block_id
-        (0..SHA_BLOCK_BITS * 2).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[4][i],
-                t.untrusted_last_block_id_padded[i],
-            )
-        });
-
-        // set last_commit_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[5][i],
-                t.untrusted_last_commit_hash_padded[i],
-            )
-        });
-
-        // set data_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[6][i],
-                t.untrusted_data_hash_padded[i],
-            )
-        });
-
-        // set validators_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[7][i],
-                t.untrusted_validators_hash_padded[i],
-            )
-        });
-
-        // set next_validators_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[8][i],
-                t.untrusted_next_validators_hash_padded[i],
-            )
-        });
-
-        // set consensus hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[9][i],
-                t.untrusted_consensus_hash_padded[i],
-            )
-        });
-
-        // set app_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[10][i],
-                t.untrusted_app_hash_padded[i],
-            )
-        });
-
-        // set last_results_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[11][i],
-                t.untrusted_last_results_hash_padded[i],
-            )
-        });
-
-        // set evidence_hash
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[12][i],
-                t.untrusted_evidence_hash_padded[i],
-            )
-        });
-
-        // set proposer_address
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                header_leaves_padded_target[13][i],
-                t.untrusted_proposer_address_padded[i],
-            )
-        });
-
-        let computed = header_hash_merkle_root(&mut builder, &header_leaves_padded_target);
+        let computed = header_merkle_root(&mut builder, untrusted_header_padded.into_iter());
         let expected_hash = [
             122, 142, 192, 235, 60, 200, 129, 138, 195, 28, 210, 246, 239, 120, 205, 133, 142, 55,
             139, 49, 122, 88, 39, 159, 168, 141, 149, 188, 97, 173, 187, 96,
         ];
-
-        // // checking if first element hash is done correctly -> Error is coming
-
-        // let computed = header_hash_merkle_root(&mut builder, &header_leaves_padded_target);
-        // let expected_hash = [17, 108, 61, 227, 1, 152, 64, 6, 137, 249, 81, 191, 188, 103, 200, 53, 120, 86, 12, 150, 217, 90, 236, 12, 100, 206, 199, 113, 45, 38, 127, 78];
-
-        println!("Expected hash: {:?}", expected_hash);
 
         let expected_hash_target = builder.add_virtual_hash256_target();
         witness.set_hash256_target(&expected_hash_target, &expected_hash);
@@ -1081,17 +960,19 @@ mod tests {
     fn test_sha256_2_block_hash_target() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let cc = load_chain_config();
 
         let t = get_test_data();
 
         let mut witness = PartialWitness::new();
         let last_block_id_target = get_sha_2_block_target(&mut builder);
         (0..SHA_BLOCK_BITS * 2).for_each(|i| {
-            witness.set_bool_target(last_block_id_target[i], t.untrusted_last_block_id_padded[i])
+            witness.set_bool_target(
+                last_block_id_target[i],
+                t.untrusted_header_padded.last_block_id[i],
+            )
         });
 
-        let computed = sha256_2_block_hash_target(&mut builder, &last_block_id_target);
+        let computed = sha256_n_block_hash_target(&mut builder, &last_block_id_target, 2);
 
         let expected_hash = [
             74, 80, 141, 164, 102, 195, 37, 198, 28, 154, 188, 145, 132, 242, 240, 115, 132, 85,
