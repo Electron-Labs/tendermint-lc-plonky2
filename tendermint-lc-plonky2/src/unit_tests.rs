@@ -7,10 +7,9 @@ mod tests {
         header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
     use crate::targets::{
-        add_virtual_connect_sign_message_target, add_virtual_header_padded_target,
-        add_virtual_update_validity_target, constrain_pub_keys_target_vps, constrain_timestamp,
-        constrain_trusted_quorum, constrain_untrusted_quorum, set_header_padded_target,
-        UpdateValidityTarget,
+        add_virtual_header_padded_target, constrain_pub_keys_vps, constrain_sign_message,
+        constrain_timestamp, constrain_trusted_quorum, constrain_untrusted_quorum,
+        constrain_update_validity, set_header_padded_target,
     };
     use crate::test_utils::*;
     use lazy_static::lazy_static;
@@ -64,67 +63,59 @@ mod tests {
         assert!(data.verify(proof).is_ok());
     }
 
-    fn set_update_validity_target<F: RichField, W: Witness<F>>(
-        witness: &mut W,
-        untrusted_height: u64,
-        trusted_height: u64,
-        untrusted_timestamp: u64,
-        trusted_timestamp: u64,
-        untrusted_version_padded: Vec<bool>,
-        untrusted_chain_id_padded: Vec<bool>,
-        target: &UpdateValidityTarget,
-    ) {
-        witness.set_biguint_target(
-            &target.untrusted_height,
-            &BigUint::from_u64(untrusted_height).unwrap(),
-        );
-        witness.set_biguint_target(
-            &target.trusted_height,
-            &BigUint::from_u64(trusted_height).unwrap(),
-        );
-        witness.set_biguint_target(
-            &target.untrusted_timestamp,
-            &BigUint::from_u64(untrusted_timestamp).unwrap(),
-        );
-        witness.set_biguint_target(
-            &target.trusted_timestamp,
-            &BigUint::from_u64(trusted_timestamp).unwrap(),
-        );
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                target.untrusted_version_padded[i],
-                untrusted_version_padded[i],
-            )
-        });
-        (0..SHA_BLOCK_BITS).for_each(|i| {
-            witness.set_bool_target(
-                target.untrusted_chain_id_padded[i],
-                untrusted_chain_id_padded[i],
-            )
-        });
-    }
-
     #[test]
     fn test_update_validity_target() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
 
-        set_update_validity_target(
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
+        );
+
+        witness.set_biguint_target(
+            &trusted_height,
+            &BigUint::from_u64(data.trusted_height).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+
+        set_header_padded_target(
             &mut witness,
-            data.untrusted_height,
-            data.trusted_height,
-            data.untrusted_timestamp,
-            data.trusted_timestamp,
-            data.untrusted_header_padded.version,
-            data.untrusted_header_padded.chain_id,
-            &target,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
         );
 
         let data = builder.build::<C>();
@@ -138,22 +129,48 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
-        set_update_validity_target(
-            &mut witness,
-            12975357,
-            12975356,
-            data.untrusted_timestamp,
-            data.trusted_timestamp,
-            data.untrusted_header_padded.version,
-            data.untrusted_header_padded.chain_id,
-            &target,
+
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
         );
 
+        witness.set_biguint_target(&trusted_height, &BigUint::from_u64(12975356).unwrap());
+        witness.set_biguint_target(&untrusted_height, &BigUint::from_u64(12975357).unwrap());
+
+        set_header_padded_target(
+            &mut witness,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -165,20 +182,47 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
-        set_update_validity_target(
+
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
+        );
+
+        witness.set_biguint_target(&trusted_height, &BigUint::from_u64(12975357).unwrap());
+        witness.set_biguint_target(&untrusted_height, &BigUint::from_u64(12975357).unwrap());
+
+        set_header_padded_target(
             &mut witness,
-            12975357,
-            12975357,
-            data.untrusted_timestamp,
-            data.trusted_timestamp,
-            data.untrusted_header_padded.version,
-            data.untrusted_header_padded.chain_id,
-            &target,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
         );
 
         let data = builder.build::<C>();
@@ -192,23 +236,52 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
 
-        let untrusted_timestamp = data.trusted_timestamp + cc.TRUSTING_PERIOD as u64 + 1;
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp + cc.TRUSTING_PERIOD as u64 + 1).unwrap(),
+        );
 
-        set_update_validity_target(
+        witness.set_biguint_target(
+            &trusted_height,
+            &BigUint::from_u64(data.trusted_height).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+        set_header_padded_target(
             &mut witness,
-            data.untrusted_height,
-            data.trusted_height,
-            untrusted_timestamp,
-            data.trusted_timestamp,
-            data.untrusted_header_padded.version,
-            data.untrusted_header_padded.chain_id,
-            &target,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
         );
 
         let data = builder.build::<C>();
@@ -222,24 +295,54 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
+        let mut data = get_test_data();
 
-        let data = get_test_data();
+        data.untrusted_header_padded.chain_id[25] = false;
 
-        let mut untrusted_chain_id_padded = data.untrusted_header_padded.chain_id;
-        untrusted_chain_id_padded[25] = false;
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
+        );
 
-        set_update_validity_target(
+        witness.set_biguint_target(
+            &trusted_height,
+            &BigUint::from_u64(data.trusted_height).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+
+        set_header_padded_target(
             &mut witness,
-            data.untrusted_height,
-            data.trusted_height,
-            data.untrusted_timestamp,
-            data.trusted_timestamp,
-            data.untrusted_header_padded.version,
-            untrusted_chain_id_padded,
-            &target,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
         );
 
         let data = builder.build::<C>();
@@ -253,24 +356,54 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_update_validity_target(&mut builder, cc);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let trusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let trusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
+
+        constrain_update_validity(
+            &mut builder,
+            &untrusted_height,
+            &trusted_height,
+            &untrusted_timestamp,
+            &trusted_timestamp,
+            &untrusted_header_padded.version,
+            &untrusted_header_padded.chain_id,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
+        let mut data = get_test_data();
 
-        let data = get_test_data();
+        data.untrusted_header_padded.version[18] = true;
 
-        let mut untrusted_version_padded = data.untrusted_header_padded.version;
-        untrusted_version_padded[18] = true;
+        witness.set_biguint_target(
+            &trusted_timestamp,
+            &BigUint::from_u64(data.trusted_timestamp).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_timestamp,
+            &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
+        );
 
-        set_update_validity_target(
+        witness.set_biguint_target(
+            &trusted_height,
+            &BigUint::from_u64(data.trusted_height).unwrap(),
+        );
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+
+        set_header_padded_target(
             &mut witness,
-            data.untrusted_height,
-            data.trusted_height,
-            data.untrusted_timestamp,
-            data.trusted_timestamp,
-            untrusted_version_padded,
-            data.untrusted_header_padded.chain_id,
-            &target,
+            &data.untrusted_header_padded,
+            &untrusted_header_padded,
         );
 
         let data = builder.build::<C>();
@@ -286,7 +419,7 @@ mod tests {
         let messages_padded = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_VALIDATORS)
+        let signatures = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -297,12 +430,23 @@ mod tests {
         let untrusted_pub_keys = (0..cc.N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_hash = builder.add_virtual_hash256_target();
+        let untrusted_hash_bool_targets = &hash256_to_bool_targets(&mut builder, &untrusted_hash);
+        let untrusted_hash_bool_targets_formatted =
+            get_formatted_hash_256_bools(untrusted_hash_bool_targets);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
 
-        let target = add_virtual_connect_sign_message_target(
+        constrain_sign_message(
             &mut builder,
             &messages_padded,
             &signatures,
             &untrusted_pub_keys,
+            &untrusted_hash_bool_targets_formatted,
+            &untrusted_height,
+            &signature_indices,
             cc,
         );
         println!("num_gates {:?}", builder.num_gates());
@@ -316,34 +460,10 @@ mod tests {
                 witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
-        // connect untrusted hash
-        let header_hash = builder.add_virtual_hash256_target();
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
-        witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
-        let header_hash_bool_targets =
-            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256).for_each(|i| {
-            builder.connect(
-                target.header_hash[i].target,
-                header_hash_bool_targets[i].target,
-            )
-        });
-        // connect untrusted height
-        witness.set_biguint_target(
-            &target.height,
-            &BigUint::from_u64(data.untrusted_height).unwrap(),
-        );
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
-        });
-        // connect signature indices
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(
-                target.signature_indexes[i],
-                F::from_canonical_u8(data.signature_indices[i]),
-            )
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -359,6 +479,22 @@ mod tests {
             (0..256).for_each(|j| {
                 (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
+        });
+
+        // connect untrusted hash
+        let mut untrusted_hash_slice = [0u8; 32];
+        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
+        witness.set_hash256_target(&untrusted_hash, &untrusted_hash_slice);
+
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
 
         let data = builder.build::<C>();
@@ -387,52 +523,39 @@ mod tests {
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let target = add_virtual_connect_sign_message_target(
+        let untrusted_hash = builder.add_virtual_hash256_target();
+        let untrusted_hash_bool_targets = &hash256_to_bool_targets(&mut builder, &untrusted_hash);
+        let untrusted_hash_bool_targets_formatted =
+            get_formatted_hash_256_bools(untrusted_hash_bool_targets);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_sign_message(
             &mut builder,
             &messages_padded,
             &signatures,
             &untrusted_pub_keys,
+            &untrusted_hash_bool_targets_formatted,
+            &untrusted_height,
+            &signature_indices,
             cc,
         );
 
         let data = get_test_data();
-
         let mut witness = PartialWitness::new();
 
+        // connect padded message
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
                 witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
-
-        let header_hash = builder.add_virtual_hash256_target();
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
-        untrusted_hash_slice[0] = 10;
-        witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
-        let header_hash_bool_targets =
-            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256).for_each(|i| {
-            builder.connect(
-                target.header_hash[i].target,
-                header_hash_bool_targets[i].target,
-            )
-        });
-
-        witness.set_biguint_target(
-            &target.height,
-            &BigUint::from_u64(data.untrusted_height).unwrap(),
-        );
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
-        });
-        // connect signature indexes
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(
-                target.signature_indexes[i],
-                F::from_canonical_u8(data.signature_indices[i]),
-            )
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -443,6 +566,7 @@ mod tests {
                 );
             });
         });
+
         // in case when the indices domain size is greator than n validators
         (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
@@ -450,6 +574,22 @@ mod tests {
             });
         });
 
+        let mut untrusted_hash_slice = [0u8; 32];
+        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
+        untrusted_hash_slice[0] = 10;
+        witness.set_hash256_target(&untrusted_hash, &untrusted_hash_slice);
+
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -476,49 +616,39 @@ mod tests {
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let target = add_virtual_connect_sign_message_target(
+        let untrusted_hash = builder.add_virtual_hash256_target();
+        let untrusted_hash_bool_targets = &hash256_to_bool_targets(&mut builder, &untrusted_hash);
+        let untrusted_hash_bool_targets_formatted =
+            get_formatted_hash_256_bools(untrusted_hash_bool_targets);
+        let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_sign_message(
             &mut builder,
             &messages_padded,
             &signatures,
             &untrusted_pub_keys,
+            &untrusted_hash_bool_targets_formatted,
+            &untrusted_height,
+            &signature_indices,
             cc,
         );
 
         let data = get_test_data();
 
         let mut witness = PartialWitness::new();
-
+        // connect padded message
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
                 witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
-        let mut height = data.untrusted_height;
-        height += 1;
-
-        let header_hash = builder.add_virtual_hash256_target();
-        let mut untrusted_hash_slice = [0u8; 32];
-        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
-        witness.set_hash256_target(&header_hash, &untrusted_hash_slice);
-        let header_hash_bool_targets =
-            get_formatted_hash_256_bools(&hash256_to_bool_targets(&mut builder, &header_hash));
-        (0..256).for_each(|i| {
-            builder.connect(
-                target.header_hash[i].target,
-                header_hash_bool_targets[i].target,
-            )
-        });
-        witness.set_biguint_target(&target.height, &BigUint::from_u64(height).unwrap());
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
-        });
-        // connect signature indexes
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            witness.set_target(
-                target.signature_indexes[i],
-                F::from_canonical_u8(data.signature_indices[i]),
-            )
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -534,6 +664,23 @@ mod tests {
             (0..256).for_each(|j| {
                 (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
+        });
+        let mut height = data.untrusted_height;
+        height += 1;
+
+        let mut untrusted_hash_slice = [0u8; 32];
+        untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
+        witness.set_hash256_target(&untrusted_hash, &untrusted_hash_slice);
+
+        witness.set_biguint_target(
+            &untrusted_height,
+            &BigUint::from_u64(data.untrusted_height).unwrap(),
+        );
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
         });
 
         let data = builder.build::<C>();
@@ -625,11 +772,15 @@ mod tests {
         let untrusted_validators_padded = (0..cc.N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
 
-        let target = constrain_pub_keys_target_vps(
+        constrain_pub_keys_vps(
             &mut builder,
             &untrusted_validator_pub_keys,
             &untrusted_validators_padded,
+            &untrusted_validator_vps,
             cc,
         );
 
@@ -646,18 +797,19 @@ mod tests {
             })
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
-            witness.set_biguint_target(
-                &target.vps[i],
-                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
-            )
-        });
-        (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
+            )
         });
 
         let data = builder.build::<C>();
@@ -677,11 +829,15 @@ mod tests {
         let untrusted_validators_padded = (0..cc.N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
 
-        let target = constrain_pub_keys_target_vps(
+        let target = constrain_pub_keys_vps(
             &mut builder,
             &untrusted_validator_pub_key,
             &untrusted_validators_padded,
+            &untrusted_validator_vps,
             cc,
         );
 
@@ -701,18 +857,19 @@ mod tests {
             })
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
-            witness.set_biguint_target(
-                &target.vps[i],
-                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
-            )
-        });
-        (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
+            )
         });
 
         let data = builder.build::<C>();
@@ -735,11 +892,15 @@ mod tests {
         let untrusted_validators_padded = (0..cc.N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
 
-        constrain_pub_keys_target_vps(
+        constrain_pub_keys_vps(
             &mut builder,
             &untrusted_validator_pub_keys,
             &untrusted_validators_padded,
+            &untrusted_validator_vps,
             cc,
         );
 
@@ -759,18 +920,19 @@ mod tests {
             })
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
-            witness.set_biguint_target(
-                &untrusted_validator_vps[i],
-                &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
-            )
-        });
-        (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
+            )
         });
 
         let data = builder.build::<C>();
