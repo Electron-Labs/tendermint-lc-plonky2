@@ -346,9 +346,8 @@ pub async fn get_inputs_for_height(
     >::encode_vec(
         trusted_block.header.version,
     )));
-    // let td = get_test_data();
 
-    Inputs {
+    let inputs = Inputs {
         sign_messages_padded,
         signatures: signatures_45,
         untrusted_hash,
@@ -386,16 +385,29 @@ pub async fn get_inputs_for_height(
         trusted_chain_id_padded,
         trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
         trusted_version_padded,
-    }
+    };
+
+    use std::fs;
+    use std::fs::File;
+    use std::io::BufWriter;
+    fs::create_dir_all("./dump_inputs").unwrap();
+    let file = File::create(format!(
+        "./dump_inputs/last_inputs.json"
+    ))
+    .unwrap();
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, &inputs).unwrap();
+
+    inputs
 }
 
 #[cfg(test)]
 mod tests {
     use crate::config_data::get_chain_config;
     use crate::input_types::get_inputs_for_height;
+    use crate::test_heights::*;
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    use crate::test_heights::*;
 
     #[tokio::test]
     #[ignore]
