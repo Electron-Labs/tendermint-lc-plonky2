@@ -6,7 +6,7 @@ use plonky2::{
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
 
 use crate::config_data::*;
-pub fn constrain_update_validity<F: RichField + Extendable<D>, const D: usize>(
+pub fn check_update_validity<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     untrusted_height: &BigUintTarget,
     trusted_height: &BigUintTarget,

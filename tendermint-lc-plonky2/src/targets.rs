@@ -3,8 +3,9 @@ use super::merkle_targets::{
     get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets, header_merkle_root,
     merkle_1_block_leaf_root, SHA_BLOCK_BITS,
 };
-use crate::connect::{constrain_pub_keys_vps, constrain_sign_message, constrain_timestamp};
-use crate::update_validity::constrain_update_validity;
+use crate::checks::check_update_validity;
+use crate::connect::{connect_pub_keys_and_vps, connect_timestamp};
+use crate::sign_messages::verify_signatures;
 use crate::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
@@ -247,7 +248,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         c,
     );
     constrain_untrusted_quorum(builder, &untrusted_validator_vps, &signature_indices, c);
-    constrain_update_validity(
+    check_update_validity(
         builder,
         &untrusted_height,
         &trusted_height,
@@ -257,21 +258,21 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &untrusted_header_padded.chain_id,
         c,
     );
-    constrain_timestamp(
+    connect_timestamp(
         builder,
         &untrusted_header_padded.time,
         &untrusted_timestamp,
         c,
     );
-    constrain_timestamp(builder, &trusted_header_padded.time, &trusted_timestamp, c);
-    constrain_pub_keys_vps(
+    connect_timestamp(builder, &trusted_header_padded.time, &trusted_timestamp, c);
+    connect_pub_keys_and_vps(
         builder,
         &untrusted_validator_pub_keys,
         &untrusted_validators_padded,
         &untrusted_validator_vps,
         c,
     );
-    constrain_pub_keys_vps(
+    connect_pub_keys_and_vps(
         builder,
         &trusted_next_validator_pub_keys,
         &trusted_next_validators_padded,
@@ -288,7 +289,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_hash_bool_targets_formatted =
         get_formatted_hash_256_bools(untrusted_hash_bool_targets);
 
-    constrain_sign_message(
+    verify_signatures(
         builder,
         &sign_messages_padded,
         &signatures,

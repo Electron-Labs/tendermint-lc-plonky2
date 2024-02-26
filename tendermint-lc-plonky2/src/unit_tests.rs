@@ -1,15 +1,16 @@
 #[cfg(test)]
 mod tests {
+    use crate::checks::check_update_validity;
     use crate::config_data::*;
-    use crate::connect::{constrain_pub_keys_vps, constrain_sign_message, constrain_timestamp};
+    use crate::connect::{connect_pub_keys_and_vps, connect_timestamp};
     use crate::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
         header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
+    use crate::sign_messages::verify_signatures;
     use crate::targets::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::test_utils::*;
-    use crate::update_validity::constrain_update_validity;
     use crate::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
     use lazy_static::lazy_static;
     use num::BigUint;
@@ -76,7 +77,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -136,7 +137,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -189,7 +190,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -243,7 +244,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -302,7 +303,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -363,7 +364,7 @@ mod tests {
         );
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
 
-        constrain_update_validity(
+        check_update_validity(
             &mut builder,
             &untrusted_height,
             &trusted_height,
@@ -436,7 +437,7 @@ mod tests {
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
-        constrain_sign_message(
+        verify_signatures(
             &mut builder,
             &messages_padded,
             &signatures,
@@ -529,7 +530,7 @@ mod tests {
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
-        constrain_sign_message(
+        verify_signatures(
             &mut builder,
             &messages_padded,
             &signatures,
@@ -622,7 +623,7 @@ mod tests {
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
-        constrain_sign_message(
+        verify_signatures(
             &mut builder,
             &messages_padded,
             &signatures,
@@ -694,7 +695,7 @@ mod tests {
         let untrusted_timestamp = builder.add_virtual_biguint_target(
             (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
         );
-        constrain_timestamp(
+        connect_timestamp(
             &mut builder,
             &untrusted_time_padded,
             &untrusted_timestamp,
@@ -731,7 +732,7 @@ mod tests {
         let untrusted_timestamp = builder.add_virtual_biguint_target(
             (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
         );
-        constrain_timestamp(
+        connect_timestamp(
             &mut builder,
             &untrusted_time_padded,
             &untrusted_timestamp,
@@ -773,7 +774,7 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        constrain_pub_keys_vps(
+        connect_pub_keys_and_vps(
             &mut builder,
             &untrusted_validator_pub_keys,
             &untrusted_validators_padded,
@@ -830,7 +831,7 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        let target = constrain_pub_keys_vps(
+        let target = connect_pub_keys_and_vps(
             &mut builder,
             &untrusted_validator_pub_key,
             &untrusted_validators_padded,
@@ -893,7 +894,7 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        constrain_pub_keys_vps(
+        connect_pub_keys_and_vps(
             &mut builder,
             &untrusted_validator_pub_keys,
             &untrusted_validators_padded,
