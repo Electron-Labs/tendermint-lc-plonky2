@@ -1,26 +1,24 @@
 #[cfg(test)]
 mod tests {
     use crate::config_data::*;
+    use crate::connect::{constrain_pub_keys_vps, constrain_sign_message, constrain_timestamp};
     use crate::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
         header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
-    use crate::targets::{
-        add_virtual_header_padded_target, constrain_pub_keys_vps, constrain_sign_message,
-        constrain_timestamp, constrain_trusted_quorum, constrain_untrusted_quorum,
-        constrain_update_validity, set_header_padded_target,
-    };
+    use crate::targets::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::test_utils::*;
+    use crate::update_validity::constrain_update_validity;
+    use crate::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
     use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;
     use plonky2::iop::target::Target;
     use plonky2::{
         field::types::Field,
-        hash::hash_types::RichField,
         iop::target::BoolTarget,
-        iop::{witness::PartialWitness, witness::Witness, witness::WitnessWrite},
+        iop::{witness::PartialWitness, witness::WitnessWrite},
         plonk::{
             circuit_builder::CircuitBuilder,
             circuit_data::{CircuitConfig, CircuitData},
@@ -33,7 +31,6 @@ mod tests {
         hash::{CircuitBuilderHash, WitnessHash},
         u32::binary_u32::CircuitBuilderBU32,
     };
-    use std::cmp::min;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
