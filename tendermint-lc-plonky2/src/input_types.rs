@@ -300,7 +300,7 @@ pub async fn get_inputs_for_height(
         proposer_address: get_n_sha_blocks_for_leaf(
             bytes_to_bool(untrusted_block.clone().header.proposer_address.encode_vec()),
             1,
-        )
+        ),
     };
     let trusted_header_padded = HeaderPadded {
         version: get_n_sha_blocks_for_leaf(

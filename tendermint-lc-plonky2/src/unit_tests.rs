@@ -2,20 +2,21 @@
 mod tests {
     use crate::config_data::*;
     use crate::merkle_targets::{
-        bytes_to_bool, get_formatted_hash_256_bools, get_sha_2_block_target, get_sha_block_target,
-        hash256_to_bool_targets, header_merkle_root, merkle_1_block_leaf_root,
-        sha256_n_block_hash_target, SHA_BLOCK_BITS,
+        bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
+        get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
+        header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
     use crate::targets::{
-        add_virtual_connect_pub_keys_vps_target, add_virtual_connect_sign_message_target,
-        add_virtual_connect_timestamp_target, add_virtual_trusted_quorum_target,
-        add_virtual_untrusted_quorum_target, add_virtual_update_validity_target, add_virtual_header_padded_target, set_header_padded_target,
+        add_virtual_connect_sign_message_target, add_virtual_header_padded_target,
+        add_virtual_update_validity_target, constrain_pub_keys_target_vps, constrain_timestamp,
+        constrain_trusted_quorum, constrain_untrusted_quorum, set_header_padded_target,
         UpdateValidityTarget,
     };
     use crate::test_utils::*;
     use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;
+    use plonky2::iop::target::Target;
     use plonky2::{
         field::types::Field,
         hash::hash_types::RichField,
@@ -27,6 +28,7 @@ mod tests {
             config::{GenericConfig, PoseidonGoldilocksConfig},
         },
     };
+    use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
     use plonky2_crypto::{
         biguint::WitnessBigUint,
         hash::{CircuitBuilderHash, WitnessHash},
@@ -281,7 +283,28 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_sign_message_target(&mut builder, cc);
+        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let signatures = (0..cc.N_VALIDATORS)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let target = add_virtual_connect_sign_message_target(
+            &mut builder,
+            &messages_padded,
+            &signatures,
+            &untrusted_pub_keys,
+            cc,
+        );
         println!("num_gates {:?}", builder.num_gates());
         let data = get_test_data();
 
@@ -290,10 +313,7 @@ mod tests {
         // connect padded message
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(
-                    target.messages_padded[i][j],
-                    data.sign_messages_padded[i][j],
-                )
+                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
         // connect untrusted hash
@@ -316,9 +336,7 @@ mod tests {
         );
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| {
-                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
-            })
+            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect signature indices
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
@@ -331,7 +349,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.untrusted_pub_keys[i][j],
+                    untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 );
             });
@@ -339,8 +357,7 @@ mod tests {
         // in case when the indices domain size is greator than n validators
         (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
-                (0..256)
-                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
         });
 
@@ -355,7 +372,28 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_sign_message_target(&mut builder, cc);
+        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let signatures = (0..cc.N_VALIDATORS)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let target = add_virtual_connect_sign_message_target(
+            &mut builder,
+            &messages_padded,
+            &signatures,
+            &untrusted_pub_keys,
+            cc,
+        );
 
         let data = get_test_data();
 
@@ -363,10 +401,7 @@ mod tests {
 
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(
-                    target.messages_padded[i][j],
-                    data.sign_messages_padded[i][j],
-                )
+                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
 
@@ -390,9 +425,7 @@ mod tests {
         );
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| {
-                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
-            })
+            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect signature indexes
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
@@ -405,7 +438,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.untrusted_pub_keys[i][j],
+                    untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 );
             });
@@ -413,8 +446,7 @@ mod tests {
         // in case when the indices domain size is greator than n validators
         (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
-                (0..256)
-                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
         });
 
@@ -429,7 +461,28 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_sign_message_target(&mut builder, cc);
+        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let signatures = (0..cc.N_VALIDATORS)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let target = add_virtual_connect_sign_message_target(
+            &mut builder,
+            &messages_padded,
+            &signatures,
+            &untrusted_pub_keys,
+            cc,
+        );
 
         let data = get_test_data();
 
@@ -437,10 +490,7 @@ mod tests {
 
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(
-                    target.messages_padded[i][j],
-                    data.sign_messages_padded[i][j],
-                )
+                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
             })
         });
         let mut height = data.untrusted_height;
@@ -461,9 +511,7 @@ mod tests {
         witness.set_biguint_target(&target.height, &BigUint::from_u64(height).unwrap());
         // connect signatures
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
-            (0..512).for_each(|j| {
-                witness.set_bool_target(target.signatures[i][j], data.signatures[i][j])
-            })
+            (0..512).for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect signature indexes
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
@@ -476,7 +524,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.untrusted_pub_keys[i][j],
+                    untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 );
             });
@@ -484,8 +532,7 @@ mod tests {
         // in case when the indices domain size is greator than n validators
         (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
             (0..256).for_each(|j| {
-                (0..256)
-                    .for_each(|j| witness.set_bool_target(target.untrusted_pub_keys[i][j], false));
+                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
         });
 
@@ -499,7 +546,16 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_timestamp_target(&mut builder, cc);
+        let untrusted_time_padded = get_sha_block_target(&mut builder);
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        constrain_timestamp(
+            &mut builder,
+            &untrusted_time_padded,
+            &untrusted_timestamp,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
@@ -507,12 +563,12 @@ mod tests {
 
         (0..SHA_BLOCK_BITS).for_each(|i| {
             witness.set_bool_target(
-                target.header_time_padded[i],
+                untrusted_time_padded[i],
                 data.untrusted_header_padded.time[i],
             )
         });
         witness.set_biguint_target(
-            &target.header_timestamp,
+            &untrusted_timestamp,
             &BigUint::from_u64(data.untrusted_timestamp).unwrap(),
         );
 
@@ -527,7 +583,16 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_timestamp_target(&mut builder, cc);
+        let untrusted_time_padded = get_sha_block_target(&mut builder);
+        let untrusted_timestamp = builder.add_virtual_biguint_target(
+            (cc.TIMESTAMP_BITS.div_ceil(cc.LEB128_GROUP_SIZE) * 8).div_ceil(32),
+        );
+        constrain_timestamp(
+            &mut builder,
+            &untrusted_time_padded,
+            &untrusted_timestamp,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
@@ -535,12 +600,12 @@ mod tests {
 
         (0..SHA_BLOCK_BITS).for_each(|i| {
             witness.set_bool_target(
-                target.header_time_padded[i],
+                untrusted_time_padded[i],
                 data.untrusted_header_padded.time[i],
             )
         });
         witness.set_biguint_target(
-            &target.header_timestamp,
+            &untrusted_timestamp,
             &BigUint::from_u64(data.untrusted_timestamp + 1).unwrap(),
         );
 
@@ -554,7 +619,19 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_pub_keys_vps_target(&mut builder, cc);
+        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let target = constrain_pub_keys_target_vps(
+            &mut builder,
+            &untrusted_validator_pub_keys,
+            &untrusted_validators_padded,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
@@ -563,7 +640,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.pub_keys[i][j],
+                    untrusted_validator_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 )
             })
@@ -577,7 +654,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
-                    target.validators_padded[i][j],
+                    untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
@@ -594,7 +671,19 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_pub_keys_vps_target(&mut builder, cc);
+        let untrusted_validator_pub_key = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let target = constrain_pub_keys_target_vps(
+            &mut builder,
+            &untrusted_validator_pub_key,
+            &untrusted_validators_padded,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
@@ -605,7 +694,10 @@ mod tests {
 
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(target.pub_keys[i][j], untrusted_validator_pub_keys[i][j])
+                witness.set_bool_target(
+                    untrusted_validator_pub_key[i][j],
+                    untrusted_validator_pub_keys[i][j],
+                )
             })
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -617,7 +709,7 @@ mod tests {
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
-                    target.validators_padded[i][j],
+                    untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
@@ -634,33 +726,48 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let target = add_virtual_connect_pub_keys_vps_target(&mut builder, cc);
+        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        constrain_pub_keys_target_vps(
+            &mut builder,
+            &untrusted_validator_pub_keys,
+            &untrusted_validators_padded,
+            cc,
+        );
 
         let mut witness = PartialWitness::new();
 
         let data = get_test_data();
 
-        let mut untrusted_validator_vps = data.untrusted_validator_vps;
-        untrusted_validator_vps[3] = 14141431 + 1;
+        let mut untrusted_validator_vp = data.untrusted_validator_vps;
+        untrusted_validator_vp[3] = 14141431 + 1;
 
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.pub_keys[i][j],
+                    untrusted_validator_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 )
             })
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.vps[i],
-                &BigUint::from_u64(untrusted_validator_vps[i]).unwrap(),
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(untrusted_validator_vp[i]).unwrap(),
             )
         });
         (0..cc.N_VALIDATORS).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
-                    target.validators_padded[i][j],
+                    untrusted_validators_padded[i][j],
                     data.untrusted_validators_padded[i][j],
                 )
             })
@@ -680,72 +787,82 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let target = add_virtual_trusted_quorum_target(&mut builder, cc);
-
         let data = get_test_data();
 
-        (0..min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)).for_each(|i| {
+        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let untrusted_intersect_indices = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let trusted_next_validator_pub_keys = (0..cc.N_VALIDATORS)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let trusted_next_validator_vp = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+        let trusted_next_intersect_indices = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_trusted_quorum(
+            &mut builder,
+            &untrusted_validator_pub_keys,
+            &trusted_next_validator_pub_keys,
+            &trusted_next_validator_vp,
+            &signature_indices,
+            &untrusted_intersect_indices,
+            &trusted_next_intersect_indices,
+            cc,
+        );
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.untrusted_validator_pub_keys[i][j],
+                    untrusted_validator_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 )
             })
         });
-        // in case if n_validators are less than the indices domain size
-        (min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)
-            ..cc.INTERSECTION_INDICES_DOMAIN_SIZE)
-            .for_each(|i| {
-                (0..256).for_each(|j| {
-                    witness.set_bool_target(target.untrusted_validator_pub_keys[i][j], false)
-                })
-            });
 
-        (0..min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)).for_each(|i| {
+        (0..cc.N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    target.trusted_next_validator_pub_keys[i][j],
+                    trusted_next_validator_pub_keys[i][j],
                     data.trusted_next_validator_pub_keys[i][j],
                 )
             })
         });
-        // in case if n_validators are less than the indices domain size
-        (min(cc.INTERSECTION_INDICES_DOMAIN_SIZE, cc.N_VALIDATORS)
-            ..cc.INTERSECTION_INDICES_DOMAIN_SIZE)
-            .for_each(|i| {
-                (0..256).for_each(|j| {
-                    witness.set_bool_target(target.trusted_next_validator_pub_keys[i][j], false)
-                })
-            });
 
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.trusted_next_validator_vps[i],
+                &trusted_next_validator_vp[i],
                 &BigUint::from_u64(data.trusted_next_validator_vps[i]).unwrap(),
-            )
-        });
-        (cc.N_VALIDATORS..cc.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|i| {
-            witness.set_biguint_target(
-                &target.trusted_next_validator_vps[i],
-                &BigUint::from_u64(0).unwrap(),
             )
         });
 
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
-                target.signature_indices[i],
+                signature_indices[i],
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
         (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
             witness.set_target(
-                target.untrusted_intersect_indices[i],
+                untrusted_intersect_indices[i],
                 F::from_canonical_u8(data.untrusted_intersect_indices[i]),
             )
         });
         (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
             witness.set_target(
-                target.trusted_next_intersect_indices[i],
+                trusted_next_intersect_indices[i],
                 F::from_canonical_u8(data.trusted_next_intersect_indices[i]),
             )
         });
@@ -763,28 +880,34 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let target = add_virtual_untrusted_quorum_target(&mut builder, cc);
+        let untrusted_validator_vp = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_untrusted_quorum(
+            &mut builder,
+            &untrusted_validator_vp,
+            &signature_indices,
+            cc,
+        );
 
         let data = get_test_data();
 
         // in case if the indices domain size is gretor than n validators
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vps[i],
+                &untrusted_validator_vp[i],
                 &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
-            )
-        });
-
-        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
-            witness.set_biguint_target(
-                &target.untrusted_validator_vps[i],
-                &BigUint::from_u64(0).unwrap(),
             )
         });
 
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
-                target.signature_indices[i],
+                signature_indices[i],
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
@@ -803,7 +926,20 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let target = add_virtual_untrusted_quorum_target(&mut builder, cc);
+        let untrusted_validator_vp = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_untrusted_quorum(
+            &mut builder,
+            &untrusted_validator_vp,
+            &signature_indices,
+            cc,
+        );
 
         let data = get_test_data();
 
@@ -814,13 +950,13 @@ mod tests {
         vp.extend([45; 1].to_vec());
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vps[i],
+                &untrusted_validator_vp[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
-                target.signature_indices[i],
+                signature_indices[i],
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
@@ -840,7 +976,20 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let target = add_virtual_untrusted_quorum_target(&mut builder, cc);
+        let untrusted_validator_vp = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+
+        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_untrusted_quorum(
+            &mut builder,
+            &untrusted_validator_vp,
+            &signature_indices,
+            cc,
+        );
 
         let data = get_test_data();
 
@@ -850,13 +999,13 @@ mod tests {
         vp.extend([45; 1].to_vec());
         (0..cc.N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
-                &target.untrusted_validator_vps[i],
+                &untrusted_validator_vp[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(
-                target.signature_indices[i],
+                signature_indices[i],
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
@@ -931,7 +1080,11 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         let untrusted_header_padded = add_virtual_header_padded_target(&mut builder);
-        set_header_padded_target(&mut witness, &t.untrusted_header_padded, &untrusted_header_padded);
+        set_header_padded_target(
+            &mut witness,
+            &t.untrusted_header_padded,
+            &untrusted_header_padded,
+        );
 
         let computed = header_merkle_root(&mut builder, untrusted_header_padded.into_iter());
         let expected_hash = [

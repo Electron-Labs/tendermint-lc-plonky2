@@ -76,7 +76,6 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         pw,
         &inputs.sign_messages_padded,
         &inputs.signatures,
-
         &inputs.untrusted_hash,
         inputs.untrusted_height,
         inputs.untrusted_timestamp,
@@ -84,7 +83,6 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.untrusted_validator_pub_keys,
         &inputs.untrusted_validator_vps,
         &inputs.untrusted_header_padded,
-
         &inputs.trusted_hash,
         inputs.trusted_height,
         inputs.trusted_timestamp,
@@ -92,11 +90,9 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_next_validator_pub_keys,
         &inputs.trusted_next_validator_vps,
         &inputs.trusted_header_padded,
-
         &inputs.signature_indices,
         &inputs.untrusted_intersect_indices,
         &inputs.trusted_next_intersect_indices,
-
         proof_target,
         config,
     );
@@ -204,7 +200,8 @@ where
 
     println!("--- Recursion Circuit ---");
     // Add one more recursion proof generation layer
-    let recursive_data = load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
+    let recursive_data =
+        load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
     let mut recursive_builder =
         CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
     // Config for both outer and inner circuit are same for now
@@ -237,9 +234,9 @@ where
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "sommelier";
-    let untrusted_height = SOMMELIER_UNTRUSTED_HEIGHT;
-    let trusted_height = SOMMELIER_TRUSTED_HEIGHT;
+    let chain_name = "nibiru";
+    let untrusted_height = NIBIRU_UNTRUSTED_HEIGHT;
+    let trusted_height = NIBIRU_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
 
