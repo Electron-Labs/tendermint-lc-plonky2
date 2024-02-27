@@ -428,6 +428,8 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     trusted_next_validator_vps: &Vec<u64>,
     trusted_header_padded: &HeaderPadded,
 
+    trusted_next_validators_hash_proof: &Vec<Vec<bool>>,
+
     signature_indices: &Vec<u8>,
     untrusted_intersect_indices: &Vec<u8>,
     trusted_next_intersect_indices: &Vec<u8>,
@@ -549,6 +551,15 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         trusted_header_padded,
         &target.trusted_header_padded,
     );
+
+    (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+        (0..256).for_each(|j| {
+            witness.set_bool_target(
+                target.trusted_next_validators_hash_proof[i][j],
+                trusted_next_validators_hash_proof[i][j],
+            )
+        })
+    });
 
     (0..c.N_SIGNATURE_INDICES).for_each(|i| {
         witness.set_target(

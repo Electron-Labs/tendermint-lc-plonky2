@@ -96,6 +96,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_next_validator_pub_keys,
         &inputs.trusted_next_validator_vps,
         &inputs.trusted_header_padded,
+        &inputs.trusted_next_validators_hash_proof,
         &inputs.signature_indices,
         &inputs.untrusted_intersect_indices,
         &inputs.trusted_next_intersect_indices,
