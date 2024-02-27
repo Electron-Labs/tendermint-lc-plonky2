@@ -1,4 +1,4 @@
-use crate::circuits::main::{add_virtual_proof_target, set_proof_target, ProofTarget};
+use crate::circuits::tendermint::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::config_data::{get_chain_config, Config};
 use crate::input_types::{get_inputs_for_height, Inputs};
 use crate::tests::test_heights::*;

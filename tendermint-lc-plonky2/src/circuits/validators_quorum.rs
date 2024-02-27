@@ -70,6 +70,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let mut total_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
+    // TODO: move to indices.rs
     // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for reserved index
     untrusted_intersect_indices
         .iter()

@@ -382,6 +382,42 @@ pub fn header_merkle_root<F: RichField + Extendable<D>, const D: usize>(
     items[0].clone()
 }
 
+pub fn verify_next_validators_hash_merkle_proof<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf_padded: &Vec<BoolTarget>,
+    proof: &Vec<Vec<BoolTarget>>,
+    root: &Hash256Target,
+) {
+    let mut hash = sha256_n_block_hash_target(builder, &leaf_padded, 1);
+
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[0]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[1]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[2]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &get_formatted_hash_256_bools(&proof[3]),
+        &hash,
+    );
+
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
+}
+
 #[cfg(test)]
 mod tests {
     use super::{

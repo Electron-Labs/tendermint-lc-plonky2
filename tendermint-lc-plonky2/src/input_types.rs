@@ -50,6 +50,8 @@ pub struct Inputs {
     pub trusted_next_validator_vps: Vec<u64>,
     pub trusted_header_padded: HeaderPadded,
 
+    pub trusted_next_validators_hash_proof: Vec<Vec<bool>>,
+
     pub signature_indices: Vec<u8>,
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
@@ -386,6 +388,9 @@ pub async fn get_inputs_for_height(
         ),
     };
 
+    let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
+    let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
+
     let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
     let mut trusted_next_intersect_indices: Vec<u8> = Vec::new();
 
@@ -507,6 +512,10 @@ pub async fn get_inputs_for_height(
         trusted_next_validator_vps,
         trusted_header_padded,
 
+        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
+            &trusted_next_validators_hash_proof,
+        ),
+
         signature_indices: signatures_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
@@ -542,14 +551,12 @@ mod tests {
         pub const UNTRUSTED_HEIGHT: u64 = OSMOSIS_UNTRUSTED_HEIGHT;
         pub const TRUSTED_HEIGHT: u64 = OSMOSIS_TRUSTED_HEIGHT;
 
-        // pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
-        // pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
-        let chain_name = "osmosis";
+        let chain_name = "OSMOSIS";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);
         let file = File::create(format!(
-            "./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
+            "./src/tests/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
         ))
         .unwrap();
         let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;

@@ -1,7 +1,7 @@
 use super::merkle_targets::{
     get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
     get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets, header_merkle_root,
-    merkle_1_block_leaf_root, SHA_BLOCK_BITS,
+    merkle_1_block_leaf_root, verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
 };
 use crate::circuits::checks::check_update_validity;
 use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
@@ -24,16 +24,13 @@ use std::array::IntoIter;
 use crate::config_data::*;
 use crate::input_types::HeaderPadded;
 
-// TODO: constrain non-repetition of indices
 // TODO: use BlockIDFlag: https://pkg.go.dev/github.com/tendermint/tendermint@v0.35.9/types#BlockIDFlag
-// TODO: add trusted_next_validators_hash leaf proof against trusted hash
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
     pub messaged_padded: Vec<Vec<BoolTarget>>,
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
-
 
 #[derive(Clone)]
 pub struct HeaderPaddedTarget {
@@ -110,6 +107,8 @@ pub struct ProofTarget {
     pub trusted_next_validator_pub_keys: Vec<Vec<BoolTarget>>,
     pub trusted_next_validator_vps: Vec<BigUintTarget>,
     pub trusted_header_padded: HeaderPaddedTarget,
+
+    pub trusted_next_validators_hash_proof: Vec<Vec<BoolTarget>>,
 
     pub signature_indices: Vec<Target>,
     pub untrusted_intersect_indices: Vec<Target>,
@@ -198,6 +197,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BigUintTarget>>();
     let trusted_header_padded = add_virtual_header_padded_target(builder);
 
+    let trusted_next_validators_hash_proof = (0..c.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
+        .map(|_| get_256_bool_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+
     let signature_indices = (0..c.N_SIGNATURE_INDICES)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
@@ -268,7 +271,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let untrusted_hash_bool_targets = &hash256_to_bool_targets(builder, &untrusted_hash);
     let untrusted_hash_bool_targets_formatted =
         get_formatted_hash_256_bools(untrusted_hash_bool_targets);
-
     verify_signatures(
         builder,
         &sign_messages_padded,
@@ -278,6 +280,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &untrusted_height,
         &signature_indices,
         c,
+    );
+    // TODO: trusted_next_validators_hash leaf proof against trusted hash
+    verify_next_validators_hash_merkle_proof(
+        builder,
+        &trusted_header_padded.next_validators_hash,
+        &trusted_next_validators_hash_proof,
+        &trusted_hash,
     );
 
     // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
@@ -332,6 +341,8 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         trusted_next_validator_pub_keys,
         trusted_next_validator_vps,
         trusted_header_padded,
+
+        trusted_next_validators_hash_proof,
 
         signature_indices,
         untrusted_intersect_indices,

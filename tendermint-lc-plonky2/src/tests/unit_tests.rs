@@ -1,17 +1,20 @@
 #[cfg(test)]
 mod tests {
     use crate::circuits::checks::check_update_validity;
-    use crate::config_data::*;
     use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
+    use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::circuits::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
-        header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
+        header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target,
+        verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
     };
     use crate::circuits::sign_messages::verify_signatures;
-    use crate::circuits::main::{add_virtual_header_padded_target, set_header_padded_target};
+    use crate::circuits::validators_quorum::{
+        constrain_trusted_quorum, constrain_untrusted_quorum,
+    };
+    use crate::config_data::*;
     use crate::tests::test_utils::*;
-    use crate::circuits::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
     use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;
@@ -37,6 +40,7 @@ mod tests {
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
+    // TODO: support for multichain testing
     // TODO: load all test data only once
 
     // for osmosis
@@ -45,7 +49,7 @@ mod tests {
             static ref CONFIG: Config = {
                 // Read the config file and deserialize it into a Config struct
                 let file_content =
-                    std::fs::read_to_string("./src/chain_config/osmosis.yaml").expect("Unable to read config yaml file");
+                    std::fs::read_to_string("./src/chain_config/OSMOSIS.yaml").expect("Unable to read config yaml file");
                 serde_yaml::from_str(file_content.as_str()).unwrap()
             };
         }
@@ -1303,6 +1307,51 @@ mod tests {
                     builder.connect(computed[i * 32 + j].target, bin32_target.bits[j].target)
                 });
             });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_verify_next_validators_hash_merkle_proof() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let t = get_test_data();
+
+        let mut witness = PartialWitness::new();
+
+        let trusted_next_validators_hash_padded = get_sha_block_target(&mut builder);
+        let trusted_next_validators_hash_proof = (0..cc.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE)
+            .map(|_| get_256_bool_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let trusted_root = builder.add_virtual_hash256_target();
+
+        verify_next_validators_hash_merkle_proof(
+            &mut builder,
+            &trusted_next_validators_hash_padded,
+            &trusted_next_validators_hash_proof,
+            &trusted_root,
+        );
+
+        (0..SHA_BLOCK_BITS).for_each(|i| {
+            witness.set_bool_target(
+                trusted_next_validators_hash_padded[i],
+                t.trusted_header_padded.next_validators_hash[i],
+            )
+        });
+        (0..cc.HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    trusted_next_validators_hash_proof[i][j],
+                    t.trusted_next_validators_hash_proof[i][j],
+                )
+            })
+        });
+        let mut trusted_hash_slice = [0u8; 32];
+        trusted_hash_slice.copy_from_slice(&t.trusted_hash.as_slice());
+        witness.set_hash256_target(&trusted_root, &trusted_hash_slice);
 
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
