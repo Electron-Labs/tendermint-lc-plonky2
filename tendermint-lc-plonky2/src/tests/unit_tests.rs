@@ -2,7 +2,7 @@
 mod tests {
     use crate::circuits::checks::check_update_validity;
     use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
-    use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
+    use crate::circuits::indices::constrain_indices;
     use crate::circuits::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
@@ -10,6 +10,7 @@ mod tests {
         verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
     };
     use crate::circuits::sign_messages::verify_signatures;
+    use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::circuits::validators_quorum::{
         constrain_trusted_quorum, constrain_untrusted_quorum,
     };
@@ -1353,6 +1354,120 @@ mod tests {
         trusted_hash_slice.copy_from_slice(&t.trusted_hash.as_slice());
         witness.set_hash256_target(&trusted_root, &trusted_hash_slice);
 
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_constrain_indices() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices = Vec::new();
+        let mut untrusted_intersect_indices = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES {
+            signature_indices.push(i);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
+            untrusted_intersect_indices.push(i);
+        }
+        for _ in 0..3 {
+            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        }
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_usize(signature_indices[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_usize(untrusted_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_neg_indices() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices = Vec::new();
+        let mut untrusted_intersect_indices = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES - 10 {
+            signature_indices.push(i);
+        }
+        for i in (0..10) {
+            signature_indices.push(0);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
+            untrusted_intersect_indices.push(i);
+        }
+        for _ in 0..3 {
+            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        }
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_usize(signature_indices[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_usize(untrusted_intersect_indices[i]),
+            )
+        });
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
