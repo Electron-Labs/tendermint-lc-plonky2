@@ -1,17 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use crate::checks::check_update_validity;
+    use crate::circuits::checks::check_update_validity;
     use crate::config_data::*;
-    use crate::connect::{connect_pub_keys_and_vps, connect_timestamp};
-    use crate::merkle_targets::{
+    use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
+    use crate::circuits::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
         header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, SHA_BLOCK_BITS,
     };
-    use crate::sign_messages::verify_signatures;
-    use crate::targets::{add_virtual_header_padded_target, set_header_padded_target};
-    use crate::test_utils::*;
-    use crate::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
+    use crate::circuits::sign_messages::verify_signatures;
+    use crate::circuits::main::{add_virtual_header_padded_target, set_header_padded_target};
+    use crate::tests::test_utils::*;
+    use crate::circuits::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
     use lazy_static::lazy_static;
     use num::BigUint;
     use num::FromPrimitive;

@@ -3,10 +3,10 @@ use super::merkle_targets::{
     get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets, header_merkle_root,
     merkle_1_block_leaf_root, SHA_BLOCK_BITS,
 };
-use crate::checks::check_update_validity;
-use crate::connect::{connect_pub_keys_and_vps, connect_timestamp};
-use crate::sign_messages::verify_signatures;
-use crate::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
+use crate::circuits::checks::check_update_validity;
+use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
+use crate::circuits::sign_messages::verify_signatures;
+use crate::circuits::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
@@ -23,9 +23,10 @@ use std::array::IntoIter;
 
 use crate::config_data::*;
 use crate::input_types::HeaderPadded;
-// TODO: constrain non-repetition of indices
 
-// TODO: pass reference of targets instead of connecting to the struct
+// TODO: constrain non-repetition of indices
+// TODO: use BlockIDFlag: https://pkg.go.dev/github.com/tendermint/tendermint@v0.35.9/types#BlockIDFlag
+// TODO: add trusted_next_validators_hash leaf proof against trusted hash
 
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -33,7 +34,6 @@ pub struct VerifySignatures {
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
 
-// TODO: use BlockIDFlag: https://pkg.go.dev/github.com/tendermint/tendermint@v0.35.9/types#BlockIDFlag
 
 #[derive(Clone)]
 pub struct HeaderPaddedTarget {
@@ -91,8 +91,6 @@ impl IntoIterator for HeaderPaddedTarget {
 
 // TODO: need multiple arrays in case 1 array fails to accomodate for sufficient common vals?
 
-// TODO: add trusted_next_validators_hash leaf proof against trusted hash
-
 pub struct ProofTarget {
     pub sign_messages_padded: Vec<Vec<BoolTarget>>,
     pub signatures: Vec<Vec<BoolTarget>>,
@@ -117,24 +115,6 @@ pub struct ProofTarget {
     pub untrusted_intersect_indices: Vec<Target>,
     pub trusted_next_intersect_indices: Vec<Target>,
 }
-
-// TODO: ?
-// pub fn add_virtual_verify_signatures_target<F: RichField + Extendable<D>, const D: usize>(
-//     builder: &mut CircuitBuilder<F, D>,
-// ) -> VerifySignatures {
-//     let signatures = (0..c.N_VALIDATORS)
-//         .map(|_| {
-//             (0..SIGNATURE_BITS)
-//                 .map(|_| builder.add_virtual_bool_target_unsafe())
-//                 .collect()
-//         })
-//         .collect::<Vec<Vec<BoolTarget>>>();
-//     let verify = (0..c.N_VALIDATORS)
-//         .map(|_| builder.add_virtual_bool_target_unsafe())
-//         .collect::<Vec<BoolTarget>>();
-
-//     VerifySignatures { signatures, verify }
-// }
 
 pub fn add_virtual_header_padded_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,

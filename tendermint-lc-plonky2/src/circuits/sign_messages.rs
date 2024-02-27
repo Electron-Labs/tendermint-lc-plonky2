@@ -4,7 +4,7 @@ use plonky2::{
     iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
+use plonky2_crypto::biguint::BigUintTarget;
 use plonky2_ed25519::gadgets::eddsa::verify_using_preprocessed_sha_block;
 use std::cmp::min;
 

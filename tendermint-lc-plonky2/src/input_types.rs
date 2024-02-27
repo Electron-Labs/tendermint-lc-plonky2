@@ -1,6 +1,6 @@
 use crate::config_data::*;
-use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_utils::{get_n_sha_blocks_for_leaf, get_sha512_preprocessed_input};
+use crate::circuits::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use crate::tests::test_utils::{get_n_sha_blocks_for_leaf, get_sha512_preprocessed_input};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
@@ -517,7 +517,7 @@ pub async fn get_inputs_for_height(
 mod tests {
     use crate::config_data::get_chain_config;
     use crate::input_types::get_inputs_for_height;
-    use crate::test_heights::*;
+    use crate::tests::test_heights::*;
     use std::fs::File;
     use std::io::{BufWriter, Write};
 

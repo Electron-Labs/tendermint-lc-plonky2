@@ -389,7 +389,7 @@ mod tests {
         sha256_2_block_two_to_one_hash_target, sha256_n_block_hash_target, two_to_one_pad_target,
         BoolTarget, SHA_BLOCK_BITS,
     };
-    use crate::test_utils::*;
+    use crate::tests::test_utils::*;
     use plonky2::{
         iop::{witness::PartialWitness, witness::WitnessWrite},
         plonk::{

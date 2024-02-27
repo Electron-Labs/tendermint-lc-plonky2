@@ -1,7 +1,7 @@
 use crate::config_data::{get_chain_config, Config};
 use crate::input_types::{get_inputs_for_height, Inputs};
-use crate::targets::{add_virtual_proof_target, set_proof_target, ProofTarget};
-use crate::test_heights::*;
+use crate::circuits::main::{add_virtual_proof_target, set_proof_target, ProofTarget};
+use crate::tests::test_heights::*;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::witness::{PartialWitness, Witness, WitnessWrite};
@@ -234,9 +234,9 @@ where
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "nibiru";
-    let untrusted_height = NIBIRU_UNTRUSTED_HEIGHT;
-    let trusted_height = NIBIRU_TRUSTED_HEIGHT;
+    let chain_name = "dydx";
+    let untrusted_height = DYDX_UNTRUSTED_HEIGHT;
+    let trusted_height = DYDX_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
 
