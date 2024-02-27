@@ -1,6 +1,6 @@
+use crate::circuits::main::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::config_data::{get_chain_config, Config};
 use crate::input_types::{get_inputs_for_height, Inputs};
-use crate::circuits::main::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::tests::test_heights::*;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -14,7 +14,7 @@ use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
     dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/lc_circuit")
@@ -44,6 +44,12 @@ pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(
 pub struct RecursionTargets<const D: usize> {
     pt: ProofWithPublicInputsTarget<D>,
     inner_data: VerifierCircuitTarget,
+}
+
+pub struct GeneratedProofInfo {
+    pub proof_with_pis: Vec<u8>,
+    pub proof_generate_time_duration: Duration,
+    pub recursive_proof_generation_time_duration: Duration,
 }
 
 pub fn make_recursion_circuit<
@@ -170,7 +176,7 @@ pub fn generate_proof<
     storage_dir: &str,
     inputs: Inputs,
     tag: &str,
-) -> Vec<u8>
+) -> GeneratedProofInfo
 where
     [(); C::Hasher::HASH_SIZE]:,
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
@@ -229,16 +235,20 @@ where
         .verify(rec_proof_with_pis)
         .expect("verify error");
 
-    return rec_proof_with_pis_bytes;
+    GeneratedProofInfo {
+        proof_with_pis: rec_proof_with_pis_bytes,
+        proof_generate_time_duration: t_pg.elapsed(),
+        recursive_proof_generation_time_duration: t_pg_rec.elapsed(),
+    }
 }
 
 pub async fn run_circuit() {
     // TODO: read from env
-    let chain_name = "dydx";
+    let chain_name = "DYDX";
     let untrusted_height = DYDX_UNTRUSTED_HEIGHT;
     let trusted_height = DYDX_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
-    let chains_config_path = "./tendermint-lc-plonky2/src/chain_config";
+    let chains_config_path = "tendermint-lc-plonky2/src/chain_config";
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

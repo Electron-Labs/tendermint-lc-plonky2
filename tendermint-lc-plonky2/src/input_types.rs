@@ -487,7 +487,7 @@ pub async fn get_inputs_for_height(
         sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
     }
 
-    Inputs {
+    let inputs = Inputs {
         sign_messages_padded,
         signatures: signatures_for_indices,
 
@@ -510,7 +510,22 @@ pub async fn get_inputs_for_height(
         signature_indices: signatures_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
-    }
+    };
+
+    // TODO: remove
+    // dump inputs
+    use std::fs;
+    use std::fs::File;
+    use std::io::BufWriter;
+    fs::create_dir_all("./dump_inputs").unwrap();
+    let file = File::create(format!(
+        "./dump_inputs/last_inputs.json"
+    ))
+    .unwrap();
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, &inputs).unwrap();
+
+    inputs
 }
 
 #[cfg(test)]
