@@ -10,6 +10,7 @@ use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
+use std::error::Error;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct HeaderPadded {
@@ -95,61 +96,62 @@ pub async fn get_inputs_for_height(
     untrusted_height: u64,
     trusted_height: u64,
     c: &Config,
-) -> Inputs {
-    let client = HttpClient::new(c.RPC_ENDPOINT.as_str()).unwrap();
+) -> Result<Inputs, Box<dyn Error + Send + Sync>> {
+    let client = HttpClient::new(c.RPC_ENDPOINT.as_str())?;
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
-    let untrusted_commit_response = client.commit(u_height).await;
-    let untrusted_block_response = client.block(u_height).await;
-    let untrusted_validators_response = client.validators(u_height, Paging::All).await;
+    let untrusted_commit = client.commit(u_height).await?.signed_header.commit;
+    let untrusted_block = client.block(u_height).await?.block;
+    let untrusted_validators = client.validators(u_height, Paging::All).await?.validators;
 
-    let trusted_commit_response = client.commit(t_height).await;
-    let trusted_block_response = client.block(t_height).await;
-    let trusted_next_validators_response = client
+    let trusted_commit = client.commit(t_height).await?.signed_header.commit;
+    let trusted_block = client.block(t_height).await?.block;
+    let trusted_next_validators = client
         .validators(Height::from((t_height.value() + 1) as u32), Paging::All)
-        .await;
+        .await?
+        .validators;
 
-    let untrusted_commit = match untrusted_commit_response {
-        Ok(commit_response) => commit_response.signed_header.commit,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted commit")
-        }
-    };
+    // let untrusted_commit = match untrusted_commit_response {
+    //     Ok(commit_response) => commit_response.signed_header.commit,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted commit")
+    //     }
+    // };
 
-    let trusted_commit = match trusted_commit_response {
-        Ok(commit_response) => commit_response.signed_header.commit,
-        Err(_) => {
-            panic!("Couldnt fetch trusted commit")
-        }
-    };
+    // let trusted_commit = match trusted_commit_response {
+    //     Ok(commit_response) => commit_response.signed_header.commit,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch trusted commit")
+    //     }
+    // };
 
-    let untrusted_block = match untrusted_block_response {
-        Ok(block_response) => block_response.block,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_block")
-        }
-    };
+    // let untrusted_block = match untrusted_block_response {
+    //     Ok(block_response) => block_response.block,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_block")
+    //     }
+    // };
 
-    let trusted_block = match trusted_block_response {
-        Ok(block_response) => block_response.block,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_block")
-        }
-    };
+    // let trusted_block = match trusted_block_response {
+    //     Ok(block_response) => block_response.block,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_block")
+    //     }
+    // };
 
-    let untrusted_validators = match untrusted_validators_response {
-        Ok(validators_response) => validators_response.validators,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_validators")
-        }
-    };
+    // let untrusted_validators = match untrusted_validators_response {
+    //     Ok(validators_response) => validators_response.validators,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_validators")
+    //     }
+    // };
 
-    let trusted_next_validators = match trusted_next_validators_response {
-        Ok(validators_response) => validators_response.validators,
-        Err(_) => {
-            panic!("Couldnt fetch trusted_next_validators")
-        }
-    };
+    // let trusted_next_validators = match trusted_next_validators_response {
+    //     Ok(validators_response) => validators_response.validators,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch trusted_next_validators")
+    //     }
+    // };
 
     let mut signatures_for_indices: Vec<Vec<bool>> = vec![];
     let mut signatures_indices: Vec<u8> = vec![];
@@ -526,15 +528,12 @@ pub async fn get_inputs_for_height(
     use std::fs;
     use std::fs::File;
     use std::io::BufWriter;
-    fs::create_dir_all("./dump_inputs").unwrap();
-    let file = File::create(format!(
-        "./dump_inputs/last_inputs.json"
-    ))
-    .unwrap();
+    fs::create_dir_all("./dump_inputs")?;
+    let file = File::create(format!("./dump_inputs/last_inputs.json"))?;
     let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &inputs).unwrap();
+    serde_json::to_writer(&mut writer, &inputs)?; //.unwrap();
 
-    inputs
+    Ok(inputs)
 }
 
 #[cfg(test)]
@@ -559,7 +558,7 @@ mod tests {
             "./src/tests/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
         ))
         .unwrap();
-        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;
+        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await.unwrap();
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
         writer.flush().unwrap();
