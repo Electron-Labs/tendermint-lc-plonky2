@@ -77,9 +77,10 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         // Connect public key
         (0..256).for_each(|i| builder.connect(message[256 + i].target, pub_key[i].target));
 
-        // connect header hash in message
-        // header hash takes the position at [640, 640+256)
-        (0..256).for_each(|i| builder.connect(message[640 + i].target, header_hash[i].target));
+        // TODO: the index is varying
+        // // connect header hash in message
+        // // header hash takes the position at [640, 640+256)
+        // (0..256).for_each(|i| builder.connect(message[640 + i].target, header_hash[i].target));
 
         // connect header height in message
         // header height takes the position at [544, 544+64)
