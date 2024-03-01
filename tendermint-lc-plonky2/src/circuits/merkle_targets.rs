@@ -441,6 +441,8 @@ mod tests {
         },
         u32::binary_u32::CircuitBuilderBU32,
     };
+    use tracing::info;
+    use tracing_test::traced_test;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -450,10 +452,10 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(witness).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("proved in {}ms", duration_ms);
+        info!("proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
-
+    #[traced_test]
     #[test]
     fn test_two_to_one_pad_target() {
         let config = CircuitConfig::standard_recursion_config();

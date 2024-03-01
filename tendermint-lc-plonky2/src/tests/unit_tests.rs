@@ -36,6 +36,8 @@ mod tests {
         hash::{CircuitBuilderHash, WitnessHash},
         u32::binary_u32::CircuitBuilderBU32,
     };
+    use tracing::info;
+    use tracing_test::traced_test;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -62,10 +64,11 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(witness).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("proved in {}ms", duration_ms);
+        info!("proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 
+    #[traced_test]
     #[test]
     fn test_update_validity_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -125,6 +128,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_update_validity_target_invalid_height_1() {
@@ -178,6 +182,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_update_validity_target_invalid_height_2() {
@@ -232,6 +237,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_update_validity_target_invalid_timestamp() {
@@ -291,6 +297,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_update_validity_target_invalid_chain_id() {
@@ -352,6 +359,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_update_validity_target_invalid_version_block() {
@@ -412,7 +420,7 @@ mod tests {
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
-
+    #[traced_test]
     #[test]
     fn test_connect_sign_message() {
         let config = CircuitConfig::standard_ecc_config();
@@ -452,7 +460,7 @@ mod tests {
             &signature_indices,
             cc,
         );
-        println!("num_gates {:?}", builder.num_gates());
+        info!("num_gates {:?}", builder.num_gates());
         let data = get_test_data();
 
         let mut witness = PartialWitness::<F>::new();
@@ -504,6 +512,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_connect_sign_message_wrong_hash() {
@@ -598,6 +607,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_connect_sign_message_incorrect_height() {
@@ -691,6 +701,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_connect_timestamp() {
         let config = CircuitConfig::standard_recursion_config();
@@ -727,6 +738,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_connect_timestamp_incorrect() {
@@ -764,6 +776,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_connect_pub_keys_vps() {
         let config = CircuitConfig::standard_recursion_config();
@@ -820,6 +833,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_connect_pub_keys_vps_invalid_pubkey() {
@@ -880,6 +894,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_connect_pub_keys_vps_invalid_vp() {
@@ -944,6 +959,7 @@ mod tests {
     }
 
     // TODO: add negative tests and cover more cases
+    #[traced_test]
     #[test]
     fn test_sufficient_trusted_quorum_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1036,6 +1052,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_sufficient_untrusted_quorum_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1082,6 +1099,7 @@ mod tests {
     }
 
     // only for osmosis
+    #[traced_test]
     #[test]
     fn test_sufficient_untrusted_quorum_target_border() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1131,6 +1149,7 @@ mod tests {
     }
 
     // only for osmosis
+    #[traced_test]
     #[test]
     #[should_panic]
     fn test_insufficient_untrusted_quorum_target() {
@@ -1178,7 +1197,8 @@ mod tests {
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
-
+    
+    #[traced_test]
     #[test]
     fn test_validators_hash() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1208,7 +1228,7 @@ mod tests {
             232, 89, 230, 77, 86, 114, 76, 122, 224, 97, 170, 76, 43, 119, 30, 183, 92, 152, 183,
             190, 44, 225, 8, 7, 237, 32, 132, 245, 7, 108, 141, 252,
         ];
-        println!(
+        info!(
             "{:?}",
             bytes_to_bool(
                 [
@@ -1235,6 +1255,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_header_merkle_root() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1274,6 +1295,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_sha256_2_block_hash_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -1313,6 +1335,7 @@ mod tests {
         prove_and_verify(data, witness);
     }
 
+    #[traced_test]
     #[test]
     fn test_verify_next_validators_hash_merkle_proof() {
         let config = CircuitConfig::standard_recursion_config();
