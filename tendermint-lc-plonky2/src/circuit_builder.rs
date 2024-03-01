@@ -16,6 +16,7 @@ use plonky2_circuit_serializer::utils::{
 };
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
+use tracing::{info,error};
 
 pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/lc_circuit")
@@ -123,13 +124,13 @@ pub fn build_tendermint_lc_circuit<
 
     let lc_storage_dir = &get_lc_storage_dir(chain_name, storage_dir);
 
-    println!("Building Tendermint lc circuit");
+    info!("Building Tendermint lc circuit");
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let _target = generate_circuit::<F, D>(&mut builder, &config);
-    println!("Building circuit with {:?} gates", builder.num_gates());
+    info!("Building circuit with {:?} gates", builder.num_gates());
     let t = Instant::now();
     let data = builder.build::<C>();
-    println!("Time taken to build the circuit : {:?}", t.elapsed());
+    info!("Time taken to build the circuit : {:?}", t.elapsed());
     dump_circuit_data::<F, C, D>(&data, &format!("{lc_storage_dir}/circuit_data/"));
 }
 
@@ -153,18 +154,18 @@ pub fn build_recursion_circuit<
 
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
 
-    println!("Reconstructing inner common data");
+    info!("Reconstructing inner common data");
     let inner_cd_bytes = read_bytes_from_json(inner_common_data_path);
     let inner_common_data =
         CommonCircuitData::<F, D>::from_bytes(inner_cd_bytes, &CustomGateSerializer).unwrap();
     make_recursion_circuit::<F, C, InnerC, D>(&mut builder, &inner_common_data);
-    println!(
+    info!(
         "Building recursive circuit with {:?} gates",
         builder.num_gates()
     );
 
     let data = builder.build::<C>();
-    println!("Recursive circuit build complete");
+    info!("Recursive circuit build complete");
     dump_circuit_data::<F, C, D>(&data, &format!("{recursive_storage_dir}/circuit_data/"));
 }
 
@@ -187,17 +188,17 @@ where
     let lc_storage_dir = &get_lc_storage_dir(chain_name, storage_dir);
     let recursive_storage_dir = &get_recursive_storage_dir(chain_name, storage_dir);
 
-    println!("--- Light Client circuit ---");
+    info!("--- Light Client circuit ---");
     let data = load_circuit_data_from_dir::<F, C, D>(&format!("{lc_storage_dir}/circuit_data"));
     let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_ecc_config());
     let target = generate_circuit::<F, D>(&mut builder, &config);
-    println!("Starting lc proof generation");
+    info!("Starting lc proof generation");
     let t_pg = Instant::now();
     let mut pw = PartialWitness::new();
     set_proof_targets::<F, D, PartialWitness<F>>(&mut pw, inputs, &target, &config);
     let proof_with_pis =
         prove::<F, C, D>(&data.prover_only, &data.common, pw, &mut Default::default()).unwrap();
-    println!("Proof generated in {:?}", t_pg.elapsed());
+    info!("Proof generated in {:?}", t_pg.elapsed());
     let proof_with_pis_bytes = proof_with_pis.to_bytes();
     dump_bytes_to_json(
         proof_with_pis_bytes,
@@ -206,7 +207,7 @@ where
 
     data.verify(proof_with_pis.clone()).expect("verify error");
 
-    println!("--- Recursion Circuit ---");
+    info!("--- Recursion Circuit ---");
     // Add one more recursion proof generation layer
     let recursive_data =
         load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
@@ -215,7 +216,7 @@ where
     // Config for both outer and inner circuit are same for now
     let recursion_targets =
         make_recursion_circuit::<F, C, C, D>(&mut recursive_builder, &data.common);
-    println!("Starting to generate recursive proof");
+    info!("Starting to generate recursive proof");
     let t_pg_rec = Instant::now();
     let mut pw_rec = PartialWitness::new();
     pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
@@ -232,7 +233,7 @@ where
         rec_proof_with_pis_bytes.clone(),
         format!("{recursive_storage_dir}/proof_data/proof_with_pis_{tag}.json").as_str(),
     );
-    println!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
+    info!("recursive proof gen done in {:?}", t_pg_rec.elapsed());
     recursive_data
         .verify(rec_proof_with_pis)
         .expect("verify error");
@@ -278,7 +279,7 @@ pub async fn run_circuit() {
                     break;
                 }
                 Err(e) => {
-                    println!("Error in get_inputs_for_height::{:?}, {:?}", e.to_string(), "Trying again...");
+                    error!("Error in get_inputs_for_height::{:?}, {:?}", e.to_string(), "Trying again...");
                     sleep(Duration::from_secs_f32(2 as f32)).await; // 2 seconds
                 }
             };
