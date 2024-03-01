@@ -33,6 +33,7 @@ pub struct VerifySignatures {
     pub pub_keys: Vec<Vec<BoolTarget>>,
 }
 
+// each field is prefixed with a 0-byte, then padded as a sha blocks
 #[derive(Clone)]
 pub struct HeaderPaddedTarget {
     pub version: Vec<BoolTarget>,

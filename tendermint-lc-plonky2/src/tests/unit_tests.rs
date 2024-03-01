@@ -593,13 +593,14 @@ mod tests {
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
+
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
 
     #[test]
     #[should_panic]
-    fn test_connect_sign_message_wrong_height() {
+    fn test_connect_sign_message_incorrect_height() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -677,7 +678,7 @@ mod tests {
 
         witness.set_biguint_target(
             &untrusted_height,
-            &BigUint::from_u64(data.untrusted_height).unwrap(),
+            &BigUint::from_u64(height).unwrap(),
         );
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(

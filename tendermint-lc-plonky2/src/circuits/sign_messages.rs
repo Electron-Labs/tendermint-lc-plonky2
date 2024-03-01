@@ -53,7 +53,6 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
     header_hash: &Vec<BoolTarget>,
     height: &BigUintTarget,
     signature_indices: &Vec<Target>,
-
     c: &Config,
 ) {
     let zero_pub_key = (0..256)
@@ -77,7 +76,22 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         // ** Connect public key **
         (0..256).for_each(|i| builder.connect(message[256 + i].target, pub_key[i].target));
 
-        // ** connect header hash in message **
+        // ** connect header height in message **
+        // header height takes the position at [544, 544+64)
+        let height_offset = 544;
+        (0..2).for_each(|i| {
+            let height_bits = builder.split_le_base::<2>(height.get_limb(i).0, 32);
+            (0..4).for_each(|j| {
+                (0..8).for_each(|k| {
+                    builder.connect(
+                        message[height_offset + i * 32 + j * 8 + k].target,
+                        height_bits[j * 8 + 7 - k],
+                    );
+                })
+            });
+        });
+
+        // ** connect header hash and chain id in message **
         let zero_round_header_hash_offset = 256 + 256 + (1 + 15) * 8;
         let non_zero_round_header_hash_offset = 256 + 256 + (1 + 15 + 9) * 8;
         // find if the round is 0
@@ -98,8 +112,9 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
             is_non_zero_round = builder.and(is_non_zero_round, is_equal);
         });
         let is_zero_round = builder.not(is_non_zero_round);
-        // connect header hash of 256 bits
-        (0..256).for_each(|i| {
+
+        // connect header hash
+        (0..header_hash.len()).for_each(|i| {
             // Case 1: non-zero round
             let a = builder.mul(header_hash[i].target, is_non_zero_round.target);
             let b = builder.mul(
@@ -117,20 +132,33 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
             builder.connect(a, b);
         });
 
-        // ** connect header height in message **
-        // header height takes the position at [544, 544+64)
-        let offset = 544;
-        (0..2).for_each(|i| {
-            let height_bits = builder.split_le_base::<2>(height.get_limb(i).0, 32);
-            (0..4).for_each(|j| {
-                (0..8).for_each(|k| {
-                    builder.connect(
-                        message[offset + i * 32 + j * 8 + k].target,
-                        height_bits[j * 8 + 7 - k],
-                    );
-                })
-            });
-        });
+        // TODO: chain id index varies due to milliseconds part in timestamp
+        // // ** connect chain id in message **
+        // let chain_id_target = c
+        //     .CHAIN_ID
+        //     .iter()
+        //     .map(|&elm| builder.constant_bool(elm))
+        //     .collect::<Vec<BoolTarget>>();
+        // let zero_round_chain_id_offset = zero_round_header_hash_offset + 85 * 8;
+        // let non_zero_round_chain_id_offset = non_zero_round_header_hash_offset + 85 * 8;
+        // (0..chain_id_target.len()).for_each(|i| {
+        //     // Case 1: non-zero round
+        //     let a = builder.mul(header_hash[i].target, is_non_zero_round.target);
+        //     let b = builder.mul(
+        //         message[non_zero_round_chain_id_offset + i].target,
+        //         is_non_zero_round.target,
+        //     );
+        //     builder.connect(a, b);
+
+        //     // Case 2: zero round
+        //     let a = builder.mul(chain_id_target[i].target, is_zero_round.target);
+        //     let b = builder.mul(
+        //         message[zero_round_chain_id_offset + i].target,
+        //         is_zero_round.target,
+        //     );
+        //     builder.connect(a, b);
+        // });
+
         // TODO Verify signatures using plonky2_ed25519
         if j == 0 {
             verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
