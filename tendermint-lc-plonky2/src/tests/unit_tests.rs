@@ -2,7 +2,6 @@
 mod tests {
     use crate::circuits::checks::check_update_validity;
     use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
-    use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::circuits::merkle_targets::{
         bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
         get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
@@ -10,6 +9,7 @@ mod tests {
         verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
     };
     use crate::circuits::sign_messages::verify_signatures;
+    use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
     use crate::circuits::validators_quorum::{
         constrain_trusted_quorum, constrain_untrusted_quorum,
     };
@@ -592,13 +592,14 @@ mod tests {
                 F::from_canonical_u8(data.signature_indices[i]),
             )
         });
+
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
 
     #[test]
     #[should_panic]
-    fn test_connect_sign_message_wrong_height() {
+    fn test_connect_sign_message_incorrect_height() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -676,7 +677,7 @@ mod tests {
 
         witness.set_biguint_target(
             &untrusted_height,
-            &BigUint::from_u64(data.untrusted_height).unwrap(),
+            &BigUint::from_u64(height).unwrap(),
         );
         (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
             witness.set_target(

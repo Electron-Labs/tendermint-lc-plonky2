@@ -12,6 +12,7 @@ use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
 use std::error::Error;
 
+// each field is prefixed with a 0-byte, then padded as a sha blocks
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct HeaderPadded {
     pub version: Vec<bool>,
