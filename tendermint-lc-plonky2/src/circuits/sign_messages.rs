@@ -74,14 +74,50 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         // Connect signature_r
         (0..256).for_each(|i| builder.connect(message[i].target, signature[i].target));
 
-        // Connect public key
+        // ** Connect public key **
         (0..256).for_each(|i| builder.connect(message[256 + i].target, pub_key[i].target));
 
-        // connect header hash in message
-        // header hash takes the position at [640, 640+256)
-        (0..256).for_each(|i| builder.connect(message[640 + i].target, header_hash[i].target));
+        // ** connect header hash in message **
+        let zero_round_header_hash_offset = 256 + 256 + (1 + 15) * 8;
+        let non_zero_round_header_hash_offset = 256 + 256 + (1 + 15 + 9) * 8;
+        // find if the round is 0
+        let mut is_non_zero_round = builder._true();
+        let twenty_five: Vec<Target> = vec![
+            builder._false().target,
+            builder._false().target,
+            builder._false().target,
+            builder._true().target,
+            builder._true().target,
+            builder._false().target,
+            builder._false().target,
+            builder._true().target,
+        ];
+        // find out if it is a non-zero round number
+        (0..twenty_five.len()).for_each(|i| {
+            let is_equal = builder.is_equal(twenty_five[i], message[608 + i].target);
+            is_non_zero_round = builder.and(is_non_zero_round, is_equal);
+        });
+        let is_zero_round = builder.not(is_non_zero_round);
+        // connect header hash of 256 bits
+        (0..256).for_each(|i| {
+            // Case 1: non-zero round
+            let a = builder.mul(header_hash[i].target, is_non_zero_round.target);
+            let b = builder.mul(
+                message[non_zero_round_header_hash_offset + i].target,
+                is_non_zero_round.target,
+            );
+            builder.connect(a, b);
 
-        // connect header height in message
+            // Case 2: zero round
+            let a = builder.mul(header_hash[i].target, is_zero_round.target);
+            let b = builder.mul(
+                message[zero_round_header_hash_offset + i].target,
+                is_zero_round.target,
+            );
+            builder.connect(a, b);
+        });
+
+        // ** connect header height in message **
         // header height takes the position at [544, 544+64)
         let offset = 544;
         (0..2).for_each(|i| {

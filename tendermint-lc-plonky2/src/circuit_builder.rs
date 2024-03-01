@@ -14,7 +14,8 @@ use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
     dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
-use std::time::{Duration, Instant};
+use std::time::Instant;
+use tokio::time::{sleep, Duration};
 
 pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/lc_circuit")
@@ -244,9 +245,9 @@ where
 }
 
 pub async fn run_circuit() {
-    let chain_name = "DYDX";
-    let untrusted_height = DYDX_UNTRUSTED_HEIGHT;
-    let trusted_height = DYDX_TRUSTED_HEIGHT;
+    let chain_name = "OSMOSIS";
+    let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
+    let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "tendermint-lc-plonky2/src/chain_config";
 
@@ -255,7 +256,6 @@ pub async fn run_circuit() {
     type F = <C as GenericConfig<D>>::F;
 
     let config = get_chain_config(chains_config_path, chain_name);
-    let t: Inputs = get_inputs_for_height(untrusted_height, trusted_height, &config).await;
 
     let x = std::env::var("X").expect("`X` env variable must be set");
 
@@ -269,6 +269,19 @@ pub async fn run_circuit() {
     }
     // Generate proof for lc and recursion both
     if x == "3" {
+        let t: Inputs;
+        loop {
+            match get_inputs_for_height(untrusted_height, trusted_height, &config).await {
+                Ok(_inputs) => {
+                    t = _inputs;
+                    break;
+                }
+                Err(e) => {
+                    println!("Error in get_inputs_for_height::{:?}, {:?}", e.to_string(), "Trying again...");
+                    sleep(Duration::from_secs_f32(2 as f32)).await; // 2 seconds
+                }
+            };
+        }
         generate_proof::<F, C, D>(chains_config_path, chain_name, storage_dir, t, "xyz");
     }
 }

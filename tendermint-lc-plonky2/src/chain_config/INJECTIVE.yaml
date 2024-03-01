@@ -6,19 +6,19 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600 # 2 weeks in seconds
-N_SIGNATURE_INDICES: 45
-N_INTERSECTION_INDICES: 60
-INTERSECTION_INDICES_DOMAIN_SIZE: 64
-SIGNATURE_INDICES_DOMAIN_SIZE: 64
+N_SIGNATURE_INDICES: 25
+N_INTERSECTION_INDICES: 25
+INTERSECTION_INDICES_DOMAIN_SIZE: 32
+SIGNATURE_INDICES_DOMAIN_SIZE: 32
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: *N_VALIDATORS_REF
 CHAIN_ID: [false, true, true, false, true, false, false, true, false, true, true,
           false, true, true, true, false, false, true, true, false, true, false,
-          true, false, false, true, true, false, false, true, false, true, false, 
-          true, true, false, false, false, true, true, false, true, true, true, 
-          false, true, false, false, false, true, true, false, true, false, false, 
+          true, false, false, true, true, false, false, true, false, true, false,
+          true, true, false, false, false, true, true, false, true, true, true,
+          false, true, false, false, false, true, true, false, true, false, false,
           true, false, true, true, true, false, true, true, false, false, true, true,
-          false, false, true, false, true, false, false, true, false, true, true, false, 
+          false, false, true, false, true, false, false, true, false, true, true, false,
           true, false, false, true, true, false, false, false, true]
 
 VERSION_BLOCK: [false, false, false, false, true, false, true, true]

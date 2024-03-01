@@ -1,4 +1,4 @@
-RPC_ENDPOINT: https://osmosis-rpc.quickapi.com
+RPC_ENDPOINT: https://rpc.cros-nest.com/osmosis
 VP_BITS: 64 # VOTING POWER
 SIGNATURE_BITS: 512
 N_VALIDATORS: &N_VALIDATORS_REF 150
