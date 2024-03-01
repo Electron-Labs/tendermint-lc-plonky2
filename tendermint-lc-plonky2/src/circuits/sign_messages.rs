@@ -91,7 +91,7 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
             });
         });
 
-        // ** connect header hash and chain id in message **
+        // ** connect header hash in message **
         let zero_round_header_hash_offset = 256 + 256 + (1 + 15) * 8;
         let non_zero_round_header_hash_offset = 256 + 256 + (1 + 15 + 9) * 8;
         // find if the round is 0
