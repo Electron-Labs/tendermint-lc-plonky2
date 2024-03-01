@@ -5,6 +5,7 @@ use super::merkle_targets::{
 };
 use crate::circuits::checks::check_update_validity;
 use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
+use crate::circuits::indices::constrain_indices;
 use crate::circuits::sign_messages::verify_signatures;
 use crate::circuits::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
 use num::{BigUint, FromPrimitive};
@@ -225,7 +226,6 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &untrusted_validator_pub_keys,
         &trusted_next_validator_pub_keys,
         &trusted_next_validator_vps,
-        &signature_indices,
         &untrusted_intersect_indices,
         &trusted_next_intersect_indices,
         c,
@@ -262,12 +262,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &trusted_next_validator_vps,
         c,
     );
-
     let untrusted_header_merkle_root_bool_targets =
         header_merkle_root(builder, untrusted_header_padded.clone().into_iter());
     let trusted_header_merkle_root_bool_targets =
         header_merkle_root(builder, trusted_header_padded.clone().into_iter());
-
     let untrusted_hash_bool_targets = &hash256_to_bool_targets(builder, &untrusted_hash);
     let untrusted_hash_bool_targets_formatted =
         get_formatted_hash_256_bools(untrusted_hash_bool_targets);
@@ -281,13 +279,13 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &signature_indices,
         c,
     );
-    // TODO: trusted_next_validators_hash leaf proof against trusted hash
     verify_next_validators_hash_merkle_proof(
         builder,
         &trusted_header_padded.next_validators_hash,
         &trusted_next_validators_hash_proof,
         &trusted_hash,
     );
+    constrain_indices(builder, &signature_indices, &untrusted_intersect_indices, &c);
 
     // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     (0..256).for_each(|i| {

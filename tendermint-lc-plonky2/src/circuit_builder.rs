@@ -245,7 +245,6 @@ where
 }
 
 pub async fn run_circuit() {
-    // TODO: read from env
     let chain_name = "OSMOSIS";
     let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
     let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
