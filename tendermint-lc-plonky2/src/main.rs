@@ -6,6 +6,6 @@ use tendermint_lc_plonky2::{circuit_builder::run_circuit, logger::initialize_log
 
 async fn main() {
     dotenv().ok();
-    run_circuit().await;
     let _guard = initialize_logger();
+    run_circuit().await;
 }

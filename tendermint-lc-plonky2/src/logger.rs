@@ -1,9 +1,9 @@
-use tracing_appender::{non_blocking::WorkerGuard, rolling::hourly};
+use tracing_appender::{non_blocking::WorkerGuard, rolling::daily};
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 pub fn initialize_logger() -> WorkerGuard {
 
-    let file_appender = hourly("./log", "tendermint-lc.log");
+    let file_appender = daily("./log", "tendermint_lc_plonky2.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     let file_layer = fmt::layer().with_writer(non_blocking).json().pretty();
 

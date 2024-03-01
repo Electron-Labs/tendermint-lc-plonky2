@@ -20,7 +20,7 @@ sha2 = { version = "0.10.6" }
 plonky2_ed25519 = { git = "https://github.com/Electron-Labs/plonky2_ed25519" }
 log = { version = "0.4.14", default-features = false }
 env_logger = { version = "0.9.0", default-features = false }
-plonky2-circuit-serializer = { git = "https://github.com/Electron-Labs/plonky2-circuit-serializer" }
+plonky2-circuit-serializer = { git = "https://github.com/Electron-Labs/plonky2-circuit-serializer", branch = "dev"}
 dotenv = "0.15.0"
 serde_yaml = "0.9.31"
 lazy_static = "1.4.0"
