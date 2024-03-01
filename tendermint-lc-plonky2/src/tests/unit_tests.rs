@@ -1359,7 +1359,43 @@ mod tests {
     }
 
     #[test]
-    fn test_constrain_indices() {
+    fn test_constrain_indices2() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+        let t = get_test_data();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            cc,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES)
+            .for_each(|i| witness.set_target(signature_indices_target[i], F::from_canonical_u8(t.signature_indices[i])));
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_u8(t.untrusted_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    fn test_constrain_indices_generated() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1415,7 +1451,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_constrain_neg_indices() {
+    fn test_constrain_indices_incorrect_signature_indices() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1441,7 +1477,7 @@ mod tests {
         for i in 0..cc.N_SIGNATURE_INDICES - 10 {
             signature_indices.push(i);
         }
-        for i in (0..10) {
+        for i in 0..10 {
             signature_indices.push(0);
         }
 
@@ -1451,6 +1487,62 @@ mod tests {
         }
         for _ in 0..3 {
             untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        }
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_usize(signature_indices[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_usize(untrusted_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_incorrect_untrusted_intersection_indices() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices = Vec::new();
+        let mut untrusted_intersect_indices = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES {
+            signature_indices.push(i);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
+            untrusted_intersect_indices.push(i);
+        }
+        for _ in 0..3 {
+            untrusted_intersect_indices.push(1);
         }
 
         // set targets
