@@ -244,7 +244,6 @@ where
 }
 
 pub async fn run_circuit() {
-    // TODO: read from env
     let chain_name = "DYDX";
     let untrusted_height = DYDX_UNTRUSTED_HEIGHT;
     let trusted_height = DYDX_TRUSTED_HEIGHT;

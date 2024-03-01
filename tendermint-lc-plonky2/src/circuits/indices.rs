@@ -5,7 +5,6 @@ use plonky2::{
 };
 use plonky2_crypto::u32::gadgets::multiple_comparison::list_le_circuit;
 
-// TODO: constrain non-repetition of indices
 pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     signature_indices: &Vec<Target>,
@@ -38,4 +37,21 @@ pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
         let result = list_le_circuit(builder, curr, prev, 6); // returns true if curr <= prev
         builder.connect(result.target, mul_result);
     }
+
+    // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for reserved index
+    untrusted_intersect_indices
+        .iter()
+        .for_each(|&untrusted_idx| {
+            let is_reserved_index = builder.is_equal(untrusted_idx, null_idx);
+            // constrain only if its a non-reserved index
+            let enable_constraint = builder.not(is_reserved_index);
+
+            let mut is_untrusted_in_signature = builder._false();
+            signature_indices.iter().for_each(|&signature_idx| {
+                let is_equal = builder.is_equal(untrusted_idx, signature_idx);
+                is_untrusted_in_signature = builder.or(is_untrusted_in_signature, is_equal);
+            });
+            let a = builder.mul(is_untrusted_in_signature.target, enable_constraint.target);
+            builder.connect(a, enable_constraint.target);
+        });
 }

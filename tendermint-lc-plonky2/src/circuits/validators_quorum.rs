@@ -16,10 +16,9 @@ use crate::config_data::*;
 // Checks trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals) signed correctly
 pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    untrusted_validators_pub_keys: &Vec<Vec<BoolTarget>>,
-    trusted_next_validators_pub_keys: &Vec<Vec<BoolTarget>>,
-    trusted_next_validator_vp: &Vec<BigUintTarget>,
-    signature_indices: &Vec<Target>,
+    untrusted_validator_pub_keys: &Vec<Vec<BoolTarget>>,
+    trusted_next_validator_pub_keys: &Vec<Vec<BoolTarget>>,
+    trusted_next_validator_vps: &Vec<BigUintTarget>,
     untrusted_intersect_indices: &Vec<Target>,
     trusted_next_intersect_indices: &Vec<Target>,
     c: &Config,
@@ -33,7 +32,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
     zero_vp.limbs.push(builder.constant_u32(0));
 
-    let mut untrusted_validator_pub_keys = untrusted_validators_pub_keys
+    let mut untrusted_validator_pub_keys = untrusted_validator_pub_keys
         [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)]
         .to_vec();
     (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
@@ -41,7 +40,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
             untrusted_validator_pub_keys.push(zero_pub_key.clone());
         });
 
-    let mut trusted_next_validator_pub_keys = trusted_next_validators_pub_keys
+    let mut trusted_next_validator_pub_keys = trusted_next_validator_pub_keys
         [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)]
         .to_vec();
     (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
@@ -49,13 +48,12 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
             trusted_next_validator_pub_keys.push(zero_pub_key.clone());
         });
 
-    let mut trusted_next_validator_vp = trusted_next_validator_vp[0..c.N_VALIDATORS].to_vec();
+    let mut trusted_next_validator_vps = trusted_next_validator_vps[0..c.N_VALIDATORS].to_vec();
 
     (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
-        trusted_next_validator_vp.push(zero_vp.clone());
+        trusted_next_validator_vps.push(zero_vp.clone());
     });
 
-    let signature_indices = signature_indices[0..c.N_SIGNATURE_INDICES].to_vec();
     let untrusted_intersect_indices =
         untrusted_intersect_indices[0..c.N_INTERSECTION_INDICES].to_vec();
     let trusted_next_intersect_indices =
@@ -70,36 +68,18 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let mut total_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
-    // TODO: move to indices.rs
-    // `untrusted_intersect_indices` must be a subset of `signature_indices`, except for reserved index
-    untrusted_intersect_indices
-        .iter()
-        .for_each(|&untrusted_idx| {
-            let is_reserved_index = builder.is_equal(untrusted_idx, null_idx);
-            // constrain only if its a non-reserved index
-            let enable_constraint = builder.not(is_reserved_index);
-
-            let mut is_untrusted_in_signature = builder._false();
-            signature_indices.iter().for_each(|&signature_idx| {
-                let is_equal = builder.is_equal(untrusted_idx, signature_idx);
-                is_untrusted_in_signature = builder.or(is_untrusted_in_signature, is_equal);
-            });
-            let a = builder.mul(is_untrusted_in_signature.target, enable_constraint.target);
-            builder.connect(a, enable_constraint.target);
-        });
-
     // compute total voting power
     (0..c.N_VALIDATORS)
-        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &trusted_next_validator_vp[i]));
+        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &trusted_next_validator_vps[i]));
 
     // prepares voting power columns
     // because random_access_index wont work on BigUintTarget so need to split it into limbs
     let trusted_validator_vp_columns = vec![
-        trusted_next_validator_vp[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
+        trusted_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        trusted_next_validator_vp[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
+        trusted_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -160,7 +140,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
 // Ensure that +2/3 of new validators signed correctly.
 pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    untrusted_validator_vp: &Vec<BigUintTarget>,
+    untrusted_validator_vps: &Vec<BigUintTarget>,
     signature_indices: &Vec<Target>,
     c: &Config,
 ) {
@@ -169,10 +149,10 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
     zero_vp.limbs.push(builder.constant_u32(0));
 
-    let mut untrusted_validator_vp = untrusted_validator_vp[0..c.N_VALIDATORS].to_vec();
+    let mut untrusted_validator_vps = untrusted_validator_vps[0..c.N_VALIDATORS].to_vec();
 
     (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
-        untrusted_validator_vp.push(zero_vp.clone());
+        untrusted_validator_vps.push(zero_vp.clone());
     });
     let signature_indices = signature_indices[0..c.N_SIGNATURE_INDICES].to_vec();
 
@@ -184,15 +164,15 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
 
     // compute total voting power
     (0..c.N_VALIDATORS)
-        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_validator_vp[i]));
+        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_validator_vps[i]));
 
     // prepares voting power columns
     let untrusted_validator_vp_columns = vec![
-        untrusted_validator_vp[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
+        untrusted_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        untrusted_validator_vp[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
+        untrusted_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -221,6 +201,4 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let two_times_total_vp = builder.mul_biguint(&total_vp, &two_big_target);
     let comparison = builder.cmp_biguint(&three_times_quorum_vp, &two_times_total_vp);
     builder.connect(comparison.target, zero_bool_target.target);
-    // TODO: Current nibiru is failing in this function for above connect.
-    // Try changing heights
 }
