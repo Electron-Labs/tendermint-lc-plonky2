@@ -30,7 +30,7 @@ pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
     let mut random_access_pub_keys: Vec<Vec<BoolTarget>> =
         Vec::with_capacity(c.SIGNATURE_INDICES_DOMAIN_SIZE);
 
-    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+    (0..signature_indices.len()).for_each(|i| {
         let mut random_access_pub_key: Vec<BoolTarget> = Vec::with_capacity(256);
         (0..256).for_each(|j| {
             let value = builder.random_access(signature_indices[i], pub_keys_columns[j].clone());
@@ -47,24 +47,42 @@ pub fn get_random_access_pub_keys<F: RichField + Extendable<D>, const D: usize>(
 
 pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    messages_padded: &Vec<Vec<BoolTarget>>,
-    signatures: &Vec<Vec<BoolTarget>>,
+    messages_padded_set_1: &Vec<Vec<BoolTarget>>,
+    messages_padded_set_2: &Vec<Vec<BoolTarget>>,
+
+    signatures_set_1: &Vec<Vec<BoolTarget>>,
+    signatures_set_2: &Vec<Vec<BoolTarget>>,
     untrusted_pub_keys: &Vec<Vec<BoolTarget>>,
     header_hash: &Vec<BoolTarget>,
     height: &BigUintTarget,
-    signature_indices: &Vec<Target>,
+    signature_indices_set_1: &Vec<Target>,
+    signature_indices_set_2: &Vec<Target>,
     c: &Config,
 ) {
     let zero_pub_key = (0..256)
         .map(|_| builder._false())
         .collect::<Vec<BoolTarget>>();
     let mut untrusted_pub_keys =
-        untrusted_pub_keys[0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)].to_vec();
-    (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
+        untrusted_pub_keys[0..min(2*c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)].to_vec();
+    (c.N_VALIDATORS..(2*c.INTERSECTION_INDICES_DOMAIN_SIZE)).for_each(|_| {
         untrusted_pub_keys.push(zero_pub_key.clone());
     });
-
-    let pub_keys = get_random_access_pub_keys(builder, &untrusted_pub_keys, &signature_indices, c);
+    let signature_indices_domain_size = c.SIGNATURE_INDICES_DOMAIN_SIZE;
+    let pub_keys_set_1 = get_random_access_pub_keys(builder, &untrusted_pub_keys[0..signature_indices_domain_size].to_vec(), &signature_indices_set_1, c);
+    let pub_keys_set_2 = get_random_access_pub_keys(builder, &untrusted_pub_keys[signature_indices_domain_size..(signature_indices_domain_size+signature_indices_domain_size)].to_vec(), &signature_indices_set_2, c);
+    
+    let mut pub_keys:Vec<Vec<BoolTarget>>= Vec::new();
+    pub_keys.extend_from_slice(&pub_keys_set_1);
+    pub_keys.extend_from_slice(&pub_keys_set_2);
+    
+    
+    let mut messages_padded: Vec<Vec<BoolTarget>> = Vec::new();
+    messages_padded.extend_from_slice(&messages_padded_set_1);
+    messages_padded.extend_from_slice(&messages_padded_set_2);
+    
+    let mut signatures: Vec<Vec<BoolTarget>> = Vec::new();
+    signatures.extend_from_slice(&signatures_set_1);
+    signatures.extend_from_slice(&signatures_set_2);
 
     for j in 0..messages_padded.len() {
         let message = &messages_padded[j];

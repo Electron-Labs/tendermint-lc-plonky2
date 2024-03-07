@@ -82,8 +82,10 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
 ) {
     set_proof_target::<F, W>(
         pw,
-        &inputs.sign_messages_padded,
-        &inputs.signatures,
+        &inputs.sign_messages_padded_set_1,
+        &inputs.sign_messages_padded_set_2,
+        &inputs.signatures_set_1,
+        &inputs.signatures_set_2,
         &inputs.untrusted_hash,
         inputs.untrusted_height,
         inputs.untrusted_timestamp,
@@ -99,7 +101,8 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_next_validator_vps,
         &inputs.trusted_header_padded,
         &inputs.trusted_next_validators_hash_proof,
-        &inputs.signature_indices,
+        &inputs.signature_indices_set_1,
+        &inputs.signature_indices_set_2,
         &inputs.untrusted_intersect_indices,
         &inputs.trusted_next_intersect_indices,
         proof_target,

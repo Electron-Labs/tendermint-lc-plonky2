@@ -5,9 +5,9 @@ use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
-use tendermint::block::{CommitSig, Header, Height};
+use tendermint::block::{Commit, CommitSig, Header, Height};
 use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
-use tendermint::Signature;
+use tendermint::{Block, Signature};
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
 use std::error::Error;
@@ -33,8 +33,11 @@ pub struct HeaderPadded {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
-    pub sign_messages_padded: Vec<Vec<bool>>,
-    pub signatures: Vec<Vec<bool>>,
+    pub sign_messages_padded_set_1: Vec<Vec<bool>>,
+    pub sign_messages_padded_set_2: Vec<Vec<bool>>,
+
+    pub signatures_set_1: Vec<Vec<bool>>,
+    pub signatures_set_2: Vec<Vec<bool>>,
 
     pub untrusted_hash: Vec<u8>,
     pub untrusted_height: u64,
@@ -54,7 +57,8 @@ pub struct Inputs {
 
     pub trusted_next_validators_hash_proof: Vec<Vec<bool>>,
 
-    pub signature_indices: Vec<u8>,
+    pub signature_indices_set_1: Vec<u8>,
+    pub signature_indices_set_2: Vec<u8>,
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
 }
@@ -154,12 +158,16 @@ pub async fn get_inputs_for_height(
     //     }
     // };
 
-    let mut signatures_for_indices: Vec<Vec<bool>> = vec![];
-    let mut signatures_indices: Vec<u8> = vec![];
+    let mut signatures_for_indices_set_1: Vec<Vec<bool>> = vec![];
+    let mut signatures_for_indices_set_2: Vec<Vec<bool>> = vec![];
+    let mut signatures_indices_set_1: Vec<u8> = vec![];
+    let mut signatures_indices_set_2: Vec<u8> = vec![];
+    
+    let signature_indices_domain_size = c.SIGNATURE_INDICES_DOMAIN_SIZE;
 
     let signatures = untrusted_commit.clone().signatures;
-    for i in 0..signatures.len() {
-        if signatures_indices.len() == c.N_SIGNATURE_INDICES {
+    for i in 0..signature_indices_domain_size {
+        if signatures_indices_set_1.len() == c.N_SIGNATURE_INDICES_SET_1 {
             break;
         }
         let sig = match signatures[i].clone() {
@@ -169,11 +177,27 @@ pub async fn get_inputs_for_height(
         };
 
         if !sig.is_none() {
-            signatures_for_indices.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
-            signatures_indices.push(i as u8);
+            signatures_for_indices_set_1.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
+            signatures_indices_set_1.push(i as u8);
         }
     }
 
+
+    for i in signature_indices_domain_size..(signature_indices_domain_size+signature_indices_domain_size) {
+        if signatures_indices_set_2.len() == c.N_SIGNATURE_INDICES_SET_2 {
+            break;
+        }
+        let sig = match signatures[i].clone() {
+            CommitSig::BlockIdFlagCommit { signature, .. } => Some(signature),
+            CommitSig::BlockIdFlagNil { signature, .. } => None,
+            _ => None,
+        };
+
+        if !sig.is_none() {
+            signatures_for_indices_set_2.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
+            signatures_indices_set_2.push((i - signature_indices_domain_size) as u8);
+        }
+    }    
     let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
     let untrusted_time = untrusted_block.header.time;
     let mut untrusted_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
@@ -410,7 +434,7 @@ pub async fn get_inputs_for_height(
             if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
                 && i < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
-                && signatures_indices.contains(&(i as u8))
+                && signatures_indices_set_1.contains(&(i as u8))
             {
                 untrusted_intersect_indices.push(i as u8);
                 trusted_next_intersect_indices.push(j as u8);
@@ -428,10 +452,82 @@ pub async fn get_inputs_for_height(
         trusted_next_intersect_indices.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
     }
 
-    let mut sign_messages_padded: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
+    let mut sign_messages_padded_set_1: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
+    let mut sign_messages_padded_set_2: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
 
-    for idx in 0..signatures_indices.len() {
-        let i = signatures_indices[idx] as usize;
+    for idx in 0..signatures_indices_set_1.len() {
+        get_signned_message_padded(&signatures_indices_set_1, idx, &signatures, &untrusted_commit, 
+            &signatures_for_indices_set_1, &untrusted_block, &mut sign_messages_padded_set_1, 
+            &untrusted_validator_pub_keys, 0);
+    }
+
+    for idx in 0..signatures_indices_set_2.len() {
+        get_signned_message_padded(&signatures_indices_set_2, idx, &signatures, &untrusted_commit, 
+            &signatures_for_indices_set_2, &untrusted_block, &mut sign_messages_padded_set_2, 
+            &untrusted_validator_pub_keys, signature_indices_domain_size);
+    }
+
+
+    let inputs = Inputs {
+        sign_messages_padded_set_1,
+        sign_messages_padded_set_2,
+        signatures_set_1: signatures_for_indices_set_1,
+        signatures_set_2: signatures_for_indices_set_2,
+
+        untrusted_hash,
+        untrusted_height,
+        untrusted_validators_padded,
+        untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
+        untrusted_validator_pub_keys,
+        untrusted_validator_vps,
+        untrusted_header_padded,
+
+        trusted_hash,
+        trusted_height,
+        trusted_timestamp: trusted_time.unix_timestamp() as u64,
+        trusted_next_validators_padded,
+        trusted_next_validator_pub_keys,
+        trusted_next_validator_vps,
+        trusted_header_padded,
+
+        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
+            &trusted_next_validators_hash_proof,
+        ),
+
+        signature_indices_set_1: signatures_indices_set_1,
+        signature_indices_set_2: signatures_indices_set_2,
+        untrusted_intersect_indices,
+        trusted_next_intersect_indices,
+    };
+
+    // TODO: remove
+    // dump inputs
+    
+    use std::fs;
+    use std::fs::File;
+    use std::io::BufWriter;
+    fs::create_dir_all("./dump_inputs")?;
+    let file = File::create(format!("./dump_inputs/last_inputs.json"))?;
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, &inputs)?; //.unwrap();
+
+    Ok(inputs)
+
+}
+
+
+fn get_signned_message_padded(
+    signatures_indices:  &Vec<u8>, 
+    idx: usize, 
+    signatures: &Vec<CommitSig>, 
+    untrusted_commit: &Commit, 
+    signatures_for_indices: &Vec<Vec<bool>>,
+    untrusted_block: &Block,
+    sign_messages_padded: &mut Vec<Vec<bool>>,
+    untrusted_validator_pub_keys: &Vec<Vec<bool>>,
+    offset: usize
+) {
+    let i = signatures_indices[idx] as usize;
 
         let timestamp_x = match signatures[i].clone() {
             CommitSig::BlockIdFlagCommit { timestamp, .. } => Some(timestamp),
@@ -440,10 +536,10 @@ pub async fn get_inputs_for_height(
         };
 
         if timestamp_x.is_none() {
-            continue;
+            return
         }
 
-        let val_x = match signatures[i].clone() {
+        let val_x = match signatures[i+offset].clone() {
             CommitSig::BlockIdFlagCommit {
                 validator_address, ..
             } => Some(validator_address),
@@ -454,7 +550,7 @@ pub async fn get_inputs_for_height(
         };
 
         if val_x.is_none() {
-            continue;
+            return
         }
 
         let v = Vote {
@@ -480,7 +576,7 @@ pub async fn get_inputs_for_height(
 
         // To create sign messages padded we would need sha512 preprocessed with [sig[0..256] + pub_key[0..256] + bytes_to_bool(sign_message)
         let sig_r = &signatures_for_indices[idx][0..256];
-        let pub_key = untrusted_validator_pub_keys[i].clone();
+        let pub_key = untrusted_validator_pub_keys[i+offset].clone();
         let msg_bits = bytes_to_bool(sign_message.clone());
         let signed_message = [sig_r, pub_key.as_slice(), msg_bits.as_slice()].concat();
         // get_sha512_preprocessed_input(signed_message.clone());
@@ -493,48 +589,6 @@ pub async fn get_inputs_for_height(
         // }
         // println!("{:?}", )
         sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
-    }
-
-    let inputs = Inputs {
-        sign_messages_padded,
-        signatures: signatures_for_indices,
-
-        untrusted_hash,
-        untrusted_height,
-        untrusted_validators_padded,
-        untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
-        untrusted_validator_pub_keys,
-        untrusted_validator_vps,
-        untrusted_header_padded,
-
-        trusted_hash,
-        trusted_height,
-        trusted_timestamp: trusted_time.unix_timestamp() as u64,
-        trusted_next_validators_padded,
-        trusted_next_validator_pub_keys,
-        trusted_next_validator_vps,
-        trusted_header_padded,
-
-        trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
-            &trusted_next_validators_hash_proof,
-        ),
-
-        signature_indices: signatures_indices,
-        untrusted_intersect_indices,
-        trusted_next_intersect_indices,
-    };
-
-    // TODO: remove
-    // dump inputs
-    use std::fs;
-    use std::fs::File;
-    use std::io::BufWriter;
-    fs::create_dir_all("./dump_inputs")?;
-    let file = File::create(format!("./dump_inputs/last_inputs.json"))?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &inputs)?; //.unwrap();
-
-    Ok(inputs)
 }
 
 #[cfg(test)]

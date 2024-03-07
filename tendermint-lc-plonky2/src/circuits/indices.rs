@@ -7,19 +7,28 @@ use plonky2_crypto::u32::gadgets::multiple_comparison::list_le_circuit;
 
 pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    signature_indices: &Vec<Target>,
+    signature_indices_set_1: &Vec<Target>,
+    signature_indices_set_2: &Vec<Target>,
     untrusted_intersect_indices: &Vec<Target>,
     c: &Config,
 ) {
     let zero_target = builder.zero();
 
     // ensuring signature indices are strictly greater than their previous indices
-    for i in 1..signature_indices.len() {
-        let curr = vec![signature_indices[i]];
-        let prev = vec![signature_indices[i - 1]];
+    for i in 1..signature_indices_set_1.len() {
+        let curr = vec![signature_indices_set_1[i]];
+        let prev = vec![signature_indices_set_1[i - 1]];
         let result = list_le_circuit(builder, curr, prev, 6); // returns true if curr <= prev
         builder.connect(result.target, zero_target);
     }
+
+    for i in 1..signature_indices_set_2.len() {
+        let curr = vec![signature_indices_set_2[i]];
+        let prev = vec![signature_indices_set_2[i - 1]];
+        let result = list_le_circuit(builder, curr, prev, 6); // returns true if curr <= prev
+        builder.connect(result.target, zero_target);
+    }
+
 
     let null_idx = builder.constant(F::from_canonical_u16(
         (c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u16,
@@ -47,7 +56,8 @@ pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
             let enable_constraint = builder.not(is_reserved_index);
 
             let mut is_untrusted_in_signature = builder._false();
-            signature_indices.iter().for_each(|&signature_idx| {
+            // NOTE: subset condition not needed to check in set 2 as the domain size of intersect indices is atmax 64 and always <= the domain size of signature_indices_set_1
+            signature_indices_set_1.iter().for_each(|&signature_idx| {
                 let is_equal = builder.is_equal(untrusted_idx, signature_idx);
                 is_untrusted_in_signature = builder.or(is_untrusted_in_signature, is_equal);
             });

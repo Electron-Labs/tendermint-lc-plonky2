@@ -91,8 +91,11 @@ impl IntoIterator for HeaderPaddedTarget {
 // TODO: need multiple arrays in case 1 array fails to accomodate for sufficient common vals?
 
 pub struct ProofTarget {
-    pub sign_messages_padded: Vec<Vec<BoolTarget>>,
-    pub signatures: Vec<Vec<BoolTarget>>,
+    pub sign_messages_padded_set_1: Vec<Vec<BoolTarget>>,
+    pub sign_messages_padded_set_2: Vec<Vec<BoolTarget>>,
+
+    pub signatures_set_1: Vec<Vec<BoolTarget>>,
+    pub signatures_set_2: Vec<Vec<BoolTarget>>,
 
     pub untrusted_hash: Hash256Target,
     pub untrusted_height: BigUintTarget,
@@ -112,7 +115,9 @@ pub struct ProofTarget {
 
     pub trusted_next_validators_hash_proof: Vec<Vec<BoolTarget>>,
 
-    pub signature_indices: Vec<Target>,
+    pub signature_indices_set_1: Vec<Target>,
+    pub signature_indices_set_2: Vec<Target>,
+
     pub untrusted_intersect_indices: Vec<Target>,
     pub trusted_next_intersect_indices: Vec<Target>,
 }
@@ -157,10 +162,20 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     c: &Config,
 ) -> ProofTarget {
-    let sign_messages_padded = (0..c.N_SIGNATURE_INDICES)
+    let sign_messages_padded_set_1 = (0..c.N_SIGNATURE_INDICES_SET_1)
         .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
-    let signatures = (0..c.N_VALIDATORS)
+    let sign_messages_padded_set_2 = (0..c.N_SIGNATURE_INDICES_SET_2)
+        .map(|_| get_sha_512_2_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let signatures_set_1 = (0..c.N_SIGNATURE_INDICES_SET_1)
+        .map(|_| {
+            (0..c.SIGNATURE_BITS)
+                .map(|_| builder.add_virtual_bool_target_unsafe())
+                .collect()
+        })
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let signatures_set_2 = (0..c.N_SIGNATURE_INDICES_SET_2)
         .map(|_| {
             (0..c.SIGNATURE_BITS)
                 .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -203,7 +218,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| get_256_bool_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
 
-    let signature_indices = (0..c.N_SIGNATURE_INDICES)
+    let signature_indices_set_1 = (0..c.N_SIGNATURE_INDICES_SET_1)
+        .map(|_| builder.add_virtual_target())
+        .collect::<Vec<Target>>();
+    let signature_indices_set_2 = (0..c.N_SIGNATURE_INDICES_SET_2)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
     let untrusted_intersect_indices = (0..c.N_INTERSECTION_INDICES)
@@ -231,7 +249,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &trusted_next_intersect_indices,
         c,
     );
-    constrain_untrusted_quorum(builder, &untrusted_validator_vps, &signature_indices, c);
+    constrain_untrusted_quorum(builder, &untrusted_validator_vps, &signature_indices_set_1, &signature_indices_set_2,c);
     check_update_validity(
         builder,
         &untrusted_height,
@@ -272,12 +290,17 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         get_formatted_hash_256_bools(untrusted_hash_bool_targets);
     verify_signatures(
         builder,
-        &sign_messages_padded,
-        &signatures,
+        &sign_messages_padded_set_1,
+        &sign_messages_padded_set_2,
+
+        &signatures_set_1,
+        &signatures_set_2,
+
         &untrusted_validator_pub_keys,
         &untrusted_hash_bool_targets_formatted,
         &untrusted_height,
-        &signature_indices,
+        &signature_indices_set_1,
+        &signature_indices_set_2,
         c,
     );
     verify_next_validators_hash_merkle_proof(
@@ -286,7 +309,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &trusted_next_validators_hash_proof,
         &trusted_hash,
     );
-    constrain_indices(builder, &signature_indices, &untrusted_intersect_indices, &c);
+    constrain_indices(builder, &signature_indices_set_1, &signature_indices_set_2, &untrusted_intersect_indices, &c);
 
     // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     (0..256).for_each(|i| {
@@ -322,8 +345,12 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     });
 
     ProofTarget {
-        sign_messages_padded,
-        signatures,
+        sign_messages_padded_set_1,
+        sign_messages_padded_set_2,
+
+        signatures_set_1,
+        signatures_set_2,
+
 
         untrusted_hash,
         untrusted_height,
@@ -343,7 +370,8 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
 
         trusted_next_validators_hash_proof,
 
-        signature_indices,
+        signature_indices_set_1,
+        signature_indices_set_2,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
     }
@@ -408,8 +436,11 @@ pub fn set_header_padded_target<F: RichField, W: Witness<F>>(
 
 pub fn set_proof_target<F: RichField, W: Witness<F>>(
     witness: &mut W,
-    sign_messages_padded: &Vec<Vec<bool>>,
-    signatures: &Vec<Vec<bool>>,
+    sign_messages_padded_set_1: &Vec<Vec<bool>>,
+    sign_messages_padded_set_2: &Vec<Vec<bool>>,
+
+    signatures_set_1: &Vec<Vec<bool>>,
+    signatures_set_2: &Vec<Vec<bool>>,
 
     untrusted_hash: &Vec<u8>,
     untrusted_height: u64,
@@ -429,7 +460,9 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
 
     trusted_next_validators_hash_proof: &Vec<Vec<bool>>,
 
-    signature_indices: &Vec<u8>,
+    signature_indices_set_1: &Vec<u8>,
+    signature_indices_set_2: &Vec<u8>,
+
     untrusted_intersect_indices: &Vec<u8>,
     trusted_next_intersect_indices: &Vec<u8>,
 
@@ -437,18 +470,33 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     c: &Config,
 ) {
     // Set N_SIGNATURE_INDICES signed messages (each message is already padded as sha512 - 2 block)
-    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
         (0..SHA_BLOCK_BITS * 4).for_each(|j| {
             witness.set_bool_target(
-                target.sign_messages_padded[i][j],
-                sign_messages_padded[i][j],
+                target.sign_messages_padded_set_1[i][j],
+                sign_messages_padded_set_1[i][j],
             )
         });
     });
+
+    (0..c.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+        (0..SHA_BLOCK_BITS * 4).for_each(|j| {
+            witness.set_bool_target(
+                target.sign_messages_padded_set_2[i][j],
+                sign_messages_padded_set_2[i][j],
+            )
+        });
+    });
+
+    
     // Set N_SIGNATURE_INDICES signatures
-    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
         (0..c.SIGNATURE_BITS)
-            .for_each(|j| witness.set_bool_target(target.signatures[i][j], signatures[i][j]))
+            .for_each(|j| witness.set_bool_target(target.signatures_set_1[i][j], signatures_set_1[i][j]))
+    });
+    (0..c.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+        (0..c.SIGNATURE_BITS)
+            .for_each(|j| witness.set_bool_target(target.signatures_set_2[i][j], signatures_set_2[i][j]))
     });
 
     // Set new block hash target (new block hash is sha256 digest)
@@ -560,10 +608,16 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
         })
     });
 
-    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+    (0..c.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
         witness.set_target(
-            target.signature_indices[i],
-            F::from_canonical_u8(signature_indices[i]),
+            target.signature_indices_set_1[i],
+            F::from_canonical_u8(signature_indices_set_1[i]),
+        )
+    });
+    (0..c.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+        witness.set_target(
+            target.signature_indices_set_2[i],
+            F::from_canonical_u8(signature_indices_set_2[i]),
         )
     });
     (0..c.N_INTERSECTION_INDICES).for_each(|i| {

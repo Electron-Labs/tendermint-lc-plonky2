@@ -427,10 +427,20 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+        let messages_padded_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_SIGNATURE_INDICES)
+        let messages_padded_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let signatures_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+        let signatures_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -446,18 +456,24 @@ mod tests {
         let untrusted_hash_bool_targets_formatted =
             get_formatted_hash_256_bools(untrusted_hash_bool_targets);
         let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         verify_signatures(
             &mut builder,
-            &messages_padded,
-            &signatures,
+            &messages_padded_set_1,
+            &messages_padded_set_2,
+            &signatures_set_1,
+            &signatures_set_2,
             &untrusted_pub_keys,
             &untrusted_hash_bool_targets_formatted,
             &untrusted_height,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
         info!("num_gates {:?}", builder.num_gates());
@@ -466,15 +482,24 @@ mod tests {
         let mut witness = PartialWitness::<F>::new();
 
         // connect padded message
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
+                witness.set_bool_target(messages_padded_set_1[i][j], data.sign_messages_padded_set_1[i][j])
+            })
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
+                witness.set_bool_target(messages_padded_set_2[i][j], data.sign_messages_padded_set_2[i][j])
             })
         });
         // connect signatures
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..cc.SIGNATURE_BITS)
-                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
+                .for_each(|j| witness.set_bool_target(signatures_set_1[i][j], data.signatures_set_1[i][j]))
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures_set_2[i][j], data.signatures_set_2[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -501,10 +526,16 @@ mod tests {
             &untrusted_height,
             &BigUint::from_u64(data.untrusted_height).unwrap(),
         );
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -520,10 +551,22 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+        let messages_padded_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_VALIDATORS)
+        let messages_padded_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        
+        let signatures_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let signatures_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -540,18 +583,25 @@ mod tests {
         let untrusted_hash_bool_targets_formatted =
             get_formatted_hash_256_bools(untrusted_hash_bool_targets);
         let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         verify_signatures(
             &mut builder,
-            &messages_padded,
-            &signatures,
+            &messages_padded_set_1,
+            &messages_padded_set_2,
+            &signatures_set_1,
+            &signatures_set_2,
             &untrusted_pub_keys,
             &untrusted_hash_bool_targets_formatted,
             &untrusted_height,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
 
@@ -559,15 +609,25 @@ mod tests {
         let mut witness = PartialWitness::new();
 
         // connect padded message
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
+                witness.set_bool_target(messages_padded_set_1[i][j], data.sign_messages_padded_set_1[i][j])
+            })
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
+                witness.set_bool_target(messages_padded_set_2[i][j], data.sign_messages_padded_set_2[i][j])
             })
         });
         // connect signatures
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..cc.SIGNATURE_BITS)
-                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
+                .for_each(|j| witness.set_bool_target(signatures_set_1[i][j], data.signatures_set_1[i][j]))
+        });
+
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures_set_2[i][j], data.signatures_set_2[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -596,10 +656,16 @@ mod tests {
             &BigUint::from_u64(data.untrusted_height).unwrap(),
         );
 
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -615,10 +681,22 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let messages_padded = (0..cc.N_SIGNATURE_INDICES)
+        let messages_padded_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_VALIDATORS)
+        let messages_padded_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| get_sha_512_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        
+        let signatures_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| {
+                (0..cc.SIGNATURE_BITS)
+                    .map(|_| builder.add_virtual_bool_target_unsafe())
+                    .collect()
+            })
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let signatures_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -635,18 +713,24 @@ mod tests {
         let untrusted_hash_bool_targets_formatted =
             get_formatted_hash_256_bools(untrusted_hash_bool_targets);
         let untrusted_height = builder.add_virtual_biguint_target(cc.HEIGHT_BITS.div_ceil(32));
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         verify_signatures(
             &mut builder,
-            &messages_padded,
-            &signatures,
+            &messages_padded_set_1,
+            &messages_padded_set_2,
+            &signatures_set_1,
+            &signatures_set_2,
             &untrusted_pub_keys,
             &untrusted_hash_bool_targets_formatted,
             &untrusted_height,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
 
@@ -654,15 +738,25 @@ mod tests {
 
         let mut witness = PartialWitness::new();
         // connect padded message
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..SHA_BLOCK_BITS * 4).for_each(|j| {
-                witness.set_bool_target(messages_padded[i][j], data.sign_messages_padded[i][j])
+                witness.set_bool_target(messages_padded_set_1[i][j], data.sign_messages_padded_set_1[i][j])
             })
         });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..SHA_BLOCK_BITS * 4).for_each(|j| {
+                witness.set_bool_target(messages_padded_set_2[i][j], data.sign_messages_padded_set_2[i][j])
+            })
+        });
+
         // connect signatures
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             (0..cc.SIGNATURE_BITS)
-                .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
+                .for_each(|j| witness.set_bool_target(signatures_set_1[i][j], data.signatures_set_1[i][j]))
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            (0..cc.SIGNATURE_BITS)
+                .for_each(|j| witness.set_bool_target(signatures_set_2[i][j], data.signatures_set_2[i][j]))
         });
         // connect untrusted_pub_key
         (0..cc.N_VALIDATORS).for_each(|i| {
@@ -690,10 +784,16 @@ mod tests {
             &untrusted_height,
             &BigUint::from_u64(height).unwrap(),
         );
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -990,7 +1090,11 @@ mod tests {
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1029,12 +1133,19 @@ mod tests {
             )
         });
 
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
             )
         });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
+            )
+        });
+
         (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
             witness.set_target(
                 untrusted_intersect_indices[i],
@@ -1066,14 +1177,18 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         constrain_untrusted_quorum(
             &mut builder,
             &untrusted_validator_vps,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
 
@@ -1087,10 +1202,87 @@ mod tests {
             )
         });
 
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
+            )
+        });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_sufficient_untrusted_quorum_target_set_2() {
+        let config = CircuitConfig::standard_recursion_config();
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let mut witness = PartialWitness::new();
+
+        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
+            .collect::<Vec<BigUintTarget>>();
+
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_untrusted_quorum(
+            &mut builder,
+            &untrusted_validator_vps,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
+            cc,
+        );
+
+        let data = get_test_data();
+
+        let mut untrusted_validator_vps_test_data: Vec<u64> =  Vec::new();
+        for _i in 0..64 {
+            untrusted_validator_vps_test_data.push(0);
+        }
+        untrusted_validator_vps_test_data[0] = 4;
+        untrusted_validator_vps_test_data[5] = 4;
+        untrusted_validator_vps_test_data[15] = 4;
+        for i in 64..cc.N_VALIDATORS {
+            untrusted_validator_vps_test_data.push((cc.N_VALIDATORS - i) as u64);
+        }
+
+
+        // in case if the indices domain size is gretor than n validators
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(untrusted_validator_vps_test_data[i]).unwrap(),
+            )
+        });
+
+
+
+
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -1113,14 +1305,18 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         constrain_untrusted_quorum(
             &mut builder,
             &untrusted_validator_vps,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
 
@@ -1137,10 +1333,16 @@ mod tests {
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -1164,14 +1366,18 @@ mod tests {
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        let signature_indices = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
         constrain_untrusted_quorum(
             &mut builder,
             &untrusted_validator_vps,
-            &signature_indices,
+            &signature_indices_set_1,
+            &signature_indices_set_2,
             cc,
         );
 
@@ -1187,10 +1393,16 @@ mod tests {
                 &BigUint::from_u64(vp[i]).unwrap(),
             )
         });
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices[i],
-                F::from_canonical_u8(data.signature_indices[i]),
+                signature_indices_set_1[i],
+                F::from_canonical_u8(data.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_set_2[i],
+                F::from_canonical_u8(data.signature_indices_set_2[i]),
             )
         });
 
@@ -1388,7 +1600,10 @@ mod tests {
         let cc = load_chain_config();
         let t = get_test_data();
 
-        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
@@ -1397,17 +1612,24 @@ mod tests {
 
         constrain_indices(
             &mut builder,
-            &signature_indices_target,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
             &untrusted_intersect_indices_target,
             cc,
         );
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices_target[i],
-                F::from_canonical_u8(t.signature_indices[i]),
+                signature_indices_target_set_1[i],
+                F::from_canonical_u8(t.signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_u8(t.signature_indices_set_2[i]),
             )
         });
 
@@ -1427,7 +1649,11 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
@@ -1436,17 +1662,23 @@ mod tests {
 
         constrain_indices(
             &mut builder,
-            &signature_indices_target,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
             &untrusted_intersect_indices_target,
             cc,
         );
         // generate indices
-        let mut signature_indices = Vec::new();
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
         let mut untrusted_intersect_indices = Vec::new();
 
         // signature indices
-        for i in 0..cc.N_SIGNATURE_INDICES {
-            signature_indices.push(i);
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+        
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
         }
 
         // intersect indices
@@ -1459,10 +1691,16 @@ mod tests {
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices_target[i],
-                F::from_canonical_usize(signature_indices[i]),
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
             )
         });
 
@@ -1478,12 +1716,15 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_constrain_indices_incorrect_signature_indices() {
+    fn test_constrain_indices_incorrect_signature_indices_set_1() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
@@ -1492,20 +1733,26 @@ mod tests {
 
         constrain_indices(
             &mut builder,
-            &signature_indices_target,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
             &untrusted_intersect_indices_target,
             cc,
         );
         // generate indices
-        let mut signature_indices = Vec::new();
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
         let mut untrusted_intersect_indices = Vec::new();
 
         // signature indices
-        for i in 0..cc.N_SIGNATURE_INDICES - 10 {
-            signature_indices.push(i);
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 - 10 {
+            signature_indices_set_1.push(i);
         }
         for i in 0..10 {
-            signature_indices.push(0);
+            signature_indices_set_1.push(0);
+        }
+
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
         }
 
         // intersect indices
@@ -1518,10 +1765,90 @@ mod tests {
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices_target[i],
-                F::from_canonical_usize(signature_indices[i]),
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_usize(untrusted_intersect_indices[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_incorrect_signature_indices_set_2() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
+            &untrusted_intersect_indices_target,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
+        let mut untrusted_intersect_indices = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 - 10 {
+            signature_indices_set_2.push(i);
+        }
+        for i in 0..10 {
+            signature_indices_set_2.push(0);
+        }
+
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
+            untrusted_intersect_indices.push(i);
+        }
+        for _ in 0..3 {
+            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        }
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
             )
         });
 
@@ -1542,7 +1869,10 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
@@ -1551,17 +1881,22 @@ mod tests {
 
         constrain_indices(
             &mut builder,
-            &signature_indices_target,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
             &untrusted_intersect_indices_target,
             cc,
         );
         // generate indices
-        let mut signature_indices = Vec::new();
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
         let mut untrusted_intersect_indices = Vec::new();
 
         // signature indices
-        for i in 0..cc.N_SIGNATURE_INDICES {
-            signature_indices.push(i);
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
         }
 
         // intersect indices
@@ -1574,10 +1909,16 @@ mod tests {
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices_target[i],
-                F::from_canonical_usize(signature_indices[i]),
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
             )
         });
 
@@ -1598,7 +1939,10 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
@@ -1607,17 +1951,22 @@ mod tests {
 
         constrain_indices(
             &mut builder,
-            &signature_indices_target,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
             &untrusted_intersect_indices_target,
             cc,
         );
         // generate indices
-        let mut signature_indices = Vec::new();
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
         let mut untrusted_intersect_indices = Vec::new();
 
         // signature indices
-        for i in 0..cc.N_SIGNATURE_INDICES {
-            signature_indices.push(i);
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
         }
 
         // intersect indices
@@ -1628,10 +1977,16 @@ mod tests {
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
-        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                signature_indices_target[i],
-                F::from_canonical_usize(signature_indices[i]),
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
             )
         });
 
