@@ -168,11 +168,13 @@ pub async fn get_inputs_for_height(
             _ => None,
         };
 
-        if !sig.is_none() {
+        if !sig.is_none() && i < c.SIGNATURE_INDICES_DOMAIN_SIZE {
             signatures_for_indices.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
             signatures_indices.push(i as u8);
         }
     }
+
+    assert!(signatures_indices.len() == c.N_SIGNATURE_INDICES, "couln't find require number of non-null sinature indices");
 
     let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
     let untrusted_time = untrusted_block.header.time;

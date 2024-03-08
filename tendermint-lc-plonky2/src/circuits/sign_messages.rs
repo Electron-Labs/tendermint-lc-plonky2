@@ -160,7 +160,7 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         // });
 
         // TODO Verify signatures using plonky2_ed25519
-        if j == 0 {
+                if j == 0 {
             verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
         }
     }

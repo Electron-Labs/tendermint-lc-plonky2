@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::circuits::checks::check_update_validity;
+        use crate::circuits::checks::check_update_validity;
     use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
     use crate::circuits::indices::constrain_indices;
     use crate::circuits::merkle_targets::{
@@ -1197,7 +1197,7 @@ mod tests {
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
-    
+
     #[traced_test]
     #[test]
     fn test_validators_hash() {
@@ -1643,5 +1643,29 @@ mod tests {
         });
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_sufficient_untrusted_quorum_native() {
+        let t = get_test_data();
+        let vps = t.untrusted_validator_vps.iter().map(|&elm| elm as usize).collect::<Vec<usize>>();
+        let total_vp: usize = vps.iter().sum();
+        let mut quorum_vp = 0;
+        let mut sufficient = false;
+        for i in t.signature_indices.clone() {
+            quorum_vp += t.untrusted_validator_vps[i as usize];
+            if (3 * quorum_vp) as usize > 2usize * total_vp {
+                sufficient = true;
+                break;
+            }
+        }
+        assert!(sufficient == true)
+        // println!("signature_indices {:?}", t.signature_indices);
+        // println!("untrusted_validator_vps {:?}", t.untrusted_validator_vps);
+        // println!("trusted_height {:?}", t.trusted_height);
+        // println!("untrusted_height {:?}", t.untrusted_height);
+        // println!("3 * quorum_vp {:?}", 3 * quorum_vp);
+        // println!("2 * total_vp {:?}", 2 * total_vp);
     }
 }
