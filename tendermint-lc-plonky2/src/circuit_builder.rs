@@ -103,8 +103,10 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         &inputs.trusted_next_validators_hash_proof,
         &inputs.signature_indices_set_1,
         &inputs.signature_indices_set_2,
-        &inputs.untrusted_intersect_indices,
-        &inputs.trusted_next_intersect_indices,
+        &inputs.untrusted_intersect_indices_set_1,
+        &inputs.untrusted_intersect_indices_set_2,
+        &inputs.trusted_next_intersect_indices_set_1,
+        &inputs.trusted_next_intersect_indices_set_2,
         proof_target,
         config,
     );

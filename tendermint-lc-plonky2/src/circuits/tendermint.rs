@@ -118,8 +118,10 @@ pub struct ProofTarget {
     pub signature_indices_set_1: Vec<Target>,
     pub signature_indices_set_2: Vec<Target>,
 
-    pub untrusted_intersect_indices: Vec<Target>,
-    pub trusted_next_intersect_indices: Vec<Target>,
+    pub untrusted_intersect_indices_set_1: Vec<Target>,
+    pub untrusted_intersect_indices_set_2: Vec<Target>,
+    pub trusted_next_intersect_indices_set_1: Vec<Target>,
+    pub trusted_next_intersect_indices_set_2: Vec<Target>,
 }
 
 pub fn add_virtual_header_padded_target<F: RichField + Extendable<D>, const D: usize>(
@@ -224,10 +226,16 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let signature_indices_set_2 = (0..c.N_SIGNATURE_INDICES_SET_2)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let untrusted_intersect_indices = (0..c.N_INTERSECTION_INDICES)
+    let untrusted_intersect_indices_set_1 = (0..c.N_INTERSECTION_INDICES_SET_1)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
-    let trusted_next_intersect_indices = (0..c.N_INTERSECTION_INDICES)
+    let untrusted_intersect_indices_set_2 = (0..c.N_INTERSECTION_INDICES_SET_2)
+        .map(|_| builder.add_virtual_target())
+        .collect::<Vec<Target>>();
+    let trusted_next_intersect_indices_set_1 = (0..c.N_INTERSECTION_INDICES_SET_1)
+        .map(|_| builder.add_virtual_target())
+        .collect::<Vec<Target>>();
+    let trusted_next_intersect_indices_set_2 = (0..c.N_INTERSECTION_INDICES_SET_2)
         .map(|_| builder.add_virtual_target())
         .collect::<Vec<Target>>();
 
@@ -245,8 +253,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &untrusted_validator_pub_keys,
         &trusted_next_validator_pub_keys,
         &trusted_next_validator_vps,
-        &untrusted_intersect_indices,
-        &trusted_next_intersect_indices,
+        &untrusted_intersect_indices_set_1,
+        &untrusted_intersect_indices_set_2,
+        &trusted_next_intersect_indices_set_1,
+        &trusted_next_intersect_indices_set_2,
         c,
     );
     constrain_untrusted_quorum(builder, &untrusted_validator_vps, &signature_indices_set_1, &signature_indices_set_2,c);
@@ -309,7 +319,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &trusted_next_validators_hash_proof,
         &trusted_hash,
     );
-    constrain_indices(builder, &signature_indices_set_1, &signature_indices_set_2, &untrusted_intersect_indices, &c);
+    constrain_indices(builder, &signature_indices_set_1, &signature_indices_set_2, &untrusted_intersect_indices_set_1, &untrusted_intersect_indices_set_2, &c);
 
     // connect `untrusted_validators_hash` and `untrusted_validators_hash_padded`
     (0..256).for_each(|i| {
@@ -372,8 +382,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
 
         signature_indices_set_1,
         signature_indices_set_2,
-        untrusted_intersect_indices,
-        trusted_next_intersect_indices,
+        untrusted_intersect_indices_set_1,
+        untrusted_intersect_indices_set_2,
+        trusted_next_intersect_indices_set_1,
+        trusted_next_intersect_indices_set_2,
     }
 }
 
@@ -463,8 +475,10 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     signature_indices_set_1: &Vec<u8>,
     signature_indices_set_2: &Vec<u8>,
 
-    untrusted_intersect_indices: &Vec<u8>,
-    trusted_next_intersect_indices: &Vec<u8>,
+    untrusted_intersect_indices_set_1: &Vec<u8>,
+    untrusted_intersect_indices_set_2: &Vec<u8>,
+    trusted_next_intersect_indices_set_1: &Vec<u8>,
+    trusted_next_intersect_indices_set_2: &Vec<u8>,
 
     target: &ProofTarget,
     c: &Config,
@@ -620,16 +634,28 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
             F::from_canonical_u8(signature_indices_set_2[i]),
         )
     });
-    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
         witness.set_target(
-            target.untrusted_intersect_indices[i],
-            F::from_canonical_u8(untrusted_intersect_indices[i]),
+            target.untrusted_intersect_indices_set_1[i],
+            F::from_canonical_u8(untrusted_intersect_indices_set_1[i]),
         )
     });
-    (0..c.N_INTERSECTION_INDICES).for_each(|i| {
+    (0..c.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
         witness.set_target(
-            target.trusted_next_intersect_indices[i],
-            F::from_canonical_u8(trusted_next_intersect_indices[i]),
+            target.untrusted_intersect_indices_set_2[i],
+            F::from_canonical_u8(untrusted_intersect_indices_set_2[i]),
+        )
+    });
+    (0..c.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
+        witness.set_target(
+            target.trusted_next_intersect_indices_set_1[i],
+            F::from_canonical_u8(trusted_next_intersect_indices_set_1[i]),
+        )
+    });
+    (0..c.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+        witness.set_target(
+            target.trusted_next_intersect_indices_set_2[i],
+            F::from_canonical_u8(trusted_next_intersect_indices_set_2[i]),
         )
     });
 }

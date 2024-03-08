@@ -59,8 +59,10 @@ pub struct Inputs {
 
     pub signature_indices_set_1: Vec<u8>,
     pub signature_indices_set_2: Vec<u8>,
-    pub untrusted_intersect_indices: Vec<u8>,
-    pub trusted_next_intersect_indices: Vec<u8>,
+    pub untrusted_intersect_indices_set_1: Vec<u8>,
+    pub untrusted_intersect_indices_set_2: Vec<u8>,
+    pub trusted_next_intersect_indices_set_1: Vec<u8>,
+    pub trusted_next_intersect_indices_set_2: Vec<u8>,
 }
 
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
@@ -176,12 +178,12 @@ pub async fn get_inputs_for_height(
             _ => None,
         };
 
-        if !sig.is_none() {
+        if !sig.is_none() && i < c.SIGNATURE_INDICES_DOMAIN_SIZE {
             signatures_for_indices_set_1.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
             signatures_indices_set_1.push(i as u8);
         }
     }
-
+    assert!(signatures_indices_set_1.len() == c.N_SIGNATURE_INDICES_SET_1, "couldn't find require number of non-null sinature indices");
 
     for i in signature_indices_domain_size..(signature_indices_domain_size+signature_indices_domain_size) {
         if signatures_indices_set_2.len() == c.N_SIGNATURE_INDICES_SET_2 {
@@ -193,11 +195,13 @@ pub async fn get_inputs_for_height(
             _ => None,
         };
 
-        if !sig.is_none() {
+        if !sig.is_none() && (i - signature_indices_domain_size < signature_indices_domain_size) {
             signatures_for_indices_set_2.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
             signatures_indices_set_2.push((i - signature_indices_domain_size) as u8);
         }
-    }    
+    }
+    assert!(signatures_indices_set_2.len() == c.N_SIGNATURE_INDICES_SET_2, "couldn't find require number of non-null sinature indices");
+
     let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
     let untrusted_time = untrusted_block.header.time;
     let mut untrusted_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
@@ -418,9 +422,13 @@ pub async fn get_inputs_for_height(
     let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
     let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
 
-    let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
-    let mut trusted_next_intersect_indices: Vec<u8> = Vec::new();
+    let mut untrusted_intersect_indices_set_1: Vec<u8> = Vec::new();
+    let mut untrusted_intersect_indices_set_2: Vec<u8> = Vec::new();
+    let mut trusted_next_intersect_indices_set_1: Vec<u8> = Vec::new();
+    let mut trusted_next_intersect_indices_set_2: Vec<u8> = Vec::new();
 
+
+    assert!(c.INTERSECTION_INDICES_DOMAIN_SIZE == c.SIGNATURE_INDICES_DOMAIN_SIZE, "They must be equal");
     // Since RandomAccess index cant go >= `null_index_for_intersection`, and we need one index reserved for Null so `null_index_for_intersection` index
     // is reserved
     for i in 0..untrusted_validators.len() {
@@ -431,25 +439,50 @@ pub async fn get_inputs_for_height(
             _ => None,
         };
         for j in 0..trusted_next_validators.len() {
-            if (untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j])
+            if untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j]
                 && i < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1
                 && signatures_indices_set_1.contains(&(i as u8))
+                && untrusted_intersect_indices_set_1.len() < c.N_INTERSECTION_INDICES_SET_1
+            
             {
-                untrusted_intersect_indices.push(i as u8);
-                trusted_next_intersect_indices.push(j as u8);
+                untrusted_intersect_indices_set_1.push(i as u8);
+                trusted_next_intersect_indices_set_1.push(j as u8);
             }
-            if untrusted_intersect_indices.len() == c.N_INTERSECTION_INDICES {
+
+            if untrusted_validator_pub_keys[i] == trusted_next_validator_pub_keys[j]
+                && i >= c.INTERSECTION_INDICES_DOMAIN_SIZE 
+                && i < 2*c.INTERSECTION_INDICES_DOMAIN_SIZE - 1 
+                && j >= c.INTERSECTION_INDICES_DOMAIN_SIZE 
+                && j < c.INTERSECTION_INDICES_DOMAIN_SIZE - 1 
+                && signatures_indices_set_2.contains(&((i-c.INTERSECTION_INDICES_DOMAIN_SIZE) as u8))
+                && untrusted_intersect_indices_set_2.len() < c.N_INTERSECTION_INDICES_SET_2
+            
+            {
+                untrusted_intersect_indices_set_2.push((i - c.INTERSECTION_INDICES_DOMAIN_SIZE) as u8);
+                trusted_next_intersect_indices_set_2.push((j - c.INTERSECTION_INDICES_DOMAIN_SIZE) as u8);
+            }
+
+
+            if untrusted_intersect_indices_set_1.len() == c.N_INTERSECTION_INDICES_SET_1 && 
+                untrusted_intersect_indices_set_2.len() == c.N_INTERSECTION_INDICES_SET_2  
+            {
                 break;
             }
         }
-        if untrusted_intersect_indices.len() == c.N_INTERSECTION_INDICES {
-            break;
-        }
+        if untrusted_intersect_indices_set_1.len() == c.N_INTERSECTION_INDICES_SET_1 && 
+                untrusted_intersect_indices_set_2.len() == c.N_INTERSECTION_INDICES_SET_2  
+            {
+                break;
+            }
     }
-    while untrusted_intersect_indices.len() != c.N_INTERSECTION_INDICES {
-        untrusted_intersect_indices.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
-        trusted_next_intersect_indices.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
+    while untrusted_intersect_indices_set_1.len() != c.N_INTERSECTION_INDICES_SET_1 {
+        untrusted_intersect_indices_set_1.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
+        trusted_next_intersect_indices_set_1.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
+    }
+    while untrusted_intersect_indices_set_2.len() != c.N_INTERSECTION_INDICES_SET_2 {
+        untrusted_intersect_indices_set_2.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
+        trusted_next_intersect_indices_set_2.push((c.INTERSECTION_INDICES_DOMAIN_SIZE - 1) as u8);
     }
 
     let mut sign_messages_padded_set_1: Vec<Vec<bool>> = Vec::with_capacity(signatures.len());
@@ -496,8 +529,10 @@ pub async fn get_inputs_for_height(
 
         signature_indices_set_1: signatures_indices_set_1,
         signature_indices_set_2: signatures_indices_set_2,
-        untrusted_intersect_indices,
-        trusted_next_intersect_indices,
+        untrusted_intersect_indices_set_1,
+        untrusted_intersect_indices_set_2,
+        trusted_next_intersect_indices_set_1,
+        trusted_next_intersect_indices_set_2,
     };
 
     // TODO: remove

@@ -1075,7 +1075,11 @@ mod tests {
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let untrusted_intersect_indices = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        let untrusted_intersect_indices_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1086,7 +1090,10 @@ mod tests {
         let trusted_next_validator_vps = (0..cc.N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
-        let trusted_next_intersect_indices = (0..cc.N_INTERSECTION_INDICES)
+        let trusted_next_intersect_indices_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1103,8 +1110,10 @@ mod tests {
             &untrusted_validator_pub_keys,
             &trusted_next_validator_pub_keys,
             &trusted_next_validator_vps,
-            &untrusted_intersect_indices,
-            &trusted_next_intersect_indices,
+            &untrusted_intersect_indices_set_1,
+            &untrusted_intersect_indices_set_2,
+            &trusted_next_intersect_indices_set_1,
+            &trusted_next_intersect_indices_set_2,
             cc,
         );
 
@@ -1146,16 +1155,28 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices[i],
-                F::from_canonical_u8(data.untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_set_1[i],
+                F::from_canonical_u8(data.untrusted_intersect_indices_set_1[i]),
             )
         });
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
             witness.set_target(
-                trusted_next_intersect_indices[i],
-                F::from_canonical_u8(data.trusted_next_intersect_indices[i]),
+                untrusted_intersect_indices_set_2[i],
+                F::from_canonical_u8(data.untrusted_intersect_indices_set_2[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_set_1[i],
+                F::from_canonical_u8(data.trusted_next_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_set_2[i],
+                F::from_canonical_u8(data.trusted_next_intersect_indices_set_2[i]),
             )
         });
 
@@ -1606,7 +1627,10 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1614,7 +1638,8 @@ mod tests {
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
 
@@ -1633,10 +1658,16 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_u8(t.untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_u8(t.untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_u8(t.untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
@@ -1656,7 +1687,10 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1664,13 +1698,15 @@ mod tests {
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
         // generate indices
         let mut signature_indices_set_1 = Vec::new();
         let mut signature_indices_set_2 = Vec::new();
-        let mut untrusted_intersect_indices = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
 
         // signature indices
         for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
@@ -1682,11 +1718,18 @@ mod tests {
         }
 
         // intersect indices
-        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
-            untrusted_intersect_indices.push(i);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 - 3 {
+            untrusted_intersect_indices_set_1.push(i);
         }
         for _ in 0..3 {
-            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+            untrusted_intersect_indices_set_1.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        }
+
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 - 3 {
+            untrusted_intersect_indices_set_2.push(i);
+        }
+        for _ in 0..3 {
+            untrusted_intersect_indices_set_2.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
         }
 
         // set targets
@@ -1704,10 +1747,16 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_usize(untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
@@ -1727,7 +1776,10 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1735,13 +1787,15 @@ mod tests {
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
         // generate indices
         let mut signature_indices_set_1 = Vec::new();
         let mut signature_indices_set_2 = Vec::new();
-        let mut untrusted_intersect_indices = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
 
         // signature indices
         for i in 0..cc.N_SIGNATURE_INDICES_SET_1 - 10 {
@@ -1756,12 +1810,16 @@ mod tests {
         }
 
         // intersect indices
-        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
-            untrusted_intersect_indices.push(i);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 {
+            untrusted_intersect_indices_set_1.push(i);
         }
-        for _ in 0..3 {
-            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 {
+            untrusted_intersect_indices_set_2.push(i);
         }
+
+        // for _ in 0..3 {
+        //     untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        // }
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
@@ -1778,10 +1836,16 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_usize(untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
@@ -1801,21 +1865,26 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        
         constrain_indices(
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
         // generate indices
         let mut signature_indices_set_1 = Vec::new();
         let mut signature_indices_set_2 = Vec::new();
-        let mut untrusted_intersect_indices = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
 
         // signature indices
         for i in 0..cc.N_SIGNATURE_INDICES_SET_2 - 10 {
@@ -1830,12 +1899,13 @@ mod tests {
         }
 
         // intersect indices
-        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
-            untrusted_intersect_indices.push(i);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 {
+            untrusted_intersect_indices_set_1.push(i);
         }
-        for _ in 0..3 {
-            untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 {
+            untrusted_intersect_indices_set_2.push(i);
         }
+
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
@@ -1852,10 +1922,16 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_usize(untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
@@ -1864,7 +1940,7 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_constrain_indices_incorrect_untrusted_intersection_indices() {
+    fn test_constrain_indices_incorrect_untrusted_intersection_indice_set_1() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1875,7 +1951,10 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1883,13 +1962,15 @@ mod tests {
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
         // generate indices
         let mut signature_indices_set_1 = Vec::new();
         let mut signature_indices_set_2 = Vec::new();
-        let mut untrusted_intersect_indices = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
 
         // signature indices
         for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
@@ -1900,11 +1981,14 @@ mod tests {
         }
 
         // intersect indices
-        for i in 0..cc.N_INTERSECTION_INDICES - 3 {
-            untrusted_intersect_indices.push(i);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 - 3 {
+            untrusted_intersect_indices_set_1.push(i);
         }
         for _ in 0..3 {
-            untrusted_intersect_indices.push(1);
+            untrusted_intersect_indices_set_1.push(1);
+        }
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 {
+            untrusted_intersect_indices_set_2.push(i);
         }
 
         // set targets
@@ -1922,19 +2006,26 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_usize(untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
 
+
     #[test]
     #[should_panic]
-    fn test_constrain_indices_non_subset() {
+    fn test_constrain_indices_incorrect_untrusted_intersection_indice_set_2() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1945,7 +2036,10 @@ mod tests {
         let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
-        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
@@ -1953,13 +2047,15 @@ mod tests {
             &mut builder,
             &signature_indices_target_set_1,
             &signature_indices_target_set_2,
-            &untrusted_intersect_indices_target,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
             cc,
         );
         // generate indices
         let mut signature_indices_set_1 = Vec::new();
         let mut signature_indices_set_2 = Vec::new();
-        let mut untrusted_intersect_indices = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
 
         // signature indices
         for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
@@ -1970,10 +2066,15 @@ mod tests {
         }
 
         // intersect indices
-        for i in 0..cc.N_INTERSECTION_INDICES - 1 {
-            untrusted_intersect_indices.push(i);
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 - 3 {
+            untrusted_intersect_indices_set_2.push(i);
         }
-        untrusted_intersect_indices.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1 - 1);
+        for _ in 0..3 {
+            untrusted_intersect_indices_set_2.push(1);
+        }
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 {
+            untrusted_intersect_indices_set_1.push(i);
+        }
 
         // set targets
         let mut witness = PartialWitness::<F>::new();
@@ -1990,10 +2091,182 @@ mod tests {
             )
         });
 
-        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
             witness.set_target(
-                untrusted_intersect_indices_target[i],
-                F::from_canonical_usize(untrusted_intersect_indices[i]),
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_set_1_non_subset() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 - 1 {
+            untrusted_intersect_indices_set_1.push(i);
+        }
+        untrusted_intersect_indices_set_1.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1 - 1);
+
+
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 {
+            untrusted_intersect_indices_set_2.push(i);
+        }
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
+            )
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_set_2_non_subset() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let signature_indices_target_set_1 = (0..cc.N_SIGNATURE_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signature_indices_target_set_2 = (0..cc.N_SIGNATURE_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_1 = (0..cc.N_INTERSECTION_INDICES_SET_1)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target_set_2 = (0..cc.N_INTERSECTION_INDICES_SET_2)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target_set_1,
+            &signature_indices_target_set_2,
+            &untrusted_intersect_indices_target_set_1,
+            &untrusted_intersect_indices_target_set_2,
+            cc,
+        );
+        // generate indices
+        let mut signature_indices_set_1 = Vec::new();
+        let mut signature_indices_set_2 = Vec::new();
+        let mut untrusted_intersect_indices_set_1 = Vec::new();
+        let mut untrusted_intersect_indices_set_2 = Vec::new();
+
+        // signature indices
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_1 {
+            signature_indices_set_1.push(i);
+        }
+        for i in 0..cc.N_SIGNATURE_INDICES_SET_2 {
+            signature_indices_set_2.push(i);
+        }
+
+        // intersect indices
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_2 - 1 {
+            untrusted_intersect_indices_set_2.push(i);
+        }
+        untrusted_intersect_indices_set_2.push(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1 - 1);
+
+
+        for i in 0..cc.N_INTERSECTION_INDICES_SET_1 {
+            untrusted_intersect_indices_set_1.push(i);
+        }
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_1[i],
+                F::from_canonical_usize(signature_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_SIGNATURE_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                signature_indices_target_set_2[i],
+                F::from_canonical_usize(signature_indices_set_2[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES_SET_1).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_1[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_1[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES_SET_2).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target_set_2[i],
+                F::from_canonical_usize(untrusted_intersect_indices_set_2[i]),
             )
         });
         let data = builder.build::<C>();
