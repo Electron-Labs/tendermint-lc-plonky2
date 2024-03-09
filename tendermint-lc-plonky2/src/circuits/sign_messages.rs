@@ -159,9 +159,6 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         //     builder.connect(a, b);
         // });
 
-        // TODO Verify signatures using plonky2_ed25519
-                if j == 0 {
-            verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
-        }
+        verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
     }
 }
