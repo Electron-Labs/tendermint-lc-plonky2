@@ -1,6 +1,6 @@
 use crate::config_data::*;
-use crate::merkle_targets::{bool_to_bytes, bytes_to_bool};
-use crate::test_utils::{get_sha512_preprocessed_input, get_sha_block_for_leaf};
+use crate::circuits::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use crate::tests::test_utils::{get_n_sha_blocks_for_leaf, get_sha512_preprocessed_input};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
@@ -10,42 +10,53 @@ use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::{Client, HttpClient, Paging};
+use std::error::Error;
+
+// each field is prefixed with a 0-byte, then padded as a sha blocks
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct HeaderPadded {
+    pub version: Vec<bool>,
+    pub chain_id: Vec<bool>,
+    pub height: Vec<bool>,
+    pub time: Vec<bool>,
+    pub last_block_id: Vec<bool>,
+    pub last_commit_hash: Vec<bool>,
+    pub data_hash: Vec<bool>,
+    pub validators_hash: Vec<bool>,
+    pub next_validators_hash: Vec<bool>,
+    pub consensus_hash: Vec<bool>,
+    pub app_hash: Vec<bool>,
+    pub last_results_hash: Vec<bool>,
+    pub evidence_hash: Vec<bool>,
+    pub proposer_address: Vec<bool>,
+}
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Inputs {
     pub sign_messages_padded: Vec<Vec<bool>>,
     pub signatures: Vec<Vec<bool>>,
+
     pub untrusted_hash: Vec<u8>,
     pub untrusted_height: u64,
-    pub untrusted_time_padded: Vec<bool>,
-    pub untrusted_time_proof: Vec<Vec<bool>>,
     pub untrusted_timestamp: u64,
-    pub untrusted_validators_hash_padded: Vec<bool>,
     pub untrusted_validators_padded: Vec<Vec<bool>>,
-    pub untrusted_chain_id_proof: Vec<Vec<bool>>,
-    pub untrusted_chain_id_padded: Vec<bool>,
-    pub untrusted_version_proof: Vec<Vec<bool>>,
-    pub untrusted_version_padded: Vec<bool>,
-    pub untrusted_validators_hash_proof: Vec<Vec<bool>>,
     pub untrusted_validator_pub_keys: Vec<Vec<bool>>,
-    pub untrusted_validator_vp: Vec<u64>,
+    pub untrusted_validator_vps: Vec<u64>,
+    pub untrusted_header_padded: HeaderPadded,
+
     pub trusted_hash: Vec<u8>,
     pub trusted_height: u64,
-    pub trusted_time_padded: Vec<bool>,
-    pub trusted_time_proof: Vec<Vec<bool>>,
     pub trusted_timestamp: u64,
-    pub trusted_next_validators_hash_proof: Vec<Vec<bool>>,
-    pub trusted_next_validators_hash_padded: Vec<bool>,
     pub trusted_next_validators_padded: Vec<Vec<bool>>,
     pub trusted_next_validator_pub_keys: Vec<Vec<bool>>,
-    pub trusted_next_validator_vp: Vec<u64>,
+    pub trusted_next_validator_vps: Vec<u64>,
+    pub trusted_header_padded: HeaderPadded,
+
+    pub trusted_next_validators_hash_proof: Vec<Vec<bool>>,
+
     pub signature_indices: Vec<u8>,
     pub untrusted_intersect_indices: Vec<u8>,
     pub trusted_next_intersect_indices: Vec<u8>,
-    pub trusted_chain_id_proof: Vec<Vec<bool>>, //TODO add to Proof target
-    pub trusted_chain_id_padded: Vec<bool>,
-    pub trusted_version_proof: Vec<Vec<bool>>, //TODO add to Proof target
-    pub trusted_version_padded: Vec<bool>,
 }
 
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
@@ -86,63 +97,64 @@ pub async fn get_inputs_for_height(
     untrusted_height: u64,
     trusted_height: u64,
     c: &Config,
-) -> Inputs {
-    let client = HttpClient::new(c.RPC_ENDPOINT.as_str()).unwrap();
+) -> Result<Inputs, Box<dyn Error + Send + Sync>> {
+    let client = HttpClient::new(c.RPC_ENDPOINT.as_str())?;
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
-    let untrusted_commit_response = client.commit(u_height).await;
-    let untrusted_block_response = client.block(u_height).await;
-    let untrusted_validators_response = client.validators(u_height, Paging::All).await;
+    let untrusted_commit = client.commit(u_height).await?.signed_header.commit;
+    let untrusted_block = client.block(u_height).await?.block;
+    let untrusted_validators = client.validators(u_height, Paging::All).await?.validators;
 
-    let trusted_commit_response = client.commit(t_height).await;
-    let trusted_block_response = client.block(t_height).await;
-    let trusted_next_validators_response = client
+    let trusted_commit = client.commit(t_height).await?.signed_header.commit;
+    let trusted_block = client.block(t_height).await?.block;
+    let trusted_next_validators = client
         .validators(Height::from((t_height.value() + 1) as u32), Paging::All)
-        .await;
+        .await?
+        .validators;
 
-    let untrusted_commit = match untrusted_commit_response {
-        Ok(commit_response) => commit_response.signed_header.commit,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted commit")
-        }
-    };
+    // let untrusted_commit = match untrusted_commit_response {
+    //     Ok(commit_response) => commit_response.signed_header.commit,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted commit")
+    //     }
+    // };
 
-    let trusted_commit = match trusted_commit_response {
-        Ok(commit_response) => commit_response.signed_header.commit,
-        Err(_) => {
-            panic!("Couldnt fetch trusted commit")
-        }
-    };
+    // let trusted_commit = match trusted_commit_response {
+    //     Ok(commit_response) => commit_response.signed_header.commit,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch trusted commit")
+    //     }
+    // };
 
-    let untrusted_block = match untrusted_block_response {
-        Ok(block_response) => block_response.block,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_block")
-        }
-    };
+    // let untrusted_block = match untrusted_block_response {
+    //     Ok(block_response) => block_response.block,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_block")
+    //     }
+    // };
 
-    let trusted_block = match trusted_block_response {
-        Ok(block_response) => block_response.block,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_block")
-        }
-    };
+    // let trusted_block = match trusted_block_response {
+    //     Ok(block_response) => block_response.block,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_block")
+    //     }
+    // };
 
-    let untrusted_validators = match untrusted_validators_response {
-        Ok(validators_response) => validators_response.validators,
-        Err(_) => {
-            panic!("Couldnt fetch untrusted_validators")
-        }
-    };
+    // let untrusted_validators = match untrusted_validators_response {
+    //     Ok(validators_response) => validators_response.validators,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch untrusted_validators")
+    //     }
+    // };
 
-    let trusted_next_validators = match trusted_next_validators_response {
-        Ok(validators_response) => validators_response.validators,
-        Err(_) => {
-            panic!("Couldnt fetch trusted_next_validators")
-        }
-    };
+    // let trusted_next_validators = match trusted_next_validators_response {
+    //     Ok(validators_response) => validators_response.validators,
+    //     Err(_) => {
+    //         panic!("Couldnt fetch trusted_next_validators")
+    //     }
+    // };
 
-    let mut signatures_45: Vec<Vec<bool>> = vec![];
+    let mut signatures_for_indices: Vec<Vec<bool>> = vec![];
     let mut signatures_indices: Vec<u8> = vec![];
 
     let signatures = untrusted_commit.clone().signatures;
@@ -156,72 +168,233 @@ pub async fn get_inputs_for_height(
             _ => None,
         };
 
-        if !sig.is_none() {
-            signatures_45.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
+        if !sig.is_none() && i < c.SIGNATURE_INDICES_DOMAIN_SIZE {
+            signatures_for_indices.push(bytes_to_bool(sig.unwrap().unwrap().into_bytes()));
             signatures_indices.push(i as u8);
         }
     }
 
+    assert!(signatures_indices.len() == c.N_SIGNATURE_INDICES, "couln't find require number of non-null sinature indices");
+
     let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
-    let trusted_hash = trusted_commit.block_id.hash.as_bytes().to_vec();
-
     let untrusted_time = untrusted_block.header.time;
-    let untrusted_time_padded = get_sha_block_for_leaf(bytes_to_bool(untrusted_time.encode_vec()));
-
-    let trusted_time = trusted_block.header.time;
-    let trusted_time_padded = get_sha_block_for_leaf(bytes_to_bool(trusted_time.encode_vec()));
-
-    let untrusted_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
-        untrusted_block.header.validators_hash.encode_vec(),
-    ));
-    let trusted_next_validators_hash_padded = get_sha_block_for_leaf(bytes_to_bool(
-        trusted_block.header.next_validators_hash.encode_vec(),
-    ));
-
-    let mut untrusted_validators_padded: Vec<Vec<bool>> = Vec::new();
-    for i in 0..untrusted_validators.len() {
-        untrusted_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(
-            untrusted_validators[i].hash_bytes(),
-        )))
-    }
-
-    let mut trusted_next_validators_padded: Vec<Vec<bool>> = Vec::new();
-    for i in 0..trusted_next_validators.len() {
-        trusted_next_validators_padded.push(get_sha_block_for_leaf(bytes_to_bool(
-            trusted_next_validators[i].hash_bytes(),
-        )))
-    }
-
-    let untrusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(
-        untrusted_block.clone().header.chain_id.encode_vec(),
-    ));
-    let untrusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
-        tendermint_proto::version::Consensus,
-    >::encode_vec(
-        untrusted_block.clone().header.version,
-    )));
-
     let mut untrusted_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
+    let mut untrusted_validators_padded: Vec<Vec<bool>> = Vec::new();
     for i in 0..untrusted_validators.len() {
         untrusted_validator_pub_keys
             .push(bytes_to_bool(untrusted_validators[i].pub_key.to_bytes()));
     }
+    for i in 0..untrusted_validators.len() {
+        untrusted_validators_padded.push(get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_validators[i].hash_bytes()),
+            1,
+        ))
+    }
+    let mut untrusted_validator_vps: Vec<u64> = Vec::new();
+    for i in 0..untrusted_validators.len() {
+        untrusted_validator_vps.push(untrusted_validators[i].power.value());
+    }
 
+    let trusted_hash = trusted_commit.block_id.hash.as_bytes().to_vec();
+    let trusted_time = trusted_block.header.time;
     let mut trusted_next_validator_pub_keys: Vec<Vec<bool>> = Vec::new();
     for i in 0..trusted_next_validators.len() {
         trusted_next_validator_pub_keys
             .push(bytes_to_bool(trusted_next_validators[i].pub_key.to_bytes()));
     }
-
-    let mut untrusted_validator_vp: Vec<u64> = Vec::new();
-    for i in 0..untrusted_validators.len() {
-        untrusted_validator_vp.push(untrusted_validators[i].power.value());
-    }
-
-    let mut trusted_next_validator_vp: Vec<u64> = Vec::new();
+    let mut trusted_next_validators_padded: Vec<Vec<bool>> = Vec::new();
     for i in 0..trusted_next_validators.len() {
-        trusted_next_validator_vp.push(trusted_next_validators[i].power.value());
+        trusted_next_validators_padded.push(get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_next_validators[i].hash_bytes()),
+            1,
+        ))
     }
+    let mut trusted_next_validator_vps: Vec<u64> = Vec::new();
+    for i in 0..trusted_next_validators.len() {
+        trusted_next_validator_vps.push(trusted_next_validators[i].power.value());
+    }
+
+    let untrusted_header_padded = HeaderPadded {
+        version: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                Protobuf::<tendermint_proto::version::Consensus>::encode_vec(
+                    untrusted_block.clone().header.version,
+                ),
+            ),
+            1,
+        ),
+        chain_id: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.clone().header.chain_id.encode_vec()),
+            1,
+        ),
+        height: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.clone().header.height.encode_vec()),
+            1,
+        ),
+        time: get_n_sha_blocks_for_leaf(bytes_to_bool(untrusted_time.encode_vec()), 1),
+        last_block_id: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(Protobuf::<tendermint_proto::types::BlockId>::encode_vec(
+                untrusted_block.clone().header.last_block_id.unwrap(),
+            )),
+            2,
+        ),
+        last_commit_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                untrusted_block
+                    .clone()
+                    .header
+                    .last_commit_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        data_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                untrusted_block
+                    .clone()
+                    .header
+                    .data_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        validators_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.header.validators_hash.encode_vec()),
+            1,
+        ),
+        next_validators_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                untrusted_block
+                    .clone()
+                    .header
+                    .next_validators_hash
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        consensus_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.clone().header.consensus_hash.encode_vec()),
+            1,
+        ),
+        app_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.clone().header.app_hash.encode_vec()),
+            1,
+        ),
+        last_results_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                untrusted_block
+                    .clone()
+                    .header
+                    .last_results_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        evidence_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                untrusted_block
+                    .clone()
+                    .header
+                    .evidence_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        proposer_address: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(untrusted_block.clone().header.proposer_address.encode_vec()),
+            1,
+        ),
+    };
+    let trusted_header_padded = HeaderPadded {
+        version: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                Protobuf::<tendermint_proto::version::Consensus>::encode_vec(
+                    trusted_block.header.version,
+                ),
+            ),
+            1,
+        ),
+        chain_id: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.chain_id.encode_vec()),
+            1,
+        ),
+        height: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.height.encode_vec()),
+            1,
+        ),
+        time: get_n_sha_blocks_for_leaf(bytes_to_bool(trusted_time.encode_vec()), 1),
+        last_block_id: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(Protobuf::<tendermint_proto::types::BlockId>::encode_vec(
+                trusted_block.clone().header.last_block_id.unwrap(),
+            )),
+            2,
+        ),
+
+        last_commit_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                trusted_block
+                    .clone()
+                    .header
+                    .last_commit_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        data_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.data_hash.unwrap().encode_vec()),
+            1,
+        ),
+        validators_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.validators_hash.encode_vec()),
+            1,
+        ),
+        next_validators_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.header.next_validators_hash.encode_vec()),
+            1,
+        ),
+        consensus_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.consensus_hash.encode_vec()),
+            1,
+        ),
+        app_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.app_hash.encode_vec()),
+            1,
+        ),
+        last_results_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                trusted_block
+                    .clone()
+                    .header
+                    .last_results_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        evidence_hash: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(
+                trusted_block
+                    .clone()
+                    .header
+                    .evidence_hash
+                    .unwrap()
+                    .encode_vec(),
+            ),
+            1,
+        ),
+        proposer_address: get_n_sha_blocks_for_leaf(
+            bytes_to_bool(trusted_block.clone().header.proposer_address.encode_vec()),
+            1,
+        ),
+    };
+
+    let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
+    let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
 
     let mut untrusted_intersect_indices: Vec<u8> = Vec::new();
     let mut trusted_next_intersect_indices: Vec<u8> = Vec::new();
@@ -295,7 +468,7 @@ pub async fn get_inputs_for_height(
             validator_address: val_x.unwrap(),
             validator_index: ValidatorIndex::try_from(i).unwrap(),
             signature: Some(
-                Signature::try_from(bool_to_bytes(signatures_45[idx].to_vec())).unwrap(),
+                Signature::try_from(bool_to_bytes(signatures_for_indices[idx].to_vec())).unwrap(),
             ),
             extension: vec![0u8; 8],
             extension_signature: None,
@@ -308,7 +481,7 @@ pub async fn get_inputs_for_height(
         let sign_message: Vec<u8> = [vec![msg.len() as u8], msg.clone()].concat();
 
         // To create sign messages padded we would need sha512 preprocessed with [sig[0..256] + pub_key[0..256] + bytes_to_bool(sign_message)
-        let sig_r = &signatures_45[idx][0..256];
+        let sig_r = &signatures_for_indices[idx][0..256];
         let pub_key = untrusted_validator_pub_keys[i].clone();
         let msg_bits = bytes_to_bool(sign_message.clone());
         let signed_message = [sig_r, pub_key.as_slice(), msg_bits.as_slice()].concat();
@@ -316,7 +489,7 @@ pub async fn get_inputs_for_height(
         // if idx == 0 {
         // println!("== {:?} ==", i);
         // println!("msg {:?}", bool_to_bytes(msg_bits.clone()));
-        // println!("sig {:?}", bool_to_bytes(signatures_45[idx].clone()));
+        // println!("sig {:?}", bool_to_bytes(signatures_for_indices[idx].clone()));
         // println!("pub key {:?}", bool_to_bytes(pub_key.clone()));
         // println!("signed_msg {:?}", bool_to_bytes(get_sha512_preprocessed_input(signed_message.clone())));
         // }
@@ -324,108 +497,71 @@ pub async fn get_inputs_for_height(
         sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
     }
 
-    let mt_untrusted = get_block_header_merkle_tree(untrusted_block.header);
-    let mt_trusted = get_block_header_merkle_tree(trusted_block.clone().header);
-
-    let untrusted_time_mt_proof = mt_untrusted.prove_inclusion(3);
-    let trusted_time_mt_proof = mt_trusted.prove_inclusion(3);
-
-    let untrusted_chain_id_mt_proof = mt_untrusted.prove_inclusion(1);
-    let trusted_chain_id_mt_proof = mt_trusted.prove_inclusion(1);
-    let untrusted_version_mt_proof = mt_untrusted.prove_inclusion(0);
-    let trusted_version_mt_proof = mt_trusted.prove_inclusion(0);
-
-    let untrusted_validators_hash_proof = mt_untrusted.prove_inclusion(7);
-    let trusted_next_validators_hash_proof = mt_trusted.prove_inclusion(8);
-
-    let trusted_chain_id_padded = get_sha_block_for_leaf(bytes_to_bool(
-        trusted_block.clone().header.chain_id.encode_vec(),
-    ));
-    let trusted_version_padded = get_sha_block_for_leaf(bytes_to_bool(Protobuf::<
-        tendermint_proto::version::Consensus,
-    >::encode_vec(
-        trusted_block.header.version,
-    )));
-
     let inputs = Inputs {
         sign_messages_padded,
-        signatures: signatures_45,
+        signatures: signatures_for_indices,
+
         untrusted_hash,
         untrusted_height,
-        untrusted_time_padded,
-        untrusted_time_proof: get_merkle_proof_byte_vec(&untrusted_time_mt_proof),
-        untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
-        untrusted_validators_hash_padded,
         untrusted_validators_padded,
-        untrusted_chain_id_proof: get_merkle_proof_byte_vec(&untrusted_chain_id_mt_proof),
-        untrusted_chain_id_padded,
-        untrusted_version_proof: get_merkle_proof_byte_vec(&untrusted_version_mt_proof),
-        untrusted_version_padded,
-        untrusted_validators_hash_proof: get_merkle_proof_byte_vec(
-            &untrusted_validators_hash_proof,
-        ),
+        untrusted_timestamp: untrusted_time.unix_timestamp() as u64,
         untrusted_validator_pub_keys,
-        untrusted_validator_vp,
+        untrusted_validator_vps,
+        untrusted_header_padded,
+
         trusted_hash,
         trusted_height,
-        trusted_time_padded,
-        trusted_time_proof: get_merkle_proof_byte_vec(&trusted_time_mt_proof),
         trusted_timestamp: trusted_time.unix_timestamp() as u64,
+        trusted_next_validators_padded,
+        trusted_next_validator_pub_keys,
+        trusted_next_validator_vps,
+        trusted_header_padded,
+
         trusted_next_validators_hash_proof: get_merkle_proof_byte_vec(
             &trusted_next_validators_hash_proof,
         ),
-        trusted_next_validators_hash_padded,
-        trusted_next_validators_padded,
-        trusted_next_validator_pub_keys,
-        trusted_next_validator_vp,
+
         signature_indices: signatures_indices,
         untrusted_intersect_indices,
         trusted_next_intersect_indices,
-        trusted_chain_id_proof: get_merkle_proof_byte_vec(&trusted_chain_id_mt_proof),
-        trusted_chain_id_padded,
-        trusted_version_proof: get_merkle_proof_byte_vec(&trusted_version_mt_proof),
-        trusted_version_padded,
     };
 
+    // TODO: remove
+    // dump inputs
     use std::fs;
     use std::fs::File;
     use std::io::BufWriter;
-    fs::create_dir_all("./dump_inputs").unwrap();
-    let file = File::create(format!(
-        "./dump_inputs/last_inputs.json"
-    ))
-    .unwrap();
+    fs::create_dir_all("./dump_inputs")?;
+    let file = File::create(format!("./dump_inputs/last_inputs.json"))?;
     let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, &inputs).unwrap();
+    serde_json::to_writer(&mut writer, &inputs)?; //.unwrap();
 
-    inputs
+    Ok(inputs)
 }
 
 #[cfg(test)]
 mod tests {
     use crate::config_data::get_chain_config;
     use crate::input_types::get_inputs_for_height;
-    use crate::test_heights::*;
+    use crate::tests::test_heights::*;
     use std::fs::File;
     use std::io::{BufWriter, Write};
 
     #[tokio::test]
     #[ignore]
     pub async fn test() {
-        // pub const UNTRUSTED_HEIGHT: u64 = 12975357;
-        // pub const TRUSTED_HEIGHT: u64 = 12960957;
+        pub const UNTRUSTED_HEIGHT: u64 = OSMOSIS_UNTRUSTED_HEIGHT;
+        pub const TRUSTED_HEIGHT: u64 = OSMOSIS_TRUSTED_HEIGHT;
 
-        pub const TRUSTED_HEIGHT: u64 = NIBIRU_TRUSTED_HEIGHT;
-        pub const UNTRUSTED_HEIGHT: u64 = NIBIRU_UNTRUSTED_HEIGHT;
-        let chain_name = "nibiru";
+        let chain_name = "OSMOSIS";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);
         let file = File::create(format!(
-            "./src/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
+            "./src/tests/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
         ))
         .unwrap();
-        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await;
+        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await.unwrap();
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
         writer.flush().unwrap();

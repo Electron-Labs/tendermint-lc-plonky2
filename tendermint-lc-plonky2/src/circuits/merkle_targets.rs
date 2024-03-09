@@ -12,6 +12,7 @@ use plonky2_crypto::{
         binary_u32::{Bin32Target, CircuitBuilderBU32},
     },
 };
+use std::array::IntoIter;
 
 pub struct Sha256_1Block {
     pub input: Vec<BoolTarget>,
@@ -54,6 +55,14 @@ pub fn get_sha_block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
+pub fn get_sha_2_block_target<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+) -> Vec<BoolTarget> {
+    (0..SHA_BLOCK_BITS * 2)
+        .map(|_| builder.add_virtual_bool_target_unsafe())
+        .collect::<Vec<BoolTarget>>()
+}
+
 pub fn get_sha_2block_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
 ) -> Vec<BoolTarget> {
@@ -70,7 +79,7 @@ pub fn get_sha_512_2_block_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<BoolTarget>>()
 }
 
-// covnert to or from bits formatting in HashInputTarget/Hash256Target
+// toggle between bits order in HashInputTarget/Hash256Target and normal
 pub fn get_formatted_hash_256_bools(input: &Vec<BoolTarget>) -> Vec<BoolTarget> {
     let mut output: Vec<BoolTarget> = Vec::with_capacity(input.len());
     input.chunks(32).for_each(|elm| {
@@ -204,13 +213,14 @@ pub fn hash256_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
 }
 
 // resulting bits are in Hash256Target order
-pub fn sha256_1_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
+pub fn sha256_n_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     input_padded: &Vec<BoolTarget>,
+    n_block: usize,
 ) -> Vec<BoolTarget> {
-    assert_eq!(input_padded.len(), SHA_BLOCK_BITS);
+    assert_eq!(input_padded.len() / n_block, SHA_BLOCK_BITS);
 
-    let hash_input_target = builder.add_virtual_hash_input_target(1, SHA_BLOCK_BITS);
+    let hash_input_target = builder.add_virtual_hash_input_target(n_block, SHA_BLOCK_BITS);
 
     input_padded
         .chunks(32)
@@ -303,7 +313,7 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
 ) -> Vec<BoolTarget> {
     let mut items = leaves_padded
         .iter()
-        .map(|elm| sha256_1_block_hash_target(builder, &elm))
+        .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
         .collect::<Vec<Vec<BoolTarget>>>();
 
     let mut size = items.len();
@@ -332,14 +342,90 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     items[0].clone()
 }
 
+pub fn header_merkle_root<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves_padded: IntoIter<Vec<BoolTarget>, 14>,
+) -> Vec<BoolTarget> {
+    let mut items = leaves_padded
+        .enumerate()
+        .map(|(i, elm)| {
+            if i != 4 {
+                return sha256_n_block_hash_target(builder, &elm, 1);
+            } else {
+                return sha256_n_block_hash_target(builder, &elm, 2);
+            }
+        })
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let mut size = items.len();
+
+    while size != 1 {
+        let mut rp = 0; // read position
+        let mut wp = 0; // write position
+        while rp < size {
+            if rp + 1 < size {
+                let hash = &sha256_2_block_two_to_one_hash_target(
+                    builder,
+                    &items[rp].clone(),
+                    &items[rp + 1].clone(),
+                );
+                items[wp] = biguint_hash_to_bool_targets(builder, hash);
+                rp += 2;
+            } else {
+                items[wp] = items[rp].clone();
+                rp += 1;
+            }
+            wp += 1;
+        }
+        size = wp;
+    }
+
+    items[0].clone()
+}
+
+pub fn verify_next_validators_hash_merkle_proof<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaf_padded: &Vec<BoolTarget>,
+    proof: &Vec<Vec<BoolTarget>>,
+    root: &Hash256Target,
+) {
+    let mut hash = sha256_n_block_hash_target(builder, &leaf_padded, 1);
+
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[0]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[1]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let hash_biguint = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &hash,
+        &get_formatted_hash_256_bools(&proof[2]),
+    );
+    hash = biguint_hash_to_bool_targets(builder, &hash_biguint);
+    let computed_root = sha256_2_block_two_to_one_hash_target(
+        builder,
+        &get_formatted_hash_256_bools(&proof[3]),
+        &hash,
+    );
+
+    (0..computed_root.num_limbs())
+        .for_each(|i| builder.connect_u32(computed_root.get_limb(i), root[i]));
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
         biguint_hash_to_bool_targets, bytes_to_bool, get_256_bool_target,
-        sha256_1_block_hash_target, sha256_2_block_two_to_one_hash_target, two_to_one_pad_target,
+        sha256_2_block_two_to_one_hash_target, sha256_n_block_hash_target, two_to_one_pad_target,
         BoolTarget, SHA_BLOCK_BITS,
     };
-    use crate::test_utils::*;
+    use crate::tests::test_utils::*;
     use plonky2::{
         iop::{witness::PartialWitness, witness::WitnessWrite},
         plonk::{
@@ -355,6 +441,8 @@ mod tests {
         },
         u32::binary_u32::CircuitBuilderBU32,
     };
+    use tracing::info;
+    use tracing_test::traced_test;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -364,10 +452,10 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(witness).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("proved in {}ms", duration_ms);
+        info!("proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
-
+    #[traced_test]
     #[test]
     fn test_two_to_one_pad_target() {
         let config = CircuitConfig::standard_recursion_config();
@@ -455,7 +543,7 @@ mod tests {
             224, 139, 244, 169, 141, 136, 113, 125, 15, 255, 146, 162, 182, 244, 87, 77, 71, 16,
             151, 152, 176, 10,
         ];
-        let input_padded = get_sha_block_for_leaf(bytes_to_bool(input_bytes.to_vec())); // prefixes with a 0 byte
+        let input_padded = get_n_sha_blocks_for_leaf(bytes_to_bool(input_bytes.to_vec()), 1); // prefixes with a 0 byte
 
         let expected_hash = [
             118, 110, 67, 134, 204, 97, 211, 117, 174, 233, 216, 70, 45, 239, 157, 3, 26, 3, 96, 3,
@@ -470,7 +558,7 @@ mod tests {
         (0..input_padded.len())
             .for_each(|i| witness.set_bool_target(bool_target[i], input_padded[i]));
 
-        let computed = sha256_1_block_hash_target(&mut builder, &bool_target);
+        let computed = sha256_n_block_hash_target(&mut builder, &bool_target, 1);
 
         expected_hash_target
             .iter()

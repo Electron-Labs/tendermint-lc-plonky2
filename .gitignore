@@ -3,3 +3,4 @@ Cargo.lock
 storage/**/*.json
 /data_store
 tendermint-lc-plonky2/src/proof_data
+dump_inputs/
