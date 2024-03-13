@@ -160,11 +160,31 @@ pub fn build_recursion_circuit<
         CommonCircuitData::<F, D>::from_bytes(inner_cd_bytes, &CustomGateSerializer).unwrap();
     make_recursion_circuit::<F, C, InnerC, D>(&mut builder, &inner_common_data);
     info!(
-        "Building recursive circuit with {:?} gates",
+        "Building first recursion step circuit with {:?} gates",
         builder.num_gates()
     );
-
     let data = builder.build::<C>();
+
+    println!("step one digest - {:?}", data.verifier_only.circuit_digest);
+
+    let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    make_recursion_circuit::<F, C, InnerC, D>(&mut builder, &data.common);
+    info!(
+        "Building second recursion step circuit with {:?} gates",
+        builder.num_gates()
+    );
+    let data = builder.build::<C>();
+    println!("step two digest - {:?}", data.verifier_only.circuit_digest);
+
+    let mut builder = CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    make_recursion_circuit::<F, C, InnerC, D>(&mut builder, &data.common);
+    info!(
+        "Building third recursion step circuit with {:?} gates",
+        builder.num_gates()
+    );
+    let data = builder.build::<C>();
+    println!("step three digest - {:?}", data.verifier_only.circuit_digest);
+
     info!("Recursive circuit build complete");
     dump_circuit_data::<F, C, D>(&data, &format!("{recursive_storage_dir}/circuit_data/"));
 }
@@ -207,10 +227,8 @@ where
 
     data.verify(proof_with_pis.clone()).expect("verify error");
 
-    info!("--- Recursion Circuit ---");
+    info!("--- Recursion step one Circuit ---");
     // Add one more recursion proof generation layer
-    let recursive_data =
-        load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
     let mut recursive_builder =
         CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
     // Config for both outer and inner circuit are same for now
@@ -221,6 +239,58 @@ where
     let mut pw_rec = PartialWitness::new();
     pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &proof_with_pis);
     pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &data.verifier_only);
+    let recursive_data = recursive_builder.build::<C>();
+    let rec_proof_with_pis = prove::<F, C, D>(
+        &recursive_data.prover_only,
+        &recursive_data.common,
+        pw_rec,
+        &mut Default::default(),
+    )
+    .unwrap();
+    info!("recursive step one proof gen done in {:?}", t_pg_rec.elapsed());
+    recursive_data
+        .verify(rec_proof_with_pis.clone())
+        .expect("verify error");
+
+    info!("--- Recursion step two Circuit ---");
+    // Add one more recursion proof generation layer
+    let mut recursive_builder =
+        CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    // Config for both outer and inner circuit are same for now
+    let recursion_targets =
+        make_recursion_circuit::<F, C, C, D>(&mut recursive_builder, &recursive_data.common);
+    info!("Starting to generate recursive proof");
+    let t_pg_rec = Instant::now();
+    let mut pw_rec = PartialWitness::new();
+    pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &rec_proof_with_pis);
+    pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &recursive_data.verifier_only);
+    let recursive_data = recursive_builder.build::<C>();
+    let rec_proof_with_pis = prove::<F, C, D>(
+        &recursive_data.prover_only,
+        &recursive_data.common,
+        pw_rec,
+        &mut Default::default(),
+    )
+    .unwrap();
+    info!("recursive step two proof gen done in {:?}", t_pg_rec.elapsed());
+    recursive_data
+        .verify(rec_proof_with_pis.clone())
+        .expect("verify error");
+
+    info!("--- Recursion step three Circuit ---");
+    // Add one more recursion proof generation layer
+    let mut recursive_builder =
+        CircuitBuilder::<F, D>::new(CircuitConfig::standard_recursion_config());
+    // Config for both outer and inner circuit are same for now
+    let recursion_targets =
+        make_recursion_circuit::<F, C, C, D>(&mut recursive_builder, &recursive_data.common);
+    info!("Starting to generate recursive proof");
+    let t_pg_rec = Instant::now();
+    let mut pw_rec = PartialWitness::new();
+    pw_rec.set_proof_with_pis_target(&recursion_targets.pt, &rec_proof_with_pis);
+    pw_rec.set_verifier_data_target(&recursion_targets.inner_data, &recursive_data.verifier_only);
+    let recursive_data =
+        load_circuit_data_from_dir::<F, C, D>(&format!("{recursive_storage_dir}/circuit_data"));
     let rec_proof_with_pis = prove::<F, C, D>(
         &recursive_data.prover_only,
         &recursive_data.common,
