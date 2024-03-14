@@ -1,10 +1,14 @@
+use core::hash;
+
+use bitvec::index;
 use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
+    field::extension::Extendable, hash::hash_types::RichField, iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
-use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint};
+use plonky2_crypto::{biguint::{BigUintTarget, CircuitBuilderBiguint}, hash::{sha256::CircuitBuilderHashSha2, CircuitBuilderHash}, u32::arithmetic_u32::CircuitBuilderU32};
 
 use crate::config_data::*;
+use super::merkle_targets::sha256_n_block_hash_target;
 
 pub fn connect_timestamp<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -67,4 +71,61 @@ pub fn connect_pub_keys_and_vps<F: RichField + Extendable<D>, const D: usize>(
             })
         });
     });
+}
+
+pub fn connect_last_ed25519<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F,D>,
+    untrusted_validator_hashes: &Vec<BigUintTarget>,
+    signature_indicies: &Vec<Target>,
+    signatures_padded: &Vec<Vec<BoolTarget>>,
+    c: &Config
+) {
+    let mut concat_hash256_target = builder.add_virtual_hash256_target();
+
+    let mut untrusted_validator_hashes_columns: Vec<Vec<Target>> = vec![];
+    (0..8).for_each(|i| {
+        let mut untrusted_validator_hash_column: Vec<Target> = vec![];
+        (0..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|j| {
+            untrusted_validator_hash_column.push(untrusted_validator_hashes[j].get_limb(i).0);
+        });
+        untrusted_validator_hashes_columns.push(untrusted_validator_hash_column);
+    });
+
+    //connect concat_hash256_target to  untrusted_validator_hashes at index signature[0]
+    for i in 0..8 {
+        let index_vaue: Target = signature_indicies[0];
+        let vh_ci = builder.random_access(index_vaue, untrusted_validator_hashes_columns[i].clone());
+        builder.connect(concat_hash256_target[i].0, vh_ci);
+    }
+
+    for i in 1..c.N_SIGNATURE_INDICES-1 {
+        let hash256_target = builder.add_virtual_hash256_target();
+        let random_index_vaue: Target = signature_indicies[i];
+        for j in 0..8 {
+            let vh_ci = builder.random_access(random_index_vaue, untrusted_validator_hashes_columns[j].clone());
+            builder.connect(hash256_target[j].0, vh_ci);
+        }
+        concat_hash256_target = builder.two_to_one_sha256(concat_hash256_target, hash256_target);
+    }
+
+
+    //concatating signatures
+    let mut signature_hashes: Vec<BigUintTarget> = vec![];
+    for i in 0..signature_indicies.len(){
+        signature_hashes.push(sha256_n_block_hash_target(builder, &signatures_padded[i] , 2));
+    }
+
+    let mut concat_hash256_target = builder.add_virtual_hash256_target();
+
+    for i in 0..8 {
+        builder.connect(concat_hash256_target[i].0, signature_hashes[0].get_limb(i).0);
+    }
+
+    for i in 1..c.N_SIGNATURE_INDICES-1 {
+        let hash256_target = builder.add_virtual_hash256_target();
+        for j in 0..8 {
+            builder.connect(hash256_target[j].0, signature_hashes[i].get_limb(j).0);
+        }
+        concat_hash256_target = builder.two_to_one_sha256(concat_hash256_target, hash256_target);
+    }
 }

@@ -1,3 +1,5 @@
+use super::connect::connect_last_ed25519;
+// use super::connect::connect_concat_validators_indices_hashes;
 use super::merkle_targets::{
     get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
     get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets, header_merkle_root,
@@ -8,6 +10,8 @@ use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
 use crate::circuits::indices::constrain_indices;
 use crate::circuits::sign_messages::verify_signatures;
 use crate::circuits::validators_quorum::{constrain_trusted_quorum, constrain_untrusted_quorum};
+use crate::tests::test_utils::get_n_sha_blocks_for_leaf;
+use num::traits::sign;
 use num::{BigUint, FromPrimitive};
 use plonky2::{
     field::extension::Extendable,
@@ -19,7 +23,7 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 use plonky2_crypto::biguint::{BigUintTarget, CircuitBuilderBiguint, WitnessBigUint};
-use plonky2_crypto::hash::{CircuitBuilderHash, Hash256Target, WitnessHash};
+use plonky2_crypto::hash::{CircuitBuilderHash, Hash256Target, HashInputTarget, WitnessHash};
 use std::array::IntoIter;
 
 use crate::config_data::*;
@@ -93,6 +97,7 @@ impl IntoIterator for HeaderPaddedTarget {
 pub struct ProofTarget {
     pub sign_messages_padded: Vec<Vec<BoolTarget>>,
     pub signatures: Vec<Vec<BoolTarget>>,
+    pub signatures_padded: Vec<Vec<BoolTarget>>,
 
     pub untrusted_hash: Hash256Target,
     pub untrusted_height: BigUintTarget,
@@ -160,6 +165,10 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     let sign_messages_padded = (0..c.N_SIGNATURE_INDICES)
         .map(|_| get_sha_512_2_block_target(builder))
         .collect::<Vec<Vec<BoolTarget>>>();
+    let signatures_padded = (0..c.N_SIGNATURE_INDICES)
+        .map(|_| get_sha_2_block_target(builder))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    
     let signatures = (0..c.N_VALIDATORS)
         .map(|_| {
             (0..c.SIGNATURE_BITS)
@@ -214,14 +223,16 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         .collect::<Vec<Target>>();
 
     // *** sub circuits ***
-    let untrusted_validators_hash = get_formatted_hash_256_bools(&merkle_1_block_leaf_root(
+    let (untrusted_vaidators_hash_unformatted, untrusted_validator_hashes) = &merkle_1_block_leaf_root(
         builder,
         &untrusted_validators_padded.clone(),
-    ));
-    let trusted_next_validators_hash = get_formatted_hash_256_bools(&merkle_1_block_leaf_root(
+    );
+    let untrusted_validators_hash = get_formatted_hash_256_bools(untrusted_vaidators_hash_unformatted);
+    let (trusted_next_validators_hash_unformatted, _) = &merkle_1_block_leaf_root(
         builder,
         &trusted_next_validators_padded.clone(),
-    ));
+    );
+    let trusted_next_validators_hash = get_formatted_hash_256_bools(trusted_next_validators_hash_unformatted);
     constrain_trusted_quorum(
         builder,
         &untrusted_validator_pub_keys,
@@ -263,6 +274,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
         &trusted_next_validator_vps,
         c,
     );
+    connect_last_ed25519(builder, untrusted_validator_hashes, &signature_indices, &signatures_padded, c);
     let untrusted_header_merkle_root_bool_targets =
         header_merkle_root(builder, untrusted_header_padded.clone().into_iter());
     let trusted_header_merkle_root_bool_targets =
@@ -324,7 +336,7 @@ pub fn add_virtual_proof_target<F: RichField + Extendable<D>, const D: usize>(
     ProofTarget {
         sign_messages_padded,
         signatures,
-
+        signatures_padded,
         untrusted_hash,
         untrusted_height,
         untrusted_timestamp,
@@ -410,7 +422,7 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
     witness: &mut W,
     sign_messages_padded: &Vec<Vec<bool>>,
     signatures: &Vec<Vec<bool>>,
-
+    signatures_padded: &Vec<Vec<bool>>,
     untrusted_hash: &Vec<u8>,
     untrusted_height: u64,
     untrusted_timestamp: u64,
@@ -444,6 +456,11 @@ pub fn set_proof_target<F: RichField, W: Witness<F>>(
                 sign_messages_padded[i][j],
             )
         });
+    });
+    // Set N_SIGNATURE_INDICES signatures
+    (0..c.N_SIGNATURE_INDICES).for_each(|i| {
+        (0..target.signatures_padded[i].len())
+            .for_each(|j| witness.set_bool_target(target.signatures_padded[i][j], signatures_padded[i][j]))
     });
     // Set N_SIGNATURE_INDICES signatures
     (0..c.N_SIGNATURE_INDICES).for_each(|i| {

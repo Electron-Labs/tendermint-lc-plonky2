@@ -1,13 +1,10 @@
 #[cfg(test)]
 mod tests {
         use crate::circuits::checks::check_update_validity;
-    use crate::circuits::connect::{connect_pub_keys_and_vps, connect_timestamp};
+    use crate::circuits::connect::{connect_last_ed25519, connect_pub_keys_and_vps, connect_timestamp};
     use crate::circuits::indices::constrain_indices;
     use crate::circuits::merkle_targets::{
-        bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
-        get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
-        header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target,
-        verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
+        biguint_hash_to_bool_targets, bytes_to_bool, get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target, get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets, header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target, verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS
     };
     use crate::circuits::sign_messages::verify_signatures;
     use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
@@ -1222,7 +1219,7 @@ mod tests {
             })
         });
 
-        let computed = merkle_1_block_leaf_root(&mut builder, &validator_leaves_padded_target);
+        let (computed,_) = merkle_1_block_leaf_root(&mut builder, &validator_leaves_padded_target);
 
         let expected_hash = [
             232, 89, 230, 77, 86, 114, 76, 122, 224, 97, 170, 76, 43, 119, 30, 183, 92, 152, 183,
@@ -1312,7 +1309,8 @@ mod tests {
             )
         });
 
-        let computed = sha256_n_block_hash_target(&mut builder, &last_block_id_target, 2);
+        let hashes = sha256_n_block_hash_target(&mut builder, &last_block_id_target, 2);
+        let computed = biguint_hash_to_bool_targets(&mut builder, &hashes);
 
         let expected_hash = [
             74, 80, 141, 164, 102, 195, 37, 198, 28, 154, 188, 145, 132, 242, 240, 115, 132, 85,
@@ -1667,5 +1665,63 @@ mod tests {
         // println!("untrusted_height {:?}", t.untrusted_height);
         // println!("3 * quorum_vp {:?}", 3 * quorum_vp);
         // println!("2 * total_vp {:?}", 2 * total_vp);
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_connect_to_ed25519() {
+        let data = get_test_data();
+
+
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc: &Config = load_chain_config();
+        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+        
+        let (untrusted_vaidators_hash_unformatted, untrusted_validator_hashes) = &merkle_1_block_leaf_root(
+            &mut builder,
+            &untrusted_validators_padded.clone(),
+        );
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let signatures_padded = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| get_sha_2_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        connect_last_ed25519(&mut builder, untrusted_validator_hashes, &signature_indices_target, &signatures_padded,cc);
+        // generate indices
+        // let mut signature_indices = Vec::new();
+
+        // signature indices
+
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_u8(data.signature_indices[i]),
+            )
+        });
+
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            (0..2*512)
+                .for_each(|j| witness.set_bool_target(signatures_padded[i][j], data.signatures_padded[i][j]))
+        });
+
+        (0..cc.N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validators_padded[i][j],
+                    data.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+
     }
 }

@@ -84,6 +84,7 @@ pub fn set_proof_targets<F: RichField + Extendable<D>, const D: usize, W: Witnes
         pw,
         &inputs.sign_messages_padded,
         &inputs.signatures,
+        &inputs.signatures_padded,
         &inputs.untrusted_hash,
         inputs.untrusted_height,
         inputs.untrusted_timestamp,

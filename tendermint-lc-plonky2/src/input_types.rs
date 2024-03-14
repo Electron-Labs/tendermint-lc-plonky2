@@ -35,7 +35,7 @@ pub struct HeaderPadded {
 pub struct Inputs {
     pub sign_messages_padded: Vec<Vec<bool>>,
     pub signatures: Vec<Vec<bool>>,
-
+    pub signatures_padded: Vec<Vec<bool>>,
     pub untrusted_hash: Vec<u8>,
     pub untrusted_height: u64,
     pub untrusted_timestamp: u64,
@@ -496,11 +496,16 @@ pub async fn get_inputs_for_height(
         // println!("{:?}", )
         sign_messages_padded.push(get_sha512_preprocessed_input(signed_message.clone()));
     }
+    let mut signatures_padded: Vec<Vec<bool>> = vec![];
+    for i in 0..signatures_for_indices.len() {
+        let signature_padded = get_n_sha_blocks_for_leaf(signatures_for_indices[i].clone(), 2);
+        signatures_padded.push(signature_padded);
+    }
 
     let inputs = Inputs {
         sign_messages_padded,
         signatures: signatures_for_indices,
-
+        signatures_padded: signatures_padded,
         untrusted_hash,
         untrusted_height,
         untrusted_validators_padded,

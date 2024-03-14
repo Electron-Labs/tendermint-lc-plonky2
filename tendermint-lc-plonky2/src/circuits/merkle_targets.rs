@@ -217,7 +217,7 @@ pub fn sha256_n_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     input_padded: &Vec<BoolTarget>,
     n_block: usize,
-) -> Vec<BoolTarget> {
+) -> BigUintTarget {
     assert_eq!(input_padded.len() / n_block, SHA_BLOCK_BITS);
 
     let hash_input_target = builder.add_virtual_hash_input_target(n_block, SHA_BLOCK_BITS);
@@ -237,8 +237,7 @@ pub fn sha256_n_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
         });
 
     let hash = builder.hash_sha256(&hash_input_target);
-
-    biguint_hash_to_bool_targets(builder, &hash)
+    hash
 }
 
 // left - 256bits, where all bits are in the same order as in Hash256Target
@@ -310,10 +309,15 @@ pub fn bytes_to_bool(bytes_arr: Vec<u8>) -> Vec<bool> {
 pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaves_padded: &Vec<Vec<BoolTarget>>,
-) -> Vec<BoolTarget> {
-    let mut items = leaves_padded
+) -> (Vec<BoolTarget>, Vec<BigUintTarget>) {
+    let hashes = leaves_padded
         .iter()
-        .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
+        .map(|elm: &Vec<BoolTarget>| sha256_n_block_hash_target(builder, &elm, 1))
+        .collect::<Vec<BigUintTarget>>();
+    
+    let mut items: Vec<Vec<BoolTarget>> = hashes
+        .iter()
+        .map(|elm: &BigUintTarget| biguint_hash_to_bool_targets(builder, &elm))
         .collect::<Vec<Vec<BoolTarget>>>();
 
     let mut size = items.len();
@@ -339,7 +343,7 @@ pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
         size = wp;
     }
 
-    items[0].clone()
+    (items[0].clone(), hashes)
 }
 
 pub fn header_merkle_root<F: RichField + Extendable<D>, const D: usize>(
@@ -350,9 +354,11 @@ pub fn header_merkle_root<F: RichField + Extendable<D>, const D: usize>(
         .enumerate()
         .map(|(i, elm)| {
             if i != 4 {
-                return sha256_n_block_hash_target(builder, &elm, 1);
+                let hash = sha256_n_block_hash_target(builder, &elm, 1);
+                return biguint_hash_to_bool_targets(builder, &hash)
             } else {
-                return sha256_n_block_hash_target(builder, &elm, 2);
+                let hash = sha256_n_block_hash_target(builder, &elm, 2);
+                return biguint_hash_to_bool_targets(builder, &hash);
             }
         })
         .collect::<Vec<Vec<BoolTarget>>>();
@@ -388,7 +394,8 @@ pub fn verify_next_validators_hash_merkle_proof<F: RichField + Extendable<D>, co
     proof: &Vec<Vec<BoolTarget>>,
     root: &Hash256Target,
 ) {
-    let mut hash = sha256_n_block_hash_target(builder, &leaf_padded, 1);
+    let hash_without_target = sha256_n_block_hash_target(builder, &leaf_padded, 1);
+    let mut hash = biguint_hash_to_bool_targets(builder, &hash_without_target);
 
     let hash_biguint = sha256_2_block_two_to_one_hash_target(
         builder,
@@ -558,7 +565,8 @@ mod tests {
         (0..input_padded.len())
             .for_each(|i| witness.set_bool_target(bool_target[i], input_padded[i]));
 
-        let computed = sha256_n_block_hash_target(&mut builder, &bool_target, 1);
+        let hash = sha256_n_block_hash_target(&mut builder, &bool_target, 1);
+        let computed = biguint_hash_to_bool_targets(&mut builder, &hash);
 
         expected_hash_target
             .iter()
