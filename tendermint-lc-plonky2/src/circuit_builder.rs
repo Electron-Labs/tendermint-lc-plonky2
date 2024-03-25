@@ -1,6 +1,6 @@
 use crate::circuits::tendermint::{add_virtual_proof_target, set_proof_target, ProofTarget};
 use crate::config_data::{get_chain_config, Config};
-use crate::input_types::{get_inputs_for_height, Inputs};
+use crate::input_types::{get_inputs_for_height, get_some_latest_inputs, Inputs};
 use crate::tests::test_heights::*;
 use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::RichField;
@@ -14,9 +14,10 @@ use plonky2_circuit_serializer::serializer::CustomGateSerializer;
 use plonky2_circuit_serializer::utils::{
     dump_bytes_to_json, dump_circuit_data, load_circuit_data_from_dir, read_bytes_from_json,
 };
+use std::fs;
 use std::time::Instant;
 use tokio::time::{sleep, Duration};
-use tracing::{info,error};
+use tracing::{error, info};
 
 pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/lc_circuit")
@@ -24,6 +25,17 @@ pub fn get_lc_storage_dir(chain_name: &str, storage_dir: &str) -> String {
 
 pub fn get_recursive_storage_dir(chain_name: &str, storage_dir: &str) -> String {
     format!("{storage_dir}/{chain_name}/recursion_circuit")
+}
+
+pub fn create_storage_dir_for_chain(chain_name: &str, storage_dir: &str) {
+    let msg = format!("creating storage directory for chain {chain_name}");
+    info!(msg);
+    let lc_storage_dir = get_lc_storage_dir(chain_name, storage_dir);
+    let recursive_storage_dir = get_recursive_storage_dir(chain_name, storage_dir);
+    fs::create_dir_all(format!("{lc_storage_dir}/circuit_data")).unwrap();
+    fs::create_dir_all(format!("{lc_storage_dir}/proof_data")).unwrap();
+    fs::create_dir_all(format!("{recursive_storage_dir}/circuit_data")).unwrap();
+    fs::create_dir_all(format!("{recursive_storage_dir}/proof_data")).unwrap();
 }
 
 pub fn generate_circuit<F: RichField + Extendable<D>, const D: usize>(
@@ -246,43 +258,83 @@ where
 }
 
 pub async fn run_circuit() {
-    let chain_name = "OSMOSIS";
-    let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
-    let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
     let storage_dir = "./storage";
     let chains_config_path = "tendermint-lc-plonky2/src/chain_config";
+
+    let mut chain_names: Vec<String> = vec![];
+    for chain_config in fs::read_dir(chains_config_path).unwrap() {
+        let path = chain_config.unwrap().path();
+        let chain_name = path.file_stem().unwrap().to_str().unwrap();
+        chain_names.push(chain_name.to_string());
+    }
+    // let chain_name = "OSMOSIS";
+    // let untrusted_height = OSMOSIS_UNTRUSTED_HEIGHT;
+    // let trusted_height = OSMOSIS_TRUSTED_HEIGHT;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = <C as GenericConfig<D>>::F;
 
-    let config = get_chain_config(chains_config_path, chain_name);
-
     let x = std::env::var("X").expect("`X` env variable must be set");
 
     // Build tendermint light client circuit
     if x == "1" {
-        build_tendermint_lc_circuit::<F, C, D>(chain_name, chains_config_path, storage_dir);
+        let chain_name = std::env::var("C").expect("`CHAIN` env variable must be set");
+        build_tendermint_lc_circuit::<F, C, D>(&chain_name, chains_config_path, storage_dir);
     }
     // Build recursive circuit
     if x == "2" {
-        build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
+        let chain_name = std::env::var("C").expect("`CHAIN` env variable must be set");
+        build_recursion_circuit::<F, C, C, D>(&chain_name, storage_dir);
     }
     // Generate proof for lc and recursion both
     if x == "3" {
+        let chain_name = std::env::var("C").expect("`C` env variable must be set to chain_name");
+        let config = get_chain_config(chains_config_path, &chain_name);
+        let t = get_some_latest_inputs(&config).await.unwrap();
+
+        // let t: Inputs;
+        // loop {
+        //     match get_inputs_for_height(untrusted_height, trusted_height, &config).await {
+        //         Ok(_inputs) => {
+        //             t = _inputs;
+        //             break;
+        //         }
+        //         Err(e) => {
+        //             error!("Error in get_inputs_for_height::{:?}, {:?}", e.to_string(), "Trying again...");
+        //             sleep(Duration::from_secs_f32(2 as f32)).await; // 2 seconds
+        //         }
+        //     };
+        // }
+        generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
+    }
+    if x == "4" {
+        for (i, chain_name) in chain_names.iter().enumerate() {
+            // let path_raw = format!("{storage_dir}/{chain_name}");
+            // let path = std::path::Path::new(&path_raw);
+            // if !path.exists() {
+                // println!("chain_name {:?}", chain_name);
+                //     create_storage_dir_for_chain(chain_name, storage_dir);
+                //     build_tendermint_lc_circuit::<F, C, D>(chain_name, chains_config_path, storage_dir);
+                //     build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
+                // }
+        println!("{:?}. chain_name {:?}", i, chain_name);
+        let config = get_chain_config(chains_config_path, &chain_name);
+        // let t = get_some_latest_inputs(&config).await.unwrap();
         let t: Inputs;
         loop {
-            match get_inputs_for_height(untrusted_height, trusted_height, &config).await {
+            match get_some_latest_inputs(&config).await {
                 Ok(_inputs) => {
                     t = _inputs;
                     break;
                 }
                 Err(e) => {
-                    error!("Error in get_inputs_for_height::{:?}, {:?}", e.to_string(), "Trying again...");
+                    error!("Error in get_some_latest_inputs::{:?}, {:?}", e.to_string(), "Trying again...");
                     sleep(Duration::from_secs_f32(2 as f32)).await; // 2 seconds
                 }
             };
         }
-        generate_proof::<F, C, D>(chains_config_path, chain_name, storage_dir, t, "xyz");
+        generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
+        }
     }
 }

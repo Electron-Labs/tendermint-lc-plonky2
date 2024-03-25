@@ -93,6 +93,14 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
     proof_elms
 }
 
+pub async fn get_some_latest_inputs(c: &Config) -> Result<Inputs, Box<dyn Error + Send + Sync>> {
+    let client = HttpClient::new(c.RPC_ENDPOINT.as_str())?;
+    let latest_commit = client.latest_commit().await?.signed_header.commit;
+    let untrusted_height = latest_commit.height.value() - 100;
+    let trusted_height = untrusted_height - 2000;
+    get_inputs_for_height(untrusted_height, trusted_height, c).await
+}
+
 pub async fn get_inputs_for_height(
     untrusted_height: u64,
     trusted_height: u64,

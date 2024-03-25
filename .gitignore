@@ -1,6 +1,7 @@
 /target
 Cargo.lock
 storage/**/*.json
+storage/**/prover_only
 /data_store
 tendermint-lc-plonky2/src/proof_data
 dump_inputs/
