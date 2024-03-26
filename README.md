@@ -22,3 +22,7 @@
 - Finally, generate both the proofs:
 `X=3 cargo run --release`
 - The generate build and proof files can be found in the `storage` directory.
+
+
+## Developer chat
+In case you wish to contribute or collaborate, you can join our ZK builder chat at - https://t.me/+GRX2LF9YSEwyNjQ1
