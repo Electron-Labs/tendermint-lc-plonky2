@@ -1,23 +1,102 @@
-RPC_ENDPOINT: https://rpc.cros-nest.com/osmosis
-VP_BITS: 64 # VOTING POWER
+RPC_ENDPOINT:
+- https://rpc.osmosis.zone/
+- https://rpc-osmosis.blockapsis.com
+- https://osmosis-rpc.onivalidator.com
+- https://osmosis-rpc.quickapi.com
+- https://rpc-osmosis.whispernode.com
+VP_BITS: 64
 SIGNATURE_BITS: 512
-N_VALIDATORS: &N_VALIDATORS_REF 150
+MAX_N_VALIDATORS: 155
+MIN_N_VALIDATORS: 146
 HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
-TRUSTING_PERIOD: 1209600 # 2 weeks in seconds
-N_SIGNATURE_INDICES: 45
-N_INTERSECTION_INDICES: 45
+TRUSTING_PERIOD: 1209600
+N_SIGNATURE_INDICES: 52
+N_INTERSECTION_INDICES: 52
 INTERSECTION_INDICES_DOMAIN_SIZE: 64
 SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
-N_VALIDATORS_LEAVES: *N_VALIDATORS_REF
-CHAIN_ID: [
-    false, true, true, false, true, true, true, true, false, true, true, true, false, false, true,
-    true, false, true, true, false, true, true, false, true, false, true, true, false, true, true,
-    true, true, false, true, true, true, false, false, true, true, false, true, true, false, true,
-    false, false, true, false, true, true, true, false, false, true, true, false, false, true,
-    false, true, true, false, true, false, false, true, true, false, false, false, true,
-]
-
-VERSION_BLOCK: [false, false, false, false, true, false, true, true]
+N_VALIDATORS_LEAVES: 155
+CHAIN_ID:
+- false
+- true
+- true
+- false
+- true
+- true
+- true
+- true
+- false
+- true
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- true
+- true
+- false
+- true
+- true
+- false
+- true
+- false
+- true
+- true
+- false
+- true
+- true
+- true
+- true
+- false
+- true
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- true
+- false
+- false
+- false
+- true
+VERSION_BLOCK:
+- false
+- false
+- false
+- false
+- true
+- false
+- true
+- true

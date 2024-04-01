@@ -1,21 +1,94 @@
-RPC_ENDPOINT: http://public-celestia-consensus.numia.xyz
-VP_BITS: 64 # VOTING POWER
+RPC_ENDPOINT:
+- https://public-celestia-rpc.numia.xyz
+- https://celestia-rpc.mesa.newmetric.xyz
+- https://rpc.lunaroasis.net
+- https://rpc.celestia.nodestake.top
+- https://celestia-rpc.lavenderfive.com
+VP_BITS: 64
 SIGNATURE_BITS: 512
-N_VALIDATORS: &N_VALIDATORS_REF 100
+MAX_N_VALIDATORS: 105
+MIN_N_VALIDATORS: 96
 HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
-TRUSTING_PERIOD: 1209600 # 2 weeks in seconds
-N_SIGNATURE_INDICES: 25
-N_INTERSECTION_INDICES: 25
+TRUSTING_PERIOD: 1209600
+N_SIGNATURE_INDICES: 24
+N_INTERSECTION_INDICES: 24
 INTERSECTION_INDICES_DOMAIN_SIZE: 32
 SIGNATURE_INDICES_DOMAIN_SIZE: 32
 LEB128_GROUP_SIZE: 7
-N_VALIDATORS_LEAVES: *N_VALIDATORS_REF
-CHAIN_ID: [false, true, true, false, false, false, true, true, false, 
-          true, true, false, false, true, false, true, false, true, true,
-          false, true, true, false, false, false, true, true, false, false, 
-          true, false, true, false, true, true, true, false, false, true, true,
-          false, true, true, true, false, true, false, false, false, true, true, false, 
-          true, false, false, true, false, true, true, false, false, false, false, true]
-VERSION_BLOCK: [false, false, false, false, true, false, true, true]
+N_VALIDATORS_LEAVES: 105
+CHAIN_ID:
+- false
+- true
+- true
+- false
+- false
+- false
+- true
+- true
+- false
+- true
+- true
+- false
+- false
+- true
+- false
+- true
+- false
+- true
+- true
+- false
+- true
+- true
+- false
+- false
+- false
+- true
+- true
+- false
+- false
+- true
+- false
+- true
+- false
+- true
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- true
+- true
+- true
+- false
+- true
+- false
+- false
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- false
+- false
+- false
+- false
+- true
+VERSION_BLOCK:
+- false
+- false
+- false
+- false
+- true
+- false
+- true
+- true

@@ -309,32 +309,39 @@ pub async fn run_circuit() {
         generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
     }
     if x == "4" {
+        // 1..24 proof remaings
+        // 55.. build remains
+        // terra -> rebuild with improved config
+        // lumenx -> rebuild with improved config (couln't find required number of non-null signature indices)
+        // TODO: don't keep lumenx: only 2 vals can cause instability
+        // STRIDE -> rebuild with improved config (couln't find required number of non-null signature indices)
+        // for (i, chain_name) in chain_names.iter().enumerate().skip(24) {
         for (i, chain_name) in chain_names.iter().enumerate() {
+            println!("{:?}. chain_name {:?}", i, chain_name);
+
             // let path_raw = format!("{storage_dir}/{chain_name}");
             // let path = std::path::Path::new(&path_raw);
             // if !path.exists() {
-                // println!("chain_name {:?}", chain_name);
-                //     create_storage_dir_for_chain(chain_name, storage_dir);
-                //     build_tendermint_lc_circuit::<F, C, D>(chain_name, chains_config_path, storage_dir);
-                //     build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
-                // }
-        println!("{:?}. chain_name {:?}", i, chain_name);
-        let config = get_chain_config(chains_config_path, &chain_name);
-        // let t = get_some_latest_inputs(&config).await.unwrap();
-        let t: Inputs;
-        loop {
-            match get_some_latest_inputs(&config).await {
-                Ok(_inputs) => {
-                    t = _inputs;
-                    break;
-                }
-                Err(e) => {
-                    error!("Error in get_some_latest_inputs::{:?}, {:?}", e.to_string(), "Trying again...");
-                    sleep(Duration::from_secs_f32(2 as f32)).await; // 2 seconds
-                }
-            };
-        }
-        generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
+            //     create_storage_dir_for_chain(chain_name, storage_dir);
+            //     build_tendermint_lc_circuit::<F, C, D>(chain_name, chains_config_path, storage_dir);
+            //     build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
+            // }
+
+            let config = get_chain_config(chains_config_path, &chain_name);
+            let t: Inputs;
+            loop {
+                match get_some_latest_inputs(&config).await {
+                    Ok(_inputs) => {
+                        t = _inputs;
+                        break;
+                    }
+                    Err(e) => {
+                        error!("Error in get_some_latest_inputs::{:?}, {:?}", e.to_string(), "Trying again...");
+                        sleep(Duration::from_secs_f32(5 as f32)).await; // 5 seconds
+                    }
+                };
+            }
+            generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
         }
     }
 }

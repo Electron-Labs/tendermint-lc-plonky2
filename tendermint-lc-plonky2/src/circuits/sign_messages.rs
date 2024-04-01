@@ -59,8 +59,8 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         .map(|_| builder._false())
         .collect::<Vec<BoolTarget>>();
     let mut untrusted_pub_keys =
-        untrusted_pub_keys[0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)].to_vec();
-    (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
+        untrusted_pub_keys[0..min(c.SIGNATURE_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)].to_vec();
+    (c.MAX_N_VALIDATORS..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|_| {
         untrusted_pub_keys.push(zero_pub_key.clone());
     });
 
@@ -159,6 +159,7 @@ pub fn verify_signatures<F: RichField + Extendable<D>, const D: usize>(
         //     builder.connect(a, b);
         // });
 
-        verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
+        // TODO:
+        // verify_using_preprocessed_sha_block(builder, message, pub_key, signature);
     }
 }

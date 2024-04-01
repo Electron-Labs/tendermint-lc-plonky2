@@ -36,7 +36,7 @@ pub fn connect_pub_keys_and_vps<F: RichField + Extendable<D>, const D: usize>(
     vps: &Vec<BigUintTarget>,
     c: &Config,
 ) {
-    let _vps = (0..c.N_VALIDATORS)
+    let _vps = (0..c.MAX_N_VALIDATORS)
         .map(|_| {
             builder.add_virtual_biguint_target(
                 (c.VP_BITS.div_ceil(c.LEB128_GROUP_SIZE) * 8).div_ceil(32),
@@ -44,11 +44,11 @@ pub fn connect_pub_keys_and_vps<F: RichField + Extendable<D>, const D: usize>(
         })
         .collect::<Vec<BigUintTarget>>();
 
-    (0..c.N_VALIDATORS).for_each(|i| builder.connect_biguint(&_vps[i], &vps[i]));
+    (0..c.MAX_N_VALIDATORS).for_each(|i| builder.connect_biguint(&_vps[i], &vps[i]));
 
     // 7 bits from each of 10 consecutive bytes in `validators_padded[i]` starting from the 39th byte makes up the `vp_bits`
     // `validators_padded[i]` contains voting power in LEB128 format
-    (0..c.N_VALIDATORS).for_each(|i| {
+    (0..c.MAX_N_VALIDATORS).for_each(|i| {
         (0..256).for_each(|j| {
             builder.connect(validators_padded[i][40 + j].target, pub_keys[i][j].target)
         });

@@ -52,7 +52,7 @@ mod tests {
             static ref CONFIG: Config = {
                 // Read the config file and deserialize it into a Config struct
                 let file_content =
-                    std::fs::read_to_string("./src/chain_config/OSMOSIS.yaml").expect("Unable to read config yaml file");
+                    std::fs::read_to_string("./src/chain_config/DYMENSION.yaml").expect("Unable to read config yaml file");
                 serde_yaml::from_str(file_content.as_str()).unwrap()
             };
         }
@@ -438,7 +438,7 @@ mod tests {
             })
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
         let untrusted_hash = builder.add_virtual_hash256_target();
@@ -477,18 +477,12 @@ mod tests {
                 .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..cc.MAX_N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 );
-            });
-        });
-        // in case when the indices domain size is greator than n validators
-        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
         });
 
@@ -523,7 +517,7 @@ mod tests {
         let messages_padded = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_VALIDATORS)
+        let signatures = (0..cc.MAX_N_VALIDATORS)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -531,7 +525,7 @@ mod tests {
             })
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
@@ -570,7 +564,7 @@ mod tests {
                 .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..cc.MAX_N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_pub_keys[i][j],
@@ -579,12 +573,6 @@ mod tests {
             });
         });
 
-        // in case when the indices domain size is greator than n validators
-        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
-            });
-        });
 
         let mut untrusted_hash_slice = [0u8; 32];
         untrusted_hash_slice.copy_from_slice(data.untrusted_hash.as_slice());
@@ -618,7 +606,7 @@ mod tests {
         let messages_padded = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| get_sha_512_2_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let signatures = (0..cc.N_VALIDATORS)
+        let signatures = (0..cc.MAX_N_VALIDATORS)
             .map(|_| {
                 (0..cc.SIGNATURE_BITS)
                     .map(|_| builder.add_virtual_bool_target_unsafe())
@@ -626,7 +614,7 @@ mod tests {
             })
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let untrusted_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
@@ -665,18 +653,12 @@ mod tests {
                 .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..cc.MAX_N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_pub_keys[i][j],
                     data.untrusted_validator_pub_keys[i][j],
                 );
-            });
-        });
-        // in case when the indices domain size is greator than n validators
-        (cc.N_VALIDATORS..cc.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|i| {
-            (0..256).for_each(|j| {
-                (0..256).for_each(|j| witness.set_bool_target(untrusted_pub_keys[i][j], false));
             });
         });
         let mut height = data.untrusted_height;
@@ -783,13 +765,13 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_validator_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+        let untrusted_validators_padded = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
@@ -805,7 +787,7 @@ mod tests {
 
         let data = get_test_data();
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.untrusted_validator_pub_keys.len()).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validator_pub_keys[i][j],
@@ -813,7 +795,16 @@ mod tests {
                 )
             })
         });
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (data.untrusted_validator_pub_keys.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validator_pub_keys[i][j],
+                    false,
+                )
+            })
+        });
+
+        (0..data.untrusted_validators_padded.len()).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
@@ -821,11 +812,25 @@ mod tests {
                 )
             })
         });
+        (data.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validators_padded[i][j],
+                    false,
+                )
+            })
+        });
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.untrusted_validator_vps.len()).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
+            )
+        });
+        (data.untrusted_validator_vps.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -841,19 +846,19 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let untrusted_validator_pub_key = (0..cc.N_VALIDATORS)
+        let untrusted_validator_pub_keys_targets = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+        let untrusted_validators_padded = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
-        let target = connect_pub_keys_and_vps(
+        connect_pub_keys_and_vps(
             &mut builder,
-            &untrusted_validator_pub_key,
+            &untrusted_validator_pub_keys_targets,
             &untrusted_validators_padded,
             &untrusted_validator_vps,
             cc,
@@ -864,17 +869,26 @@ mod tests {
         let data = get_test_data();
 
         let mut untrusted_validator_pub_keys = data.untrusted_validator_pub_keys;
-        untrusted_validator_pub_keys[3][3] = false;
+        untrusted_validator_pub_keys[3][3] = !untrusted_validator_pub_keys[3][3];
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..untrusted_validator_pub_keys.len()).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
-                    untrusted_validator_pub_key[i][j],
+                    untrusted_validator_pub_keys_targets[i][j],
                     untrusted_validator_pub_keys[i][j],
                 )
             })
         });
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (untrusted_validator_pub_keys.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validator_pub_keys_targets[i][j],
+                    false,
+                )
+            })
+        });
+
+        (0..data.untrusted_validators_padded.len()).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
@@ -882,11 +896,25 @@ mod tests {
                 )
             })
         });
+        (data.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validators_padded[i][j],
+                    false,
+                )
+            })
+        });
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.untrusted_validator_vps.len()).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
+            )
+        });
+        (data.untrusted_validator_vps.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -902,16 +930,13 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_validator_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
-            .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
-            .collect::<Vec<BigUintTarget>>();
-        let untrusted_validators_padded = (0..cc.N_VALIDATORS)
+        let untrusted_validators_padded = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
@@ -928,9 +953,9 @@ mod tests {
         let data = get_test_data();
 
         let mut untrusted_validator_vps_values = data.untrusted_validator_vps;
-        untrusted_validator_vps_values[3] = 14141431 + 1;
+        untrusted_validator_vps_values[3] += 1;
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..untrusted_validator_pub_keys.len()).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validator_pub_keys[i][j],
@@ -938,7 +963,16 @@ mod tests {
                 )
             })
         });
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (untrusted_validator_pub_keys.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validator_pub_keys[i][j],
+                    false,
+                )
+            })
+        });
+
+        (0..data.untrusted_validators_padded.len()).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validators_padded[i][j],
@@ -946,11 +980,25 @@ mod tests {
                 )
             })
         });
+        (data.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validators_padded[i][j],
+                    false,
+                )
+            })
+        });
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..untrusted_validator_vps_values.len()).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(untrusted_validator_vps_values[i]).unwrap(),
+            )
+        });
+        (untrusted_validator_vps_values.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -971,7 +1019,7 @@ mod tests {
 
         let data = get_test_data();
 
-        let untrusted_validator_pub_keys = (0..cc.N_VALIDATORS)
+        let untrusted_validator_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
@@ -979,11 +1027,11 @@ mod tests {
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
 
-        let trusted_next_validator_pub_keys = (0..cc.N_VALIDATORS)
+        let trusted_next_validator_pub_keys = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_256_bool_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
-        let trusted_next_validator_vps = (0..cc.N_VALIDATORS)
+        let trusted_next_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
         let trusted_next_intersect_indices = (0..cc.N_INTERSECTION_INDICES)
@@ -1004,7 +1052,7 @@ mod tests {
             cc,
         );
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.untrusted_validator_pub_keys.len()).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     untrusted_validator_pub_keys[i][j],
@@ -1012,8 +1060,16 @@ mod tests {
                 )
             })
         });
+        (data.untrusted_validator_pub_keys.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    untrusted_validator_pub_keys[i][j],
+                    false,
+                )
+            })
+        });
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.trusted_next_validator_pub_keys.len()).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
                     trusted_next_validator_pub_keys[i][j],
@@ -1021,11 +1077,25 @@ mod tests {
                 )
             })
         });
+        (data.trusted_next_validator_pub_keys.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..256).for_each(|j| {
+                witness.set_bool_target(
+                    trusted_next_validator_pub_keys[i][j],
+                    false,
+                )
+            })
+        });
 
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.trusted_next_validator_vps.len()).for_each(|i| {
             witness.set_biguint_target(
                 &trusted_next_validator_vps[i],
                 &BigUint::from_u64(data.trusted_next_validator_vps[i]).unwrap(),
+            )
+        });
+        (data.trusted_next_validator_vps.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &trusted_next_validator_vps[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -1062,7 +1132,7 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
@@ -1079,11 +1149,16 @@ mod tests {
 
         let data = get_test_data();
 
-        // in case if the indices domain size is gretor than n validators
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..data.untrusted_validator_vps.len()).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(data.untrusted_validator_vps[i]).unwrap(),
+            )
+        });
+        (data.untrusted_validator_vps.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            witness.set_biguint_target(
+                &untrusted_validator_vps[i],
+                &BigUint::from_u64(0).unwrap(),
             )
         });
 
@@ -1109,7 +1184,7 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
@@ -1131,7 +1206,7 @@ mod tests {
         vp[0] += 1;
         vp.extend([0; 150 - 45 - 1].to_vec());
         vp.extend([45; 1].to_vec());
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..cc.MAX_N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
@@ -1160,7 +1235,7 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let untrusted_validator_vps = (0..cc.N_VALIDATORS)
+        let untrusted_validator_vps = (0..cc.MAX_N_VALIDATORS)
             .map(|_| builder.add_virtual_biguint_target(cc.VP_BITS.div_ceil(32)))
             .collect::<Vec<BigUintTarget>>();
 
@@ -1181,7 +1256,7 @@ mod tests {
         let mut vp = [2; 45].to_vec();
         vp.extend([0; 150 - 45 - 1].to_vec());
         vp.extend([45; 1].to_vec());
-        (0..cc.N_VALIDATORS).for_each(|i| {
+        (0..cc.MAX_N_VALIDATORS).for_each(|i| {
             witness.set_biguint_target(
                 &untrusted_validator_vps[i],
                 &BigUint::from_u64(vp[i]).unwrap(),
@@ -1209,7 +1284,7 @@ mod tests {
 
         let mut witness = PartialWitness::new();
 
-        let validator_leaves_padded_target = (0..cc.N_VALIDATORS)
+        let validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
@@ -1616,9 +1691,11 @@ mod tests {
         let mut untrusted_intersect_indices = Vec::new();
 
         // signature indices
-        for i in 0..cc.N_SIGNATURE_INDICES {
+        for i in 0..cc.N_SIGNATURE_INDICES - 2 {
             signature_indices.push(i);
         }
+        signature_indices.push(cc.SIGNATURE_INDICES_DOMAIN_SIZE-1);
+        signature_indices.push(cc.SIGNATURE_INDICES_DOMAIN_SIZE-1);
 
         // intersect indices
         for i in 0..cc.N_INTERSECTION_INDICES - 1 {
@@ -1660,12 +1737,12 @@ mod tests {
                 break;
             }
         }
-        assert!(sufficient == true)
         // println!("signature_indices {:?}", t.signature_indices);
         // println!("untrusted_validator_vps {:?}", t.untrusted_validator_vps);
         // println!("trusted_height {:?}", t.trusted_height);
         // println!("untrusted_height {:?}", t.untrusted_height);
-        // println!("3 * quorum_vp {:?}", 3 * quorum_vp);
-        // println!("2 * total_vp {:?}", 2 * total_vp);
+        println!("3 * quorum_vp {:?}", 3 * quorum_vp);
+        println!("2 * total_vp {:?}", 2 * total_vp);
+        assert!(sufficient == true)
     }
 }

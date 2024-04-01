@@ -1,16 +1,16 @@
-use crate::config_data::*;
 use crate::circuits::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use crate::config_data::*;
+use crate::rpc::*;
 use crate::tests::test_utils::{get_n_sha_blocks_for_leaf, get_sha512_preprocessed_input};
 use ct_merkle::inclusion::InclusionProof;
 use ct_merkle::CtMerkleTree;
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
+use std::error::Error;
 use tendermint::block::{CommitSig, Header, Height};
 use tendermint::vote::{CanonicalVote, Type, ValidatorIndex, Vote};
 use tendermint::Signature;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::{Client, HttpClient, Paging};
-use std::error::Error;
 
 // each field is prefixed with a 0-byte, then padded as a sha blocks
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -94,8 +94,7 @@ pub fn get_merkle_proof_byte_vec(inclusion_proof: &InclusionProof<Sha256>) -> Ve
 }
 
 pub async fn get_some_latest_inputs(c: &Config) -> Result<Inputs, Box<dyn Error + Send + Sync>> {
-    let client = HttpClient::new(c.RPC_ENDPOINT.as_str())?;
-    let latest_commit = client.latest_commit().await?.signed_header.commit;
+    let latest_commit = get_latest_commit(&c).await?;
     let untrusted_height = latest_commit.height.value() - 100;
     let trusted_height = untrusted_height - 2000;
     get_inputs_for_height(untrusted_height, trusted_height, c).await
@@ -106,61 +105,15 @@ pub async fn get_inputs_for_height(
     trusted_height: u64,
     c: &Config,
 ) -> Result<Inputs, Box<dyn Error + Send + Sync>> {
-    let client = HttpClient::new(c.RPC_ENDPOINT.as_str())?;
     let u_height = Height::from(untrusted_height as u32);
     let t_height = Height::from(trusted_height as u32);
-    let untrusted_commit = client.commit(u_height).await?.signed_header.commit;
-    let untrusted_block = client.block(u_height).await?.block;
-    let untrusted_validators = client.validators(u_height, Paging::All).await?.validators;
+    let untrusted_commit = get_commit(&c, u_height).await?;
+    let untrusted_block = get_block(&c, u_height).await?;
+    let untrusted_validators = get_validators_all(&c, u_height).await?;
 
-    let trusted_commit = client.commit(t_height).await?.signed_header.commit;
-    let trusted_block = client.block(t_height).await?.block;
-    let trusted_next_validators = client
-        .validators(Height::from((t_height.value() + 1) as u32), Paging::All)
-        .await?
-        .validators;
-
-    // let untrusted_commit = match untrusted_commit_response {
-    //     Ok(commit_response) => commit_response.signed_header.commit,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch untrusted commit")
-    //     }
-    // };
-
-    // let trusted_commit = match trusted_commit_response {
-    //     Ok(commit_response) => commit_response.signed_header.commit,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch trusted commit")
-    //     }
-    // };
-
-    // let untrusted_block = match untrusted_block_response {
-    //     Ok(block_response) => block_response.block,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch untrusted_block")
-    //     }
-    // };
-
-    // let trusted_block = match trusted_block_response {
-    //     Ok(block_response) => block_response.block,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch untrusted_block")
-    //     }
-    // };
-
-    // let untrusted_validators = match untrusted_validators_response {
-    //     Ok(validators_response) => validators_response.validators,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch untrusted_validators")
-    //     }
-    // };
-
-    // let trusted_next_validators = match trusted_next_validators_response {
-    //     Ok(validators_response) => validators_response.validators,
-    //     Err(_) => {
-    //         panic!("Couldnt fetch trusted_next_validators")
-    //     }
-    // };
+    let trusted_commit = get_commit(&c, t_height).await?;
+    let trusted_block = get_block(&c, t_height).await?;
+    let trusted_next_validators = get_validators_all(&c, Height::from((t_height.value() + 1) as u32)).await?;
 
     let mut signatures_for_indices: Vec<Vec<bool>> = vec![];
     let mut signatures_indices: Vec<u8> = vec![];
@@ -182,7 +135,10 @@ pub async fn get_inputs_for_height(
         }
     }
 
-    assert!(signatures_indices.len() == c.N_SIGNATURE_INDICES, "couln't find require number of non-null sinature indices");
+    assert!(
+        signatures_indices.len() == c.N_SIGNATURE_INDICES,
+        "couln't find required number of non-null signature indices"
+    );
 
     let untrusted_hash = untrusted_commit.clone().block_id.hash.as_bytes().to_vec();
     let untrusted_time = untrusted_block.header.time;
@@ -569,7 +525,9 @@ mod tests {
             "./src/tests/test_data/{TRUSTED_HEIGHT}_{UNTRUSTED_HEIGHT}.json"
         ))
         .unwrap();
-        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config).await.unwrap();
+        let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config)
+            .await
+            .unwrap();
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
         writer.flush().unwrap();

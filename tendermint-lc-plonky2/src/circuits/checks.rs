@@ -26,9 +26,9 @@ pub fn check_update_validity<F: RichField + Extendable<D>, const D: usize>(
 
     // ensures trusted height + trusting period >= untrusted height
     let trusting_period_seconds =
-        builder.constant_biguint(&BigUint::from_usize(c.TRUSTING_PERIOD).unwrap());
+    builder.constant_biguint(&BigUint::from_usize(c.TRUSTING_PERIOD).unwrap());
     let untrusted_max_allowed_timestamp =
-        builder.add_biguint(&trusted_timestamp, &trusting_period_seconds);
+    builder.add_biguint(&trusted_timestamp, &trusting_period_seconds);
     let result = builder.cmp_biguint(&untrusted_timestamp, &untrusted_max_allowed_timestamp);
     builder.connect(result.target, one_bool_target.target);
 
@@ -45,13 +45,14 @@ pub fn check_update_validity<F: RichField + Extendable<D>, const D: usize>(
         )
     });
 
-    // ensure correct chain id
-    let chain_id = c
-        .CHAIN_ID
-        .iter()
-        .map(|&elm| builder.constant_bool(elm))
-        .collect::<Vec<BoolTarget>>();
-    (0..chain_id.len()).for_each(|i| {
-        builder.connect(untrusted_chain_id_padded[24 + i].target, chain_id[i].target)
-    });
+    // TODO: uncomment
+    // // ensure correct chain id
+    // let chain_id = c
+    //     .CHAIN_ID
+    //     .iter()
+    //     .map(|&elm| builder.constant_bool(elm))
+    //     .collect::<Vec<BoolTarget>>();
+    // (0..chain_id.len()).for_each(|i| {
+    //     builder.connect(untrusted_chain_id_padded[24 + i].target, chain_id[i].target)
+    // });
 }

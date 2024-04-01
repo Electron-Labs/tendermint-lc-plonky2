@@ -3,10 +3,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct Config {
-    pub RPC_ENDPOINT: String,
+    // TODO:
+    pub RPC_ENDPOINT: Vec<String>,
+    // pub RPC_ENDPOINT: String,
     pub VP_BITS: usize,
     pub SIGNATURE_BITS: usize,
-    pub N_VALIDATORS: usize,
+    pub MAX_N_VALIDATORS: usize,
+    pub MIN_N_VALIDATORS: usize,
     pub HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: usize,
     pub HEIGHT_BITS: usize,
     pub TIMESTAMP_BITS: usize,

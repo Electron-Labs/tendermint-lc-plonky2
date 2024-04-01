@@ -1,24 +1,118 @@
-RPC_ENDPOINT: https://sentry.tm.injective.network/
-VP_BITS: 64 # VOTING POWER
+RPC_ENDPOINT:
+- https://injective-1-public-rpc.mesa.ec1-prod.newmetric.xyz
+- https://rpc-injective.goldenratiostaking.net
+- https://injective-rpc.polkachu.com
+- https://injective-rpc.lavenderfive.com
+- https://rpc-injective-ia.cosmosia.notional.ventures/
+VP_BITS: 64
 SIGNATURE_BITS: 512
-N_VALIDATORS: &N_VALIDATORS_REF 60
+MAX_N_VALIDATORS: 65
+MIN_N_VALIDATORS: 56
 HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
-TRUSTING_PERIOD: 1209600 # 2 weeks in seconds
-N_SIGNATURE_INDICES: 25
-N_INTERSECTION_INDICES: 25
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+TRUSTING_PERIOD: 1209600
+N_SIGNATURE_INDICES: 40
+N_INTERSECTION_INDICES: 40
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
-N_VALIDATORS_LEAVES: *N_VALIDATORS_REF
-CHAIN_ID: [false, true, true, false, true, false, false, true, false, true, true,
-          false, true, true, true, false, false, true, true, false, true, false,
-          true, false, false, true, true, false, false, true, false, true, false,
-          true, true, false, false, false, true, true, false, true, true, true,
-          false, true, false, false, false, true, true, false, true, false, false,
-          true, false, true, true, true, false, true, true, false, false, true, true,
-          false, false, true, false, true, false, false, true, false, true, true, false,
-          true, false, false, true, true, false, false, false, true]
-
-VERSION_BLOCK: [false, false, false, false, true, false, true, true]
+N_VALIDATORS_LEAVES: 65
+CHAIN_ID:
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- false
+- true
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- true
+- false
+- true
+- false
+- false
+- true
+- true
+- false
+- false
+- true
+- false
+- true
+- false
+- true
+- true
+- false
+- false
+- false
+- true
+- true
+- false
+- true
+- true
+- true
+- false
+- true
+- false
+- false
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- true
+- false
+- true
+- true
+- false
+- false
+- true
+- true
+- false
+- false
+- true
+- false
+- true
+- false
+- false
+- true
+- false
+- true
+- true
+- false
+- true
+- false
+- false
+- true
+- true
+- false
+- false
+- false
+- true
+VERSION_BLOCK:
+- false
+- false
+- false
+- false
+- true
+- false
+- true
+- true

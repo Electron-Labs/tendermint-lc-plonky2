@@ -33,24 +33,24 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
 
     let mut untrusted_validator_pub_keys = untrusted_validator_pub_keys
-        [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)]
+        [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)]
         .to_vec();
-    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .for_each(|_| {
             untrusted_validator_pub_keys.push(zero_pub_key.clone());
         });
 
     let mut trusted_next_validator_pub_keys = trusted_next_validator_pub_keys
-        [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)]
+        [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)]
         .to_vec();
-    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .for_each(|_| {
             trusted_next_validator_pub_keys.push(zero_pub_key.clone());
         });
 
-    let mut trusted_next_validator_vps = trusted_next_validator_vps[0..c.N_VALIDATORS].to_vec();
+    let mut trusted_next_validator_vps = trusted_next_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
 
-    (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
+    (c.MAX_N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
         trusted_next_validator_vps.push(zero_vp.clone());
     });
 
@@ -69,7 +69,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
     // compute total voting power
-    (0..c.N_VALIDATORS)
+    (0..c.MAX_N_VALIDATORS)
         .for_each(|i| total_vp = builder.add_biguint(&total_vp, &trusted_next_validator_vps[i]));
 
     // prepares voting power columns
@@ -149,10 +149,10 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
     zero_vp.limbs.push(builder.constant_u32(0));
 
-    let mut untrusted_validator_vps = untrusted_validator_vps[0..c.N_VALIDATORS].to_vec();
+    let mut untrusted_validator_vps = untrusted_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
 
     // TODO: replace c.INTERSECTION_INDICES_DOMAIN_SIZE with c.SIGNATURE_INDICES_DOMAIN_SIZE
-    (c.N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
+    (c.MAX_N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
         untrusted_validator_vps.push(zero_vp.clone());
     });
     let signature_indices = signature_indices[0..c.N_SIGNATURE_INDICES].to_vec();
@@ -164,7 +164,7 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let zero_bool_target = builder._false();
 
     // compute total voting power
-    (0..c.N_VALIDATORS)
+    (0..c.MAX_N_VALIDATORS)
         .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_validator_vps[i]));
 
     // prepares voting power columns
@@ -203,3 +203,7 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let comparison = builder.cmp_biguint(&three_times_quorum_vp, &two_times_total_vp);
     builder.connect(comparison.target, zero_bool_target.target);
 }
+
+
+// TODO: ensure validators_padded are all zeros starting from `MAX_N_VALIDATORS` index
+// this also ensure that corresponding vps and pub keys are also 0

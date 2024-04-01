@@ -9,7 +9,7 @@ pub fn get_test_data() -> Inputs {
     let cur_dir = env::current_dir().unwrap();
     let is_test = cur_dir.ends_with("tendermint-lc-plonky2/tendermint-lc-plonky2");
     let file = match is_test {
-        true => PathBuf::from("src/tests/test_data/12960957_12975357.json"),
+        true => PathBuf::from("/home/ubuntu/tendermint-lc-proof-generator/dump_inputs/last_inputs.json"),
         false => PathBuf::from("tendermint-lc-plonky2/src/tests/test_data/12960957_12975357.json"),
     };
     let file_path = cur_dir.join(file);
