@@ -151,8 +151,7 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
 
     let mut untrusted_validator_vps = untrusted_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
 
-    // TODO: replace c.INTERSECTION_INDICES_DOMAIN_SIZE with c.SIGNATURE_INDICES_DOMAIN_SIZE
-    (c.MAX_N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
+    (c.MAX_N_VALIDATORS..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|_| {
         untrusted_validator_vps.push(zero_vp.clone());
     });
     let signature_indices = signature_indices[0..c.N_SIGNATURE_INDICES].to_vec();

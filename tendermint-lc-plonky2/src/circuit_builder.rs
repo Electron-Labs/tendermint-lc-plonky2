@@ -309,16 +309,11 @@ pub async fn run_circuit() {
         generate_proof::<F, C, D>(chains_config_path, &chain_name, storage_dir, t, "xyz");
     }
     if x == "4" {
-        // 1..24 proof remaings
-        // 55.. build remains
-        // terra -> rebuild with improved config
-        // lumenx -> rebuild with improved config (couln't find required number of non-null signature indices)
-        // TODO: don't keep lumenx: only 2 vals can cause instability
-        // STRIDE -> rebuild with improved config (couln't find required number of non-null signature indices)
         // for (i, chain_name) in chain_names.iter().enumerate().skip(24) {
         for (i, chain_name) in chain_names.iter().enumerate() {
             println!("{:?}. chain_name {:?}", i, chain_name);
 
+            // build
             // let path_raw = format!("{storage_dir}/{chain_name}");
             // let path = std::path::Path::new(&path_raw);
             // if !path.exists() {
@@ -327,6 +322,7 @@ pub async fn run_circuit() {
             //     build_recursion_circuit::<F, C, C, D>(chain_name, storage_dir);
             // }
 
+            // generate_proof
             let config = get_chain_config(chains_config_path, &chain_name);
             let t: Inputs;
             loop {

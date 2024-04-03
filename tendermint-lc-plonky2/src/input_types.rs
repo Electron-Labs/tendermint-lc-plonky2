@@ -1,4 +1,4 @@
-use crate::circuits::merkle_targets::{bool_to_bytes, bytes_to_bool};
+use crate::native::{bool_to_bytes, bytes_to_bool};
 use crate::config_data::*;
 use crate::rpc::*;
 use crate::tests::test_utils::{get_n_sha_blocks_for_leaf, get_sha512_preprocessed_input};
@@ -544,10 +544,10 @@ mod tests {
     #[tokio::test]
     #[ignore]
     pub async fn test() {
-        pub const UNTRUSTED_HEIGHT: u64 = OSMOSIS_UNTRUSTED_HEIGHT;
-        pub const TRUSTED_HEIGHT: u64 = OSMOSIS_TRUSTED_HEIGHT;
+        pub const UNTRUSTED_HEIGHT: u64 = 12405588;
+        pub const TRUSTED_HEIGHT: u64 = 12404588;
 
-        let chain_name = "OSMOSIS";
+        let chain_name = "DYDX";
         // TODO: read from env
         let chains_config_path = "src/chain_config";
         let config = get_chain_config(chains_config_path, chain_name);

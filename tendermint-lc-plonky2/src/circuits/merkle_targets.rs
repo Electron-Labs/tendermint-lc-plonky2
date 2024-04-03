@@ -1,5 +1,6 @@
 // Merkle Tree gadgets following RFC-6962
 
+use crate::native::get_split_point;
 use plonky2::{
     field::extension::Extendable, hash::hash_types::RichField, iop::target::BoolTarget,
     plonk::circuit_builder::CircuitBuilder,
@@ -281,52 +282,32 @@ pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const
     // hash_bool
 }
 
-// assuming input is a multiple of 8
-pub fn bool_to_bytes(bool_arr: Vec<bool>) -> Vec<u8> {
-    let mut b = (0..bool_arr.len() / 8).map(|_| 0u8).collect::<Vec<u8>>();
-    for (idx, bit) in bool_arr.into_iter().enumerate() {
-        let byte = idx / 8;
-        let shift = 7 - idx % 8;
-        b[byte] |= (bit as u8) << shift;
-    }
-    b
-}
-
-pub fn bytes_to_bool(bytes_arr: Vec<u8>) -> Vec<bool> {
-    let mut bool_vec: Vec<bool> = Vec::new();
-    for byte in bytes_arr {
-        for i in 0..8 {
-            let res = if (byte >> (7 - i) & 1) == 1 {
-                true
-            } else {
-                false
-            };
-            bool_vec.push(res);
-        }
-    }
-    return bool_vec;
-}
-
-
 // TODO:
-pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
-    builder: &mut CircuitBuilder<F, D>,
-    leaves_padded: &Vec<Vec<BoolTarget>>,
-    min_n_validators: usize,
-) {
-    // 90
-    // 64 + 16 + 8 + 2
-}
+// /// return array of validators hash for the range [min_n_validators, max_n_validators] using minimal number of hashes
+// pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
+//     builder: &mut CircuitBuilder<F, D>,
+//     leaves_padded: &Vec<Vec<BoolTarget>>,
+//     min_n_validators: usize,
+//     max_n_validators: usize,
+// ) {
+//     assert!(min_n_validators <= max_n_validators);
+//     assert!(leaves_padded.len() == max_n_validators);
+
+//     let mut leaves_hash = leaves_padded
+//         .iter()
+//         .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
+//         .collect::<Vec<Vec<BoolTarget>>>();
+
+//     let mut prev_sub_tree_roots: Vec<(usize, Vec<u8>)> = vec![];
+
+//     let mut right_leaves_hash = leaves_hash[..min_n_validators].to_vec();
+// }
 
 pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    leaves_padded: &Vec<Vec<BoolTarget>>,
+    leaves_hashes: &Vec<Vec<BoolTarget>>,
 ) -> Vec<BoolTarget> {
-    let mut items = leaves_padded
-        .iter()
-        .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
-        .collect::<Vec<Vec<BoolTarget>>>();
-
+    let mut items = leaves_hashes.clone();
     let mut size = items.len();
 
     while size != 1 {
@@ -432,10 +413,10 @@ pub fn verify_next_validators_hash_merkle_proof<F: RichField + Extendable<D>, co
 #[cfg(test)]
 mod tests {
     use super::{
-        biguint_hash_to_bool_targets, bytes_to_bool, get_256_bool_target,
-        sha256_2_block_two_to_one_hash_target, sha256_n_block_hash_target, two_to_one_pad_target,
-        BoolTarget, SHA_BLOCK_BITS,
+        biguint_hash_to_bool_targets, get_256_bool_target, sha256_2_block_two_to_one_hash_target,
+        sha256_n_block_hash_target, two_to_one_pad_target, BoolTarget, SHA_BLOCK_BITS,
     };
+    use crate::native::bytes_to_bool;
     use crate::tests::test_utils::*;
     use plonky2::{
         iop::{witness::PartialWitness, witness::WitnessWrite},

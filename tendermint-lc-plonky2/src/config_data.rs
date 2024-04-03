@@ -3,9 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct Config {
-    // TODO:
     pub RPC_ENDPOINT: Vec<String>,
-    // pub RPC_ENDPOINT: String,
     pub VP_BITS: usize,
     pub SIGNATURE_BITS: usize,
     pub MAX_N_VALIDATORS: usize,

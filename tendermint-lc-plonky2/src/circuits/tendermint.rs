@@ -25,8 +25,6 @@ use std::array::IntoIter;
 use crate::config_data::*;
 use crate::input_types::HeaderPadded;
 
-// TODO: use BlockIDFlag: https://pkg.go.dev/github.com/tendermint/tendermint@v0.35.9/types#BlockIDFlag
-
 pub struct VerifySignatures {
     pub signatures: Vec<Vec<BoolTarget>>,
     pub messaged_padded: Vec<Vec<BoolTarget>>,
