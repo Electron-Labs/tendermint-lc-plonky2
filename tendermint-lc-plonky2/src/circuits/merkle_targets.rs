@@ -307,6 +307,17 @@ pub fn bytes_to_bool(bytes_arr: Vec<u8>) -> Vec<bool> {
     return bool_vec;
 }
 
+
+// TODO:
+pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves_padded: &Vec<Vec<BoolTarget>>,
+    min_n_validators: usize,
+) {
+    // 90
+    // 64 + 16 + 8 + 2
+}
+
 pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     leaves_padded: &Vec<Vec<BoolTarget>>,

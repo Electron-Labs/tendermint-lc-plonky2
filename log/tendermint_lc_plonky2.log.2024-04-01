@@ -1,0 +1,9 @@
+  2024-04-01T19:57:36.347489Z  INFO tendermint_lc_plonky2::circuit_builder: Building Tendermint lc circuit
+    at tendermint-lc-plonky2/src/circuit_builder.rs:139
+
+  2024-04-01T19:57:37.341210Z  INFO tendermint_lc_plonky2::circuit_builder: Building circuit with 135202 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:142
+
+  2024-04-01T19:58:03.451906Z  INFO tendermint_lc_plonky2::circuit_builder: Time taken to build the circuit : 26.110651972s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:145
+

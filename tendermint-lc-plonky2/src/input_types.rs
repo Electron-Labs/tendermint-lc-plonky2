@@ -59,6 +59,12 @@ pub struct Inputs {
     pub trusted_next_intersect_indices: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct TestInputsNative {
+    pub validators: Vec<Vec<u8>>,
+    pub validators_hash: Vec<u8>,
+}
+
 pub fn get_block_header_merkle_tree(header: Header) -> CtMerkleTree<Sha256, Vec<u8>> {
     let mut mt = CtMerkleTree::<Sha256, Vec<u8>>::new();
 
@@ -113,7 +119,8 @@ pub async fn get_inputs_for_height(
 
     let trusted_commit = get_commit(&c, t_height).await?;
     let trusted_block = get_block(&c, t_height).await?;
-    let trusted_next_validators = get_validators_all(&c, Height::from((t_height.value() + 1) as u32)).await?;
+    let trusted_next_validators =
+        get_validators_all(&c, Height::from((t_height.value() + 1) as u32)).await?;
 
     let mut signatures_for_indices: Vec<Vec<bool>> = vec![];
     let mut signatures_indices: Vec<u8> = vec![];
@@ -503,10 +510,33 @@ pub async fn get_inputs_for_height(
     Ok(inputs)
 }
 
+pub async fn get_test_inputs_native_for_height(
+    height: u64,
+    c: &Config,
+) -> Result<TestInputsNative, Box<dyn Error + Send + Sync>> {
+    let height = Height::from(height as u32);
+    let block = get_block(&c, height).await?;
+    let validators_info = get_validators_all(&c, height).await?;
+
+    let mut validators: Vec<Vec<u8>> = Vec::new();
+    for i in 0..validators_info.len() {
+        validators.push(validators_info[i].hash_bytes());
+    }
+
+    let validators_hash = block.header.validators_hash.as_bytes().to_vec();
+
+    let inputs = TestInputsNative {
+        validators,
+        validators_hash,
+    };
+
+    Ok(inputs)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::config_data::get_chain_config;
-    use crate::input_types::get_inputs_for_height;
+    use crate::input_types::{get_inputs_for_height, get_test_inputs_native_for_height};
     use crate::tests::test_heights::*;
     use std::fs::File;
     use std::io::{BufWriter, Write};
@@ -528,6 +558,26 @@ mod tests {
         let input = get_inputs_for_height(UNTRUSTED_HEIGHT, TRUSTED_HEIGHT, &config)
             .await
             .unwrap();
+        let mut writer = BufWriter::new(file);
+        serde_json::to_writer(&mut writer, &input).unwrap();
+        writer.flush().unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore]
+    pub async fn save_test_inputs_native_for_height() {
+        pub const HEIGHT: u64 = 14627326;
+        let chain_name = "OSMOSIS";
+
+        let chains_config_path = "src/chain_config";
+        let config = get_chain_config(chains_config_path, chain_name);
+        let input = get_test_inputs_native_for_height(HEIGHT, &config)
+            .await
+            .unwrap();
+        let file = File::create(format!(
+            "./src/tests/test_data/test_inputs_data_{HEIGHT}.json"
+        ))
+        .unwrap();
         let mut writer = BufWriter::new(file);
         serde_json::to_writer(&mut writer, &input).unwrap();
         writer.flush().unwrap();

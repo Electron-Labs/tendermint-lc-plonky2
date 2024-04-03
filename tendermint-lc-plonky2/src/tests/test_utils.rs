@@ -1,5 +1,5 @@
 use crate::config_data::get_chain_config;
-use crate::input_types::Inputs;
+use crate::input_types::{Inputs, TestInputsNative};
 use bitvec::prelude::*;
 use std::env;
 use std::path::PathBuf;
@@ -15,6 +15,15 @@ pub fn get_test_data() -> Inputs {
     let file_path = cur_dir.join(file);
     let data_str = std::fs::read_to_string(file_path.as_path()).unwrap();
     let data: Inputs = serde_json::from_str(&data_str).unwrap();
+    data
+}
+
+pub fn get_test_inputs_native_data() -> TestInputsNative {
+    let cur_dir = env::current_dir().unwrap();
+    let file = PathBuf::from("src/tests/test_data/test_inputs_data_14627326.json");
+    let file_path = cur_dir.join(file);
+    let data_str = std::fs::read_to_string(file_path.as_path()).unwrap();
+    let data: TestInputsNative = serde_json::from_str(&data_str).unwrap();
     data
 }
 
