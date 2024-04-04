@@ -9,6 +9,9 @@ pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     signature_indices: &Vec<Target>,
     untrusted_intersect_indices: &Vec<Target>,
+    trusted_next_intersect_indices: &Vec<Target>,
+    n_untrusted_validators: &Target,
+    n_trusted_next_validators: &Target,
     c: &Config,
 ) {
     let zero_target = builder.zero();
@@ -54,4 +57,31 @@ pub fn constrain_indices<F: RichField + Extendable<D>, const D: usize>(
             let a = builder.mul(is_untrusted_in_signature.target, enable_constraint.target);
             builder.connect(a, enable_constraint.target);
         });
+
+    // ensure signature_indices are less than n_untrusted_validators
+    for i in 0..signature_indices.len() {
+        let result = list_le_circuit(
+            builder,
+            vec![n_untrusted_validators.clone()],
+            vec![signature_indices[i]],
+            8,
+        ); // returns true if n_untrusted_validators <= signature_indices[i]
+        builder.connect(result.target, zero_target);
+    }
+
+    // ensure trusted_next_intersection_indices are less than n_untrusted_validators
+    trusted_next_intersect_indices.iter().for_each(|&idx| {
+        let is_reserved_index = builder.is_equal(idx, null_idx);
+        // constrain only if its a non-reserved index
+        let enable_constraint = builder.not(is_reserved_index);
+        let result = list_le_circuit(
+            builder,
+            vec![n_trusted_next_validators.clone()],
+            vec![idx],
+            8,
+        ); // returns true if n_untrusted_validators <= signature_indices[i]
+        let not_result = builder.not(result);
+        let a = builder.mul(not_result.target, enable_constraint.target);
+        builder.connect(a, enable_constraint.target);
+    });
 }

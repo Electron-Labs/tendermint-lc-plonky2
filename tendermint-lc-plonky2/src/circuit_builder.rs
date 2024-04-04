@@ -280,6 +280,11 @@ pub async fn run_circuit() {
     // Build tendermint light client circuit
     if x == "1" {
         let chain_name = std::env::var("C").expect("`CHAIN` env variable must be set");
+        let path_raw = format!("{storage_dir}/{chain_name}");
+        let path = std::path::Path::new(&path_raw);
+        if !path.exists() {
+            create_storage_dir_for_chain(&chain_name, storage_dir);
+        }
         build_tendermint_lc_circuit::<F, C, D>(&chain_name, chains_config_path, storage_dir);
     }
     // Build recursive circuit
@@ -332,7 +337,11 @@ pub async fn run_circuit() {
                         break;
                     }
                     Err(e) => {
-                        error!("Error in get_some_latest_inputs::{:?}, {:?}", e.to_string(), "Trying again...");
+                        error!(
+                            "Error in get_some_latest_inputs::{:?}, {:?}",
+                            e.to_string(),
+                            "Trying again..."
+                        );
                         sleep(Duration::from_secs_f32(5 as f32)).await; // 5 seconds
                     }
                 };

@@ -14,7 +14,7 @@ use std::cmp::min;
 
 use crate::config_data::*;
 
-pub fn computer_validators_hash<F: RichField + Extendable<D>, const D: usize>(
+pub fn compute_validators_hash<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     n_validators: &Target,
     max_validators_leaves_padded: &Vec<Vec<BoolTarget>>,

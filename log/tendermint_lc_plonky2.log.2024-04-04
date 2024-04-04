@@ -1,0 +1,1572 @@
+  2024-04-04T10:00:54.183420Z  INFO tendermint_lc_plonky2::circuit_builder: msg: "creating storage directory for chain DYDX"
+    at tendermint-lc-plonky2/src/circuit_builder.rs:32
+
+  2024-04-04T10:00:54.184031Z  INFO tendermint_lc_plonky2::circuit_builder: Building Tendermint lc circuit
+    at tendermint-lc-plonky2/src/circuit_builder.rs:139
+
+  2024-04-04T10:00:55.700644Z  INFO tendermint_lc_plonky2::circuit_builder: Building circuit with 125902 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:142
+
+  2024-04-04T10:01:10.624814Z  INFO tendermint_lc_plonky2::circuit_builder: Time taken to build the circuit : 14.92381465s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:145
+
+  2024-04-04T10:01:36.698334Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T10:01:36.698595Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/lc_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T10:01:36.823118Z  INFO multithreaded_fs: time taken to dump 0 th file data: 93.294246ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.838963Z  INFO multithreaded_fs: time taken to dump 2 th file data: 80.908275ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.853729Z  INFO multithreaded_fs: time taken to dump 1 th file data: 97.122961ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.853839Z  INFO multithreaded_fs: time taken to dump 3 th file data: 80.023093ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.889553Z  INFO multithreaded_fs: time taken to dump 4 th file data: 99.537717ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.898695Z  INFO multithreaded_fs: time taken to dump 5 th file data: 96.874948ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.914313Z  INFO multithreaded_fs: time taken to dump 6 th file data: 100.491911ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.933840Z  INFO multithreaded_fs: time taken to dump 9 th file data: 63.746716ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.939476Z  INFO multithreaded_fs: time taken to dump 7 th file data: 93.451528ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.950198Z  INFO multithreaded_fs: time taken to dump 8 th file data: 96.177127ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.956626Z  INFO multithreaded_fs: time taken to dump 10 th file data: 78.841316ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.965055Z  INFO multithreaded_fs: time taken to dump 12 th file data: 79.215322ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.980523Z  INFO multithreaded_fs: time taken to dump 11 th file data: 94.454734ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:36.990418Z  INFO multithreaded_fs: time taken to dump 13 th file data: 96.623104ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.012041Z  INFO multithreaded_fs: time taken to dump 14 th file data: 81.916361ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.028415Z  INFO multithreaded_fs: time taken to dump 15 th file data: 66.591688ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.085648Z  INFO multithreaded_fs: time taken to dump 16 th file data: 94.318801ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.088140Z  INFO multithreaded_fs: time taken to dump 17 th file data: 98.3396ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.089407Z  INFO multithreaded_fs: time taken to dump 20 th file data: 79.640948ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.089464Z  INFO multithreaded_fs: time taken to dump 21 th file data: 79.702168ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.102321Z  INFO multithreaded_fs: time taken to dump 18 th file data: 96.525012ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.110321Z  INFO multithreaded_fs: time taken to dump 23 th file data: 96.537113ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.110787Z  INFO multithreaded_fs: time taken to dump 22 th file data: 97.01818ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.114247Z  INFO multithreaded_fs: time taken to dump 19 th file data: 104.468938ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.126273Z  INFO multithreaded_fs: time taken to dump 24 th file data: 96.474562ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.127272Z  INFO multithreaded_fs: time taken to dump 26 th file data: 77.445056ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.136801Z  INFO multithreaded_fs: time taken to dump 25 th file data: 98.988029ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.141393Z  INFO multithreaded_fs: time taken to dump 28 th file data: 79.632878ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.141725Z  INFO multithreaded_fs: time taken to dump 27 th file data: 95.937605ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.151580Z  INFO multithreaded_fs: time taken to dump 29 th file data: 48.095239ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.175925Z  INFO multithreaded_fs: time taken to dump 30 th file data: 65.989349ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:01:37.191488Z  INFO multithreaded_fs: time taken to dump 31 th file data: 77.73081ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:08.921030Z  INFO tendermint_lc_plonky2::circuit_builder: Reconstructing inner common data
+    at tendermint-lc-plonky2/src/circuit_builder.rs:169
+
+  2024-04-04T10:02:08.971716Z  INFO tendermint_lc_plonky2::circuit_builder: Building recursive circuit with 5137 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:174
+
+  2024-04-04T10:02:09.457381Z  INFO tendermint_lc_plonky2::circuit_builder: Recursive circuit build complete
+    at tendermint-lc-plonky2/src/circuit_builder.rs:180
+
+  2024-04-04T10:02:10.494466Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T10:02:10.494588Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/recursion_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T10:02:10.498081Z  INFO multithreaded_fs: time taken to dump 0 th file data: 2.435035ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.499261Z  INFO multithreaded_fs: time taken to dump 1 th file data: 2.655398ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.499938Z  INFO multithreaded_fs: time taken to dump 2 th file data: 2.449865ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.500835Z  INFO multithreaded_fs: time taken to dump 3 th file data: 2.414324ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.501257Z  INFO multithreaded_fs: time taken to dump 4 th file data: 2.538396ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.502161Z  INFO multithreaded_fs: time taken to dump 5 th file data: 2.473186ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.502717Z  INFO multithreaded_fs: time taken to dump 6 th file data: 2.672328ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.502737Z  INFO multithreaded_fs: time taken to dump 7 th file data: 2.365925ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.503686Z  INFO multithreaded_fs: time taken to dump 8 th file data: 2.384695ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.504185Z  INFO multithreaded_fs: time taken to dump 9 th file data: 2.509676ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.504704Z  INFO multithreaded_fs: time taken to dump 10 th file data: 2.671958ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.505492Z  INFO multithreaded_fs: time taken to dump 11 th file data: 2.452255ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.505651Z  INFO multithreaded_fs: time taken to dump 12 th file data: 2.324334ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.506126Z  INFO multithreaded_fs: time taken to dump 13 th file data: 2.491506ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.506254Z  INFO multithreaded_fs: time taken to dump 14 th file data: 2.352384ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.506724Z  INFO multithreaded_fs: time taken to dump 15 th file data: 2.497506ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.507803Z  INFO multithreaded_fs: time taken to dump 16 th file data: 2.593686ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.508245Z  INFO multithreaded_fs: time taken to dump 17 th file data: 2.539057ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.508468Z  INFO multithreaded_fs: time taken to dump 18 th file data: 2.445825ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.508890Z  INFO multithreaded_fs: time taken to dump 19 th file data: 2.513946ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.509097Z  INFO multithreaded_fs: time taken to dump 20 th file data: 2.468385ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.509480Z  INFO multithreaded_fs: time taken to dump 21 th file data: 2.529956ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.509697Z  INFO multithreaded_fs: time taken to dump 22 th file data: 2.383514ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.509981Z  INFO multithreaded_fs: time taken to dump 23 th file data: 2.388705ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.511193Z  INFO multithreaded_fs: time taken to dump 24 th file data: 2.588797ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.511478Z  INFO multithreaded_fs: time taken to dump 25 th file data: 2.545087ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.511769Z  INFO multithreaded_fs: time taken to dump 26 th file data: 2.500086ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.512146Z  INFO multithreaded_fs: time taken to dump 27 th file data: 2.516446ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.512390Z  INFO multithreaded_fs: time taken to dump 28 th file data: 2.463105ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.512541Z  INFO multithreaded_fs: time taken to dump 29 th file data: 2.336503ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.512961Z  INFO multithreaded_fs: time taken to dump 30 th file data: 2.470855ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:10.513197Z  INFO multithreaded_fs: time taken to dump 31 th file data: 2.235743ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:02:18.098542Z  INFO tendermint_lc_plonky2::circuit_builder: --- Light Client circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:203
+
+  2024-04-04T10:02:18.098562Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T10:02:18.098672Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 95.821µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T10:02:18.098692Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T10:02:18.098863Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T10:02:18.157601Z  INFO multithreaded_fs: time taken to read one chunk of file : 54.664907ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.158614Z  INFO multithreaded_fs: time taken to read one chunk of file : 58.175517ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.160287Z  INFO multithreaded_fs: time taken to read one chunk of file : 61.077839ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.162685Z  INFO multithreaded_fs: time taken to read one chunk of file : 58.150157ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.162991Z  INFO multithreaded_fs: time taken to read one chunk of file : 60.43276ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.163995Z  INFO multithreaded_fs: time taken to read one chunk of file : 59.327794ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.164054Z  INFO multithreaded_fs: time taken to read one chunk of file : 58.247928ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.164056Z  INFO multithreaded_fs: time taken to read one chunk of file : 61.420383ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.164129Z  INFO multithreaded_fs: time taken to read one chunk of file : 60.675442ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.164725Z  INFO multithreaded_fs: time taken to read one chunk of file : 59.717599ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.165868Z  INFO multithreaded_fs: time taken to read one chunk of file : 63.999551ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.166835Z  INFO multithreaded_fs: time taken to read one chunk of file : 65.025845ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167044Z  INFO multithreaded_fs: time taken to read one chunk of file : 64.113582ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167104Z  INFO multithreaded_fs: time taken to read one chunk of file : 62.190365ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167342Z  INFO multithreaded_fs: time taken to read one chunk of file : 66.670469ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167623Z  INFO multithreaded_fs: time taken to read one chunk of file : 64.876194ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167685Z  INFO multithreaded_fs: time taken to read one chunk of file : 66.546768ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.167950Z  INFO multithreaded_fs: time taken to read one chunk of file : 66.370524ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168011Z  INFO multithreaded_fs: time taken to read one chunk of file : 64.609639ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168020Z  INFO multithreaded_fs: time taken to read one chunk of file : 61.87271ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168206Z  INFO multithreaded_fs: time taken to read one chunk of file : 68.84582ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168355Z  INFO multithreaded_fs: time taken to read one chunk of file : 67.768945ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168387Z  INFO multithreaded_fs: time taken to read one chunk of file : 68.365764ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.168989Z  INFO multithreaded_fs: time taken to read one chunk of file : 68.212372ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.170054Z  INFO multithreaded_fs: time taken to read one chunk of file : 70.302012ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.171356Z  INFO multithreaded_fs: time taken to read one chunk of file : 71.770013ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.171673Z  INFO multithreaded_fs: time taken to read one chunk of file : 72.484563ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.172615Z  INFO multithreaded_fs: time taken to read one chunk of file : 66.648659ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.172952Z  INFO multithreaded_fs: time taken to read one chunk of file : 68.408345ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.176636Z  INFO multithreaded_fs: time taken to read one chunk of file : 75.410855ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.179386Z  INFO multithreaded_fs: time taken to read one chunk of file : 74.972479ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.184630Z  INFO multithreaded_fs: time taken to read one chunk of file : 81.005336ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:18.184900Z  INFO multithreaded_fs: time takne to read file : 0
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T10:02:19.192007Z  INFO multithreaded_fs: final total len of final byte vec: 1157764074
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T10:02:21.946182Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 3.847433597s
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T10:02:21.946214Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T10:02:21.946286Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 58.701µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T10:02:22.950911Z  INFO tendermint_lc_plonky2::circuit_builder: Starting lc proof generation
+    at tendermint-lc-plonky2/src/circuit_builder.rs:207
+
+  2024-04-04T10:02:30.389211Z  INFO tendermint_lc_plonky2::circuit_builder: Proof generated in 7.438259627s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:213
+
+  2024-04-04T10:02:30.402674Z  INFO tendermint_lc_plonky2::circuit_builder: --- Recursion Circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:222
+
+  2024-04-04T10:02:30.402697Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T10:02:30.402769Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 49.461µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T10:02:30.402783Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T10:02:30.402898Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T10:02:30.409851Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.347891ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.410819Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.681421ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.410894Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.300655ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.410853Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.126272ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.411668Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.313185ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.411586Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.767321ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.411609Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.188869ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.411633Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.038257ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412314Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.461083ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412374Z  INFO multithreaded_fs: time taken to read one chunk of file : 4.89592ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412320Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.94645ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412713Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.595321ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412668Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.25892ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.412694Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.067138ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.413171Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.306366ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.413148Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.839468ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.413430Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.97122ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.413399Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.730112ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.413648Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.40633ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414060Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.862646ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414120Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.452766ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414436Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.344419ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414398Z  INFO multithreaded_fs: time taken to read one chunk of file : 4.417374ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414402Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.539842ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.414776Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.315571ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415005Z  INFO multithreaded_fs: time taken to read one chunk of file : 11.344773ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415077Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.459822ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415353Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.129427ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415389Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.128582ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415547Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.847387ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415825Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.518252ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415853Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.743841ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:02:30.415996Z  INFO multithreaded_fs: time takne to read file : 0
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T10:02:30.463160Z  INFO multithreaded_fs: final total len of final byte vec: 71837084
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T10:02:30.536920Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 134.097379ms
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T10:02:30.536936Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T10:02:30.537006Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 60.191µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T10:02:30.595433Z  INFO tendermint_lc_plonky2::circuit_builder: Starting to generate recursive proof
+    at tendermint-lc-plonky2/src/circuit_builder.rs:231
+
+  2024-04-04T10:02:30.944914Z  INFO tendermint_lc_plonky2::circuit_builder: recursive proof gen done in 349.438847ms
+    at tendermint-lc-plonky2/src/circuit_builder.rs:248
+
+  2024-04-04T10:35:23.163202Z  INFO tendermint_lc_plonky2::circuit_builder: Building Tendermint lc circuit
+    at tendermint-lc-plonky2/src/circuit_builder.rs:139
+
+  2024-04-04T10:35:24.753452Z  INFO tendermint_lc_plonky2::circuit_builder: Building circuit with 125928 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:142
+
+  2024-04-04T10:35:44.365302Z  INFO tendermint_lc_plonky2::circuit_builder: Time taken to build the circuit : 19.611793818s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:145
+
+  2024-04-04T10:36:12.679431Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T10:36:12.679489Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/lc_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T10:36:12.762830Z  INFO multithreaded_fs: time taken to dump 0 th file data: 59.430218ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.785757Z  INFO multithreaded_fs: time taken to dump 1 th file data: 69.396878ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.797056Z  INFO multithreaded_fs: time taken to dump 2 th file data: 67.47169ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.816776Z  INFO multithreaded_fs: time taken to dump 3 th file data: 72.959348ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.832826Z  INFO multithreaded_fs: time taken to dump 4 th file data: 75.99343ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.849683Z  INFO multithreaded_fs: time taken to dump 6 th file data: 75.98027ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:12.879577Z  INFO multithreaded_fs: time taken to dump 5 th file data: 109.875807ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:13.170465Z  INFO multithreaded_fs: time taken to dump 7 th file data: 380.650753ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:13.986992Z  INFO multithreaded_fs: time taken to dump 8 th file data: 1.193599016s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:13.989581Z  INFO multithreaded_fs: time taken to dump 9 th file data: 1.17612806s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.299250Z  INFO multithreaded_fs: time taken to dump 11 th file data: 1.456772034s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.319263Z  INFO multithreaded_fs: time taken to dump 15 th file data: 1.441330677s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.319299Z  INFO multithreaded_fs: time taken to dump 13 th file data: 1.459939449s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.328791Z  INFO multithreaded_fs: time taken to dump 16 th file data: 1.436038621s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.330989Z  INFO multithreaded_fs: time taken to dump 18 th file data: 1.415722106s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.332854Z  INFO multithreaded_fs: time taken to dump 12 th file data: 1.487185633s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.334736Z  INFO multithreaded_fs: time taken to dump 17 th file data: 1.432900788s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.334752Z  INFO multithreaded_fs: time taken to dump 14 th file data: 1.471772405s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.338600Z  INFO multithreaded_fs: time taken to dump 10 th file data: 1.509643709s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.531624Z  INFO multithreaded_fs: time taken to dump 22 th file data: 1.533683398s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.531662Z  INFO multithreaded_fs: time taken to dump 26 th file data: 1.449119316s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.534254Z  INFO multithreaded_fs: time taken to dump 24 th file data: 1.499406995s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.534286Z  INFO multithreaded_fs: time taken to dump 20 th file data: 1.581960408s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.534305Z  INFO multithreaded_fs: time taken to dump 29 th file data: 1.359563245s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.534313Z  INFO multithreaded_fs: time taken to dump 27 th file data: 1.424659032s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.536355Z  INFO multithreaded_fs: time taken to dump 21 th file data: 1.55941236s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.536381Z  INFO multithreaded_fs: time taken to dump 28 th file data: 1.398428632s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.536418Z  INFO multithreaded_fs: time taken to dump 31 th file data: 1.33940138s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.539451Z  INFO multithreaded_fs: time taken to dump 30 th file data: 1.361660524s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.539457Z  INFO multithreaded_fs: time taken to dump 23 th file data: 1.523009307s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.539512Z  INFO multithreaded_fs: time taken to dump 19 th file data: 1.611710547s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:14.539535Z  INFO multithreaded_fs: time taken to dump 25 th file data: 1.481375021s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:30.987983Z  INFO tendermint_lc_plonky2::circuit_builder: Reconstructing inner common data
+    at tendermint-lc-plonky2/src/circuit_builder.rs:169
+
+  2024-04-04T10:36:31.156688Z  INFO tendermint_lc_plonky2::circuit_builder: Building recursive circuit with 5144 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:174
+
+  2024-04-04T10:36:32.155673Z  INFO tendermint_lc_plonky2::circuit_builder: Recursive circuit build complete
+    at tendermint-lc-plonky2/src/circuit_builder.rs:180
+
+  2024-04-04T10:36:33.964877Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T10:36:33.964987Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/recursion_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T10:36:33.977797Z  INFO multithreaded_fs: time taken to dump 0 th file data: 7.531177ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:33.982283Z  INFO multithreaded_fs: time taken to dump 1 th file data: 5.741581ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:33.990731Z  INFO multithreaded_fs: time taken to dump 2 th file data: 7.353324ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:33.994652Z  INFO multithreaded_fs: time taken to dump 3 th file data: 9.826529ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:33.997782Z  INFO multithreaded_fs: time taken to dump 4 th file data: 8.052904ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.012726Z  INFO multithreaded_fs: time taken to dump 5 th file data: 18.774355ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.017964Z  INFO multithreaded_fs: time taken to dump 9 th file data: 7.532666ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.018418Z  INFO multithreaded_fs: time taken to dump 6 th file data: 21.009667ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.020106Z  INFO multithreaded_fs: time taken to dump 8 th file data: 10.247765ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.022145Z  INFO multithreaded_fs: time taken to dump 7 th file data: 8.176186ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.026945Z  INFO multithreaded_fs: time taken to dump 10 th file data: 5.316846ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.029735Z  INFO multithreaded_fs: time taken to dump 11 th file data: 6.841347ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.031968Z  INFO multithreaded_fs: time taken to dump 12 th file data: 7.002379ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.032513Z  INFO multithreaded_fs: time taken to dump 13 th file data: 5.901524ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.034256Z  INFO multithreaded_fs: time taken to dump 14 th file data: 5.856713ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.038373Z  INFO multithreaded_fs: time taken to dump 16 th file data: 7.13082ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.040469Z  INFO multithreaded_fs: time taken to dump 17 th file data: 7.379673ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.040578Z  INFO multithreaded_fs: time taken to dump 15 th file data: 10.358267ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.041626Z  INFO multithreaded_fs: time taken to dump 18 th file data: 6.737685ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.044415Z  INFO multithreaded_fs: time taken to dump 19 th file data: 7.398624ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.045087Z  INFO multithreaded_fs: time taken to dump 20 th file data: 6.286949ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.051416Z  INFO multithreaded_fs: time taken to dump 21 th file data: 10.162184ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.054462Z  INFO multithreaded_fs: time taken to dump 22 th file data: 5.60554ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.057110Z  INFO multithreaded_fs: time taken to dump 23 th file data: 6.736565ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.058141Z  INFO multithreaded_fs: time taken to dump 24 th file data: 6.165977ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.061080Z  INFO multithreaded_fs: time taken to dump 26 th file data: 5.416097ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.063470Z  INFO multithreaded_fs: time taken to dump 27 th file data: 6.079096ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.063838Z  INFO multithreaded_fs: time taken to dump 25 th file data: 9.886179ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.066117Z  INFO multithreaded_fs: time taken to dump 29 th file data: 5.724621ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.068134Z  INFO multithreaded_fs: time taken to dump 30 th file data: 5.6642ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.068383Z  INFO multithreaded_fs: time taken to dump 28 th file data: 9.079598ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:34.070882Z  INFO multithreaded_fs: time taken to dump 31 th file data: 5.908224ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:36:43.144747Z  INFO tendermint_lc_plonky2::circuit_builder: --- Light Client circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:203
+
+  2024-04-04T10:36:43.144773Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T10:36:43.144874Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 87.881µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T10:36:43.144883Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T10:36:43.145372Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T10:36:43.271473Z  INFO multithreaded_fs: time taken to read one chunk of file : 69.740529ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.277853Z  INFO multithreaded_fs: time taken to read one chunk of file : 61.426371ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.277893Z  INFO multithreaded_fs: time taken to read one chunk of file : 69.23884ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.277922Z  INFO multithreaded_fs: time taken to read one chunk of file : 95.330821ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.278362Z  INFO multithreaded_fs: time taken to read one chunk of file : 67.464496ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.278383Z  INFO multithreaded_fs: time taken to read one chunk of file : 74.383794ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.295454Z  INFO multithreaded_fs: time taken to read one chunk of file : 125.704921ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.296020Z  INFO multithreaded_fs: time taken to read one chunk of file : 101.881023ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.297494Z  INFO multithreaded_fs: time taken to read one chunk of file : 135.755263ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.299557Z  INFO multithreaded_fs: time taken to read one chunk of file : 105.299491ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.299934Z  INFO multithreaded_fs: time taken to read one chunk of file : 129.86218ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.301057Z  INFO multithreaded_fs: time taken to read one chunk of file : 106.621521ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.302341Z  INFO multithreaded_fs: time taken to read one chunk of file : 107.98197ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.302838Z  INFO multithreaded_fs: time taken to read one chunk of file : 137.111953ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.303306Z  INFO multithreaded_fs: time taken to read one chunk of file : 141.580935ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.303557Z  INFO multithreaded_fs: time taken to read one chunk of file : 141.836809ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.314087Z  INFO multithreaded_fs: time taken to read one chunk of file : 158.030199ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.315356Z  INFO multithreaded_fs: time taken to read one chunk of file : 153.634656ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.316640Z  INFO multithreaded_fs: time taken to read one chunk of file : 154.909034ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.322737Z  INFO multithreaded_fs: time taken to read one chunk of file : 128.616422ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.324251Z  INFO multithreaded_fs: time taken to read one chunk of file : 170.222451ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.324639Z  INFO multithreaded_fs: time taken to read one chunk of file : 170.609657ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.325245Z  INFO multithreaded_fs: time taken to read one chunk of file : 155.353681ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.326876Z  INFO multithreaded_fs: time taken to read one chunk of file : 132.72459ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.327467Z  INFO multithreaded_fs: time taken to read one chunk of file : 133.40974ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.327648Z  INFO multithreaded_fs: time taken to read one chunk of file : 133.503821ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.330479Z  INFO multithreaded_fs: time taken to read one chunk of file : 176.440729ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.332630Z  INFO multithreaded_fs: time taken to read one chunk of file : 162.626844ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.335194Z  INFO multithreaded_fs: time taken to read one chunk of file : 134.627737ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.335682Z  INFO multithreaded_fs: time taken to read one chunk of file : 141.584765ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.345956Z  INFO multithreaded_fs: time taken to read one chunk of file : 151.654699ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.347502Z  INFO multithreaded_fs: time taken to read one chunk of file : 146.214422ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:36:43.347766Z  INFO multithreaded_fs: time takne to read file : 0
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T10:36:44.260774Z  INFO multithreaded_fs: final total len of final byte vec: 1157767882
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T10:36:46.832637Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 3.687709604s
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T10:36:46.832678Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T10:36:46.832769Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 69.201µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T10:36:48.476039Z  INFO tendermint_lc_plonky2::circuit_builder: Starting lc proof generation
+    at tendermint-lc-plonky2/src/circuit_builder.rs:207
+
+  2024-04-04T10:37:01.689688Z  INFO tendermint_lc_plonky2::circuit_builder: Proof generated in 13.213575299s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:213
+
+  2024-04-04T10:37:01.718047Z  INFO tendermint_lc_plonky2::circuit_builder: --- Recursion Circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:222
+
+  2024-04-04T10:37:01.718085Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T10:37:01.733773Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 15.651104ms
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T10:37:01.733795Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T10:37:01.733973Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T10:37:01.752624Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.897687ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.754841Z  INFO multithreaded_fs: time taken to read one chunk of file : 2.046559ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.756312Z  INFO multithreaded_fs: time taken to read one chunk of file : 15.671204ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.757531Z  INFO multithreaded_fs: time taken to read one chunk of file : 4.573966ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.757853Z  INFO multithreaded_fs: time taken to read one chunk of file : 4.85423ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.757997Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.081483ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.758090Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.317685ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.758493Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.903304ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.758603Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.33386ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.760405Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.785714ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.760480Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.516712ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.761957Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.941679ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.762178Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.157871ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.763030Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.187796ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.763671Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.527821ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.763715Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.550521ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.764140Z  INFO multithreaded_fs: time taken to read one chunk of file : 13.315711ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.764201Z  INFO multithreaded_fs: time taken to read one chunk of file : 11.390003ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.764216Z  INFO multithreaded_fs: time taken to read one chunk of file : 11.368313ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.764968Z  INFO multithreaded_fs: time taken to read one chunk of file : 12.200295ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.765071Z  INFO multithreaded_fs: time taken to read one chunk of file : 11.576486ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.765953Z  INFO multithreaded_fs: time taken to read one chunk of file : 13.074908ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.766863Z  INFO multithreaded_fs: time taken to read one chunk of file : 14.067011ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.769336Z  INFO multithreaded_fs: time taken to read one chunk of file : 19.155975ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.769425Z  INFO multithreaded_fs: time taken to read one chunk of file : 14.63623ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.769720Z  INFO multithreaded_fs: time taken to read one chunk of file : 19.705852ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.770055Z  INFO multithreaded_fs: time taken to read one chunk of file : 17.111865ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.770116Z  INFO multithreaded_fs: time taken to read one chunk of file : 17.112615ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.770171Z  INFO multithreaded_fs: time taken to read one chunk of file : 17.128295ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.770446Z  INFO multithreaded_fs: time taken to read one chunk of file : 17.621432ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.771634Z  INFO multithreaded_fs: time taken to read one chunk of file : 21.016672ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.771905Z  INFO multithreaded_fs: time taken to read one chunk of file : 21.481277ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T10:37:01.772076Z  INFO multithreaded_fs: time takne to read file : 0
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T10:37:01.848856Z  INFO multithreaded_fs: final total len of final byte vec: 71846104
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T10:37:01.979519Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 245.477846ms
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T10:37:01.979680Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T10:37:01.979858Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 65.621µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T10:37:02.108366Z  INFO tendermint_lc_plonky2::circuit_builder: Starting to generate recursive proof
+    at tendermint-lc-plonky2/src/circuit_builder.rs:231
+
+  2024-04-04T10:37:03.230431Z  INFO tendermint_lc_plonky2::circuit_builder: recursive proof gen done in 1.121952946s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:248
+
+  2024-04-04T10:56:04.913529Z  INFO tendermint_lc_plonky2::circuit_builder: Building Tendermint lc circuit
+    at tendermint-lc-plonky2/src/circuit_builder.rs:139
+
+  2024-04-04T10:56:05.753470Z  INFO tendermint_lc_plonky2::circuit_builder: Building circuit with 125957 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:142
+
+  2024-04-04T10:56:17.077489Z  INFO tendermint_lc_plonky2::circuit_builder: Time taken to build the circuit : 11.323974552s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:145
+
+  2024-04-04T10:56:41.792748Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T10:56:41.792811Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/lc_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T10:56:41.920821Z  INFO multithreaded_fs: time taken to dump 1 th file data: 95.732931ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:41.953131Z  INFO multithreaded_fs: time taken to dump 0 th file data: 143.402518ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:41.994643Z  INFO multithreaded_fs: time taken to dump 2 th file data: 153.724997ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.009898Z  INFO multithreaded_fs: time taken to dump 3 th file data: 153.069537ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.036162Z  INFO multithreaded_fs: time taken to dump 4 th file data: 161.349707ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.053423Z  INFO multithreaded_fs: time taken to dump 5 th file data: 159.354968ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.063605Z  INFO multithreaded_fs: time taken to dump 6 th file data: 149.329644ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.101247Z  INFO multithreaded_fs: time taken to dump 8 th file data: 162.381471ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.132952Z  INFO multithreaded_fs: time taken to dump 7 th file data: 199.086981ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.134389Z  INFO multithreaded_fs: time taken to dump 9 th file data: 173.187778ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.165850Z  INFO multithreaded_fs: time taken to dump 10 th file data: 199.538757ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.241496Z  INFO multithreaded_fs: time taken to dump 11 th file data: 252.676404ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.396497Z  INFO multithreaded_fs: time taken to dump 12 th file data: 386.957121ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.569630Z  INFO multithreaded_fs: time taken to dump 14 th file data: 549.877879ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.586947Z  INFO multithreaded_fs: time taken to dump 13 th file data: 572.585128ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.586972Z  INFO multithreaded_fs: time taken to dump 15 th file data: 550.764193ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.772015Z  INFO multithreaded_fs: time taken to dump 16 th file data: 718.567053ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.774915Z  INFO multithreaded_fs: time taken to dump 17 th file data: 717.499587ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.774966Z  INFO multithreaded_fs: time taken to dump 18 th file data: 713.361828ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.970026Z  INFO multithreaded_fs: time taken to dump 23 th file data: 831.239648ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.989420Z  INFO multithreaded_fs: time taken to dump 22 th file data: 854.502044ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.991929Z  INFO multithreaded_fs: time taken to dump 20 th file data: 888.426253ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.991940Z  INFO multithreaded_fs: time taken to dump 21 th file data: 884.949392ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:42.992169Z  INFO multithreaded_fs: time taken to dump 19 th file data: 893.894161ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.107410Z  INFO multithreaded_fs: time taken to dump 24 th file data: 964.959366ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.222929Z  INFO multithreaded_fs: time taken to dump 25 th file data: 1.052844393s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.232031Z  INFO multithreaded_fs: time taken to dump 26 th file data: 1.05814206s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.297708Z  INFO multithreaded_fs: time taken to dump 27 th file data: 1.092255871s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.300344Z  INFO multithreaded_fs: time taken to dump 31 th file data: 1.000845074s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.303159Z  INFO multithreaded_fs: time taken to dump 30 th file data: 1.02764221s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.303195Z  INFO multithreaded_fs: time taken to dump 29 th file data: 1.052131553s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T10:56:43.306445Z  INFO multithreaded_fs: time taken to dump 28 th file data: 1.058433944s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:12:33.237933Z  INFO tendermint_lc_plonky2::circuit_builder: Building Tendermint lc circuit
+    at tendermint-lc-plonky2/src/circuit_builder.rs:139
+
+  2024-04-04T11:12:38.254084Z  INFO tendermint_lc_plonky2::circuit_builder: Building circuit with 787358 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:142
+
+  2024-04-04T11:15:38.121940Z  INFO tendermint_lc_plonky2::circuit_builder: Time taken to build the circuit : 179.867805032s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:145
+
+  2024-04-04T11:20:32.268200Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T11:20:32.268244Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/lc_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T11:20:33.509755Z  INFO multithreaded_fs: time taken to dump 0 th file data: 1.140993409s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:35.480936Z  INFO multithreaded_fs: time taken to dump 1 th file data: 3.003181531s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:35.968118Z  INFO multithreaded_fs: time taken to dump 2 th file data: 3.438647465s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:37.455487Z  INFO multithreaded_fs: time taken to dump 3 th file data: 4.844311502s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:37.715366Z  INFO multithreaded_fs: time taken to dump 4 th file data: 5.006427317s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:39.710362Z  INFO multithreaded_fs: time taken to dump 5 th file data: 6.90192212s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:43.530855Z  INFO multithreaded_fs: time taken to dump 7 th file data: 10.505047594s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:43.717197Z  INFO multithreaded_fs: time taken to dump 6 th file data: 10.797304562s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:45.207525Z  INFO multithreaded_fs: time taken to dump 10 th file data: 11.88034287s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:45.212211Z  INFO multithreaded_fs: time taken to dump 9 th file data: 11.980651837s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:45.466870Z  INFO multithreaded_fs: time taken to dump 8 th file data: 12.33489109s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:45.486374Z  INFO multithreaded_fs: time taken to dump 12 th file data: 11.926248293s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:45.564097Z  INFO multithreaded_fs: time taken to dump 11 th file data: 12.151606122s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:46.052867Z  INFO multithreaded_fs: time taken to dump 14 th file data: 12.314856243s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:46.096977Z  INFO multithreaded_fs: time taken to dump 17 th file data: 11.901369127s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:46.354894Z  INFO multithreaded_fs: time taken to dump 13 th file data: 12.768085734s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:46.636587Z  INFO multithreaded_fs: time taken to dump 16 th file data: 12.591477399s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:46.728252Z  INFO multithreaded_fs: time taken to dump 15 th file data: 12.836420111s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:47.348065Z  INFO multithreaded_fs: time taken to dump 19 th file data: 12.798198324s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:47.408193Z  INFO multithreaded_fs: time taken to dump 18 th file data: 13.058312794s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.352708Z  INFO multithreaded_fs: time taken to dump 21 th file data: 12.257362758s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.448455Z  INFO multithreaded_fs: time taken to dump 20 th file data: 13.309897766s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.594374Z  INFO multithreaded_fs: time taken to dump 24 th file data: 11.965141612s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.711212Z  INFO multithreaded_fs: time taken to dump 25 th file data: 11.434933893s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.741520Z  INFO multithreaded_fs: time taken to dump 23 th file data: 12.455392595s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.845779Z  INFO multithreaded_fs: time taken to dump 22 th file data: 12.602315696s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:48.982228Z  INFO multithreaded_fs: time taken to dump 26 th file data: 11.124107983s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:49.114898Z  INFO multithreaded_fs: time taken to dump 29 th file data: 9.808183296s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:49.132904Z  INFO multithreaded_fs: time taken to dump 27 th file data: 10.810650616s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:49.148439Z  INFO multithreaded_fs: time taken to dump 30 th file data: 9.572746535s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:49.177742Z  INFO multithreaded_fs: time taken to dump 28 th file data: 10.635433594s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:20:49.185599Z  INFO multithreaded_fs: time taken to dump 31 th file data: 9.332984242s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:11.783198Z  INFO tendermint_lc_plonky2::circuit_builder: Reconstructing inner common data
+    at tendermint-lc-plonky2/src/circuit_builder.rs:169
+
+  2024-04-04T11:21:11.960278Z  INFO tendermint_lc_plonky2::circuit_builder: Building recursive circuit with 6007 gates
+    at tendermint-lc-plonky2/src/circuit_builder.rs:174
+
+  2024-04-04T11:21:12.931713Z  INFO tendermint_lc_plonky2::circuit_builder: Recursive circuit build complete
+    at tendermint-lc-plonky2/src/circuit_builder.rs:180
+
+  2024-04-04T11:21:15.045705Z  INFO multithreaded_fs: preprocess file byte func start
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:67
+
+  2024-04-04T11:21:15.045792Z  INFO multithreaded_fs: Folder created successfully at: ./storage/DYDX/recursion_circuit/circuit_data//prover_only
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:53
+
+  2024-04-04T11:21:15.062830Z  INFO multithreaded_fs: time taken to dump 0 th file data: 4.992913ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.081708Z  INFO multithreaded_fs: time taken to dump 3 th file data: 4.708719ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.081730Z  INFO multithreaded_fs: time taken to dump 4 th file data: 4.515116ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.081763Z  INFO multithreaded_fs: time taken to dump 1 th file data: 4.743219ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.081780Z  INFO multithreaded_fs: time taken to dump 5 th file data: 4.515086ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.087244Z  INFO multithreaded_fs: time taken to dump 7 th file data: 6.459094ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.087261Z  INFO multithreaded_fs: time taken to dump 2 th file data: 6.541286ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.087302Z  INFO multithreaded_fs: time taken to dump 6 th file data: 6.666276ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.106196Z  INFO multithreaded_fs: time taken to dump 10 th file data: 4.437953ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.106332Z  INFO multithreaded_fs: time taken to dump 9 th file data: 4.581226ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.110133Z  INFO multithreaded_fs: time taken to dump 11 th file data: 4.362413ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.119086Z  INFO multithreaded_fs: time taken to dump 14 th file data: 8.038517ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.119209Z  INFO multithreaded_fs: time taken to dump 12 th file data: 4.287992ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.125930Z  INFO multithreaded_fs: time taken to dump 15 th file data: 20.054122ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.126246Z  INFO multithreaded_fs: time taken to dump 16 th file data: 15.929182ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.129703Z  INFO multithreaded_fs: time taken to dump 17 th file data: 4.300753ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.129732Z  INFO multithreaded_fs: time taken to dump 8 th file data: 6.484174ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.129762Z  INFO multithreaded_fs: time taken to dump 13 th file data: 8.106188ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.129782Z  INFO multithreaded_fs: time taken to dump 19 th file data: 4.551506ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.130537Z  INFO multithreaded_fs: time taken to dump 20 th file data: 4.786659ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.134315Z  INFO multithreaded_fs: time taken to dump 22 th file data: 4.521596ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.137858Z  INFO multithreaded_fs: time taken to dump 23 th file data: 8.005096ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.139959Z  INFO multithreaded_fs: time taken to dump 21 th file data: 6.034898ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.140499Z  INFO multithreaded_fs: time taken to dump 18 th file data: 6.016047ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.141879Z  INFO multithreaded_fs: time taken to dump 25 th file data: 11.67416ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.149833Z  INFO multithreaded_fs: time taken to dump 24 th file data: 20.040491ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.150392Z  INFO multithreaded_fs: time taken to dump 26 th file data: 17.18084ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.153856Z  INFO multithreaded_fs: time taken to dump 28 th file data: 16.059903ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.153884Z  INFO multithreaded_fs: time taken to dump 29 th file data: 16.066253ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.157816Z  INFO multithreaded_fs: time taken to dump 27 th file data: 20.03779ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.174166Z  INFO multithreaded_fs: time taken to dump 31 th file data: 4.431614ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:15.178489Z  INFO multithreaded_fs: time taken to dump 30 th file data: 4.738668ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:36
+
+  2024-04-04T11:21:22.661849Z  INFO tendermint_lc_plonky2::circuit_builder: --- Light Client circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:203
+
+  2024-04-04T11:21:22.662039Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T11:21:22.662611Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 431.876µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T11:21:22.662709Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T11:21:22.663379Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T11:21:23.558743Z  INFO multithreaded_fs: time taken to read one chunk of file : 817.386299ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.564056Z  INFO multithreaded_fs: time taken to read one chunk of file : 779.458508ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.572219Z  INFO multithreaded_fs: time taken to read one chunk of file : 898.533296ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.584855Z  INFO multithreaded_fs: time taken to read one chunk of file : 842.027177ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.590256Z  INFO multithreaded_fs: time taken to read one chunk of file : 923.021462ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.596208Z  INFO multithreaded_fs: time taken to read one chunk of file : 851.456213ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.602429Z  INFO multithreaded_fs: time taken to read one chunk of file : 883.680031ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.607144Z  INFO multithreaded_fs: time taken to read one chunk of file : 863.067972ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.614656Z  INFO multithreaded_fs: time taken to read one chunk of file : 880.319492ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.615707Z  INFO multithreaded_fs: time taken to read one chunk of file : 935.901549ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.624816Z  INFO multithreaded_fs: time taken to read one chunk of file : 954.913085ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.629575Z  INFO multithreaded_fs: time taken to read one chunk of file : 914.171384ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.630197Z  INFO multithreaded_fs: time taken to read one chunk of file : 934.306716ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.636642Z  INFO multithreaded_fs: time taken to read one chunk of file : 949.148491ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.637489Z  INFO multithreaded_fs: time taken to read one chunk of file : 919.404749ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.638077Z  INFO multithreaded_fs: time taken to read one chunk of file : 949.74064ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.640404Z  INFO multithreaded_fs: time taken to read one chunk of file : 955.638636ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.643161Z  INFO multithreaded_fs: time taken to read one chunk of file : 900.83842ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.654662Z  INFO multithreaded_fs: time taken to read one chunk of file : 974.49109ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.657222Z  INFO multithreaded_fs: time taken to read one chunk of file : 992.628623ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.668677Z  INFO multithreaded_fs: time taken to read one chunk of file : 994.113145ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.669770Z  INFO multithreaded_fs: time taken to read one chunk of file : 997.096278ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.682839Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.012338969s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.689371Z  INFO multithreaded_fs: time taken to read one chunk of file : 973.423974ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.694291Z  INFO multithreaded_fs: time taken to read one chunk of file : 999.902099ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.704087Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.037725518s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.721812Z  INFO multithreaded_fs: time taken to read one chunk of file : 988.30163ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.722893Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.034912507s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.723038Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.050749977s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.735296Z  INFO multithreaded_fs: time taken to read one chunk of file : 995.85391ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.739332Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.058299957s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.742821Z  INFO multithreaded_fs: time taken to read one chunk of file : 1.075351074s
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:21:23.743076Z  INFO multithreaded_fs: time takne to read file : 1
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T11:21:32.492014Z  INFO multithreaded_fs: final total len of final byte vec: 9183729446
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T11:21:48.538379Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 25.87537019s
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T11:21:48.538543Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T11:21:48.538716Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 60.401µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T11:21:56.971384Z  INFO tendermint_lc_plonky2::circuit_builder: Starting lc proof generation
+    at tendermint-lc-plonky2/src/circuit_builder.rs:207
+
+  2024-04-04T11:23:06.843826Z  INFO tendermint_lc_plonky2::circuit_builder: Proof generated in 69.872395634s
+    at tendermint-lc-plonky2/src/circuit_builder.rs:213
+
+  2024-04-04T11:23:06.885864Z  INFO tendermint_lc_plonky2::circuit_builder: --- Recursion Circuit ---
+    at tendermint-lc-plonky2/src/circuit_builder.rs:222
+
+  2024-04-04T11:23:06.885879Z  INFO plonky2_circuit_serializer::utils: Reconstructing commong data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:157
+
+  2024-04-04T11:23:06.885954Z  INFO plonky2_circuit_serializer::utils: Common data reconstructed in 61.431µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:162
+
+  2024-04-04T11:23:06.885958Z  INFO plonky2_circuit_serializer::utils: Reconstructing prover only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:164
+
+  2024-04-04T11:23:06.886077Z  INFO multithreaded_fs: the file count is: 32
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:119
+
+  2024-04-04T11:23:06.893749Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.308414ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.893858Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.409145ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894320Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.396315ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894343Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.235383ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894756Z  INFO multithreaded_fs: time taken to read one chunk of file : 8.257547ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894949Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.116643ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894979Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.36552ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.894994Z  INFO multithreaded_fs: time taken to read one chunk of file : 3.419308ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895213Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.169931ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895234Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.184258ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895326Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.529972ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895685Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.100111ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895704Z  INFO multithreaded_fs: time taken to read one chunk of file : 4.403212ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895726Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.552459ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895736Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.523608ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.895979Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.175968ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896014Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.101323ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896169Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.753996ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896313Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.065942ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896346Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.503236ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896367Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.883353ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896724Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.285935ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896874Z  INFO multithreaded_fs: time taken to read one chunk of file : 5.358636ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.896968Z  INFO multithreaded_fs: time taken to read one chunk of file : 7.019839ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897161Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.828399ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897193Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.006947ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897214Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.464817ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897353Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.277112ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897593Z  INFO multithreaded_fs: time taken to read one chunk of file : 10.060812ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897629Z  INFO multithreaded_fs: time taken to read one chunk of file : 3.237145ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897808Z  INFO multithreaded_fs: time taken to read one chunk of file : 6.746916ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.897932Z  INFO multithreaded_fs: time taken to read one chunk of file : 9.86458ms
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:29
+
+  2024-04-04T11:23:06.898120Z  INFO multithreaded_fs: time takne to read file : 0
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:165
+
+  2024-04-04T11:23:06.944031Z  INFO multithreaded_fs: final total len of final byte vec: 72675364
+    at /home/ubuntu/.cargo/git/checkouts/multithreaded-fs-4c19f759ba6ce1c1/b30455d/src/lib.rs:138
+
+  2024-04-04T11:23:07.013763Z  INFO plonky2_circuit_serializer::utils: Prover only data reconstructed in 127.769287ms
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:175
+
+  2024-04-04T11:23:07.013777Z  INFO plonky2_circuit_serializer::utils: Reconstructing verifier only data
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:177
+
+  2024-04-04T11:23:07.013826Z  INFO plonky2_circuit_serializer::utils: Verifier only data reconstructed in 40.931µs
+    at /home/ubuntu/.cargo/git/checkouts/plonky2-circuit-serializer-3071b302da12c4e1/c8fb008/src/utils.rs:182
+
+  2024-04-04T11:23:07.078232Z  INFO tendermint_lc_plonky2::circuit_builder: Starting to generate recursive proof
+    at tendermint-lc-plonky2/src/circuit_builder.rs:231
+
+  2024-04-04T11:23:07.488822Z  INFO tendermint_lc_plonky2::circuit_builder: recursive proof gen done in 410.544658ms
+    at tendermint-lc-plonky2/src/circuit_builder.rs:248
+

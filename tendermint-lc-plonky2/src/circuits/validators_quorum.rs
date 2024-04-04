@@ -16,9 +16,9 @@ use crate::config_data::*;
 // Checks trustLevel ([1/3, 1]) of trustedHeaderVals (or trustedHeaderNextVals) signed correctly
 pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    untrusted_validator_pub_keys: &Vec<Vec<BoolTarget>>,
-    trusted_next_validator_pub_keys: &Vec<Vec<BoolTarget>>,
-    trusted_next_validator_vps: &Vec<BigUintTarget>,
+    untrusted_max_validator_pub_keys: &Vec<Vec<BoolTarget>>,
+    trusted_max_next_validator_pub_keys: &Vec<Vec<BoolTarget>>,
+    trusted_max_next_validator_vps: &Vec<BigUintTarget>,
     untrusted_intersect_indices: &Vec<Target>,
     trusted_next_intersect_indices: &Vec<Target>,
     c: &Config,
@@ -32,32 +32,30 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
     zero_vp.limbs.push(builder.constant_u32(0));
 
-    let mut untrusted_validator_pub_keys = untrusted_validator_pub_keys
+    let mut untrusted_max_validator_pub_keys = untrusted_max_validator_pub_keys
         [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)]
         .to_vec();
-    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)
+        ..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .for_each(|_| {
-            untrusted_validator_pub_keys.push(zero_pub_key.clone());
+            untrusted_max_validator_pub_keys.push(zero_pub_key.clone());
         });
 
-    let mut trusted_next_validator_pub_keys = trusted_next_validator_pub_keys
+    let mut trusted_max_next_validator_pub_keys = trusted_max_next_validator_pub_keys
         [0..min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)]
         .to_vec();
-    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)..c.INTERSECTION_INDICES_DOMAIN_SIZE)
+    (min(c.INTERSECTION_INDICES_DOMAIN_SIZE, c.MAX_N_VALIDATORS)
+        ..c.INTERSECTION_INDICES_DOMAIN_SIZE)
         .for_each(|_| {
-            trusted_next_validator_pub_keys.push(zero_pub_key.clone());
+            trusted_max_next_validator_pub_keys.push(zero_pub_key.clone());
         });
 
-    let mut trusted_next_validator_vps = trusted_next_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
+    let mut trusted_max_next_validator_vps =
+        trusted_max_next_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
 
     (c.MAX_N_VALIDATORS..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|_| {
-        trusted_next_validator_vps.push(zero_vp.clone());
+        trusted_max_next_validator_vps.push(zero_vp.clone());
     });
-
-    let untrusted_intersect_indices =
-        untrusted_intersect_indices[0..c.N_INTERSECTION_INDICES].to_vec();
-    let trusted_next_intersect_indices =
-        trusted_next_intersect_indices[0..c.N_INTERSECTION_INDICES].to_vec();
 
     let zero_bool_target = builder._false();
     let three_big_target = builder.constant_biguint(&BigUint::from_u64(3).unwrap());
@@ -69,17 +67,18 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let mut intersection_vp = builder.constant_biguint(&BigUint::from_usize(0).unwrap());
 
     // compute total voting power
-    (0..c.MAX_N_VALIDATORS)
-        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &trusted_next_validator_vps[i]));
+    (0..c.MAX_N_VALIDATORS).for_each(|i| {
+        total_vp = builder.add_biguint(&total_vp, &trusted_max_next_validator_vps[i])
+    });
 
     // prepares voting power columns
     // because random_access_index wont work on BigUintTarget so need to split it into limbs
     let trusted_validator_vp_columns = vec![
-        trusted_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
+        trusted_max_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        trusted_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
+        trusted_max_next_validator_vps[..c.INTERSECTION_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -91,8 +90,8 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
         let mut untrusted_pub_key_column: Vec<Target> = vec![];
         let mut trusted_pub_key_column: Vec<Target> = vec![];
         (0..c.INTERSECTION_INDICES_DOMAIN_SIZE).for_each(|j| {
-            untrusted_pub_key_column.push(untrusted_validator_pub_keys[j][i].target);
-            trusted_pub_key_column.push(trusted_next_validator_pub_keys[j][i].target);
+            untrusted_pub_key_column.push(untrusted_max_validator_pub_keys[j][i].target);
+            trusted_pub_key_column.push(trusted_max_next_validator_pub_keys[j][i].target);
         });
         untrusted_pub_keys_columns.push(untrusted_pub_key_column);
         trusted_pub_keys_columns.push(trusted_pub_key_column);
@@ -140,7 +139,7 @@ pub fn constrain_trusted_quorum<F: RichField + Extendable<D>, const D: usize>(
 // Ensure that +2/3 of new validators signed correctly.
 pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    untrusted_validator_vps: &Vec<BigUintTarget>,
+    untrusted_max_validator_vps: &Vec<BigUintTarget>,
     signature_indices: &Vec<Target>,
     c: &Config,
 ) {
@@ -149,10 +148,10 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     zero_vp.limbs.push(builder.constant_u32(0));
     zero_vp.limbs.push(builder.constant_u32(0));
 
-    let mut untrusted_validator_vps = untrusted_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
+    let mut untrusted_max_validator_vps = untrusted_max_validator_vps[0..c.MAX_N_VALIDATORS].to_vec();
 
     (c.MAX_N_VALIDATORS..c.SIGNATURE_INDICES_DOMAIN_SIZE).for_each(|_| {
-        untrusted_validator_vps.push(zero_vp.clone());
+        untrusted_max_validator_vps.push(zero_vp.clone());
     });
     let signature_indices = signature_indices[0..c.N_SIGNATURE_INDICES].to_vec();
 
@@ -164,15 +163,15 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
 
     // compute total voting power
     (0..c.MAX_N_VALIDATORS)
-        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_validator_vps[i]));
+        .for_each(|i| total_vp = builder.add_biguint(&total_vp, &untrusted_max_validator_vps[i]));
 
     // prepares voting power columns
     let untrusted_validator_vp_columns = vec![
-        untrusted_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
+        untrusted_max_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(0).0)
             .collect::<Vec<Target>>(),
-        untrusted_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
+        untrusted_max_validator_vps[..c.SIGNATURE_INDICES_DOMAIN_SIZE]
             .iter()
             .map(|x| x.get_limb(1).0)
             .collect::<Vec<Target>>(),
@@ -202,7 +201,3 @@ pub fn constrain_untrusted_quorum<F: RichField + Extendable<D>, const D: usize>(
     let comparison = builder.cmp_biguint(&three_times_quorum_vp, &two_times_total_vp);
     builder.connect(comparison.target, zero_bool_target.target);
 }
-
-
-// TODO: ensure validators_padded are all zeros starting from `MAX_N_VALIDATORS` index
-// this also ensure that corresponding vps and pub keys are also 0

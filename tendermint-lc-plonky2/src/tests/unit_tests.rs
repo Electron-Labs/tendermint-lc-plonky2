@@ -1,3 +1,4 @@
+// TODO: variable names in tests (_max)
 #[cfg(test)]
 mod tests {
     use crate::circuits::checks::check_update_validity;
@@ -11,7 +12,7 @@ mod tests {
     };
     use crate::circuits::sign_messages::verify_signatures;
     use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
-    use crate::circuits::validators_hash::computer_validators_hash;
+    use crate::circuits::validators_hash::compute_validators_hash;
     use crate::circuits::validators_quorum::{
         constrain_trusted_quorum, constrain_untrusted_quorum,
     };
@@ -1418,7 +1419,7 @@ mod tests {
     }
 
     #[test]
-    fn test_constrain_indices2() {
+    fn test_constrain_indices() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1430,11 +1431,19 @@ mod tests {
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
 
         constrain_indices(
             &mut builder,
             &signature_indices_target,
             &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
             cc,
         );
 
@@ -1453,6 +1462,25 @@ mod tests {
                 F::from_canonical_u8(t.untrusted_intersect_indices[i]),
             )
         });
+        (0..cc.N_INTERSECTION_INDICES - 1).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        // just to test the reserved index
+        witness.set_target(
+            trusted_next_intersect_indices_target[cc.N_INTERSECTION_INDICES - 1],
+            F::from_canonical_usize(cc.INTERSECTION_INDICES_DOMAIN_SIZE - 1),
+        );
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -1462,6 +1490,7 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
+        let t = get_test_data();
 
         let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| builder.add_virtual_target())
@@ -1469,11 +1498,19 @@ mod tests {
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
 
         constrain_indices(
             &mut builder,
             &signature_indices_target,
             &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
             cc,
         );
         // generate indices
@@ -1508,6 +1545,20 @@ mod tests {
                 F::from_canonical_usize(untrusted_intersect_indices[i]),
             )
         });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -1518,6 +1569,7 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
+        let t = get_test_data();
 
         let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| builder.add_virtual_target())
@@ -1525,11 +1577,19 @@ mod tests {
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
 
         constrain_indices(
             &mut builder,
             &signature_indices_target,
             &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
             cc,
         );
         // generate indices
@@ -1567,6 +1627,20 @@ mod tests {
                 F::from_canonical_usize(untrusted_intersect_indices[i]),
             )
         });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -1577,6 +1651,7 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
+        let t = get_test_data();
 
         let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| builder.add_virtual_target())
@@ -1584,11 +1659,19 @@ mod tests {
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
 
         constrain_indices(
             &mut builder,
             &signature_indices_target,
             &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
             cc,
         );
         // generate indices
@@ -1623,6 +1706,20 @@ mod tests {
                 F::from_canonical_usize(untrusted_intersect_indices[i]),
             )
         });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -1633,6 +1730,7 @@ mod tests {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
+        let t = get_test_data();
 
         let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
             .map(|_| builder.add_virtual_target())
@@ -1640,11 +1738,19 @@ mod tests {
         let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
             .map(|_| builder.add_virtual_target())
             .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
 
         constrain_indices(
             &mut builder,
             &signature_indices_target,
             &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
             cc,
         );
         // generate indices
@@ -1679,6 +1785,154 @@ mod tests {
                 F::from_canonical_usize(untrusted_intersect_indices[i]),
             )
         });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_incorrect_signature_indices_n_validators() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+        let t = get_test_data();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
+            cc,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES - 1).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_u8(t.signature_indices[i]),
+            )
+        });
+        witness.set_target(
+            signature_indices_target[cc.N_SIGNATURE_INDICES - 1],
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_u8(t.untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_constrain_indices_incorrect_trusted_next_intersect_indices_n_validators() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+        let t = get_test_data();
+
+        let signature_indices_target = (0..cc.N_SIGNATURE_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let untrusted_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let trusted_next_intersect_indices_target = (0..cc.N_INTERSECTION_INDICES)
+            .map(|_| builder.add_virtual_target())
+            .collect::<Vec<Target>>();
+        let n_untrusted_validators_target = builder.add_virtual_target();
+        let n_trusted_next_validators_target = builder.add_virtual_target();
+
+        constrain_indices(
+            &mut builder,
+            &signature_indices_target,
+            &untrusted_intersect_indices_target,
+            &trusted_next_intersect_indices_target,
+            &n_untrusted_validators_target,
+            &n_trusted_next_validators_target,
+            cc,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..cc.N_SIGNATURE_INDICES).for_each(|i| {
+            witness.set_target(
+                signature_indices_target[i],
+                F::from_canonical_u8(t.signature_indices[i]),
+            )
+        });
+
+        (0..cc.N_INTERSECTION_INDICES).for_each(|i| {
+            witness.set_target(
+                untrusted_intersect_indices_target[i],
+                F::from_canonical_u8(t.untrusted_intersect_indices[i]),
+            )
+        });
+        (0..cc.N_INTERSECTION_INDICES - 1).for_each(|i| {
+            witness.set_target(
+                trusted_next_intersect_indices_target[i],
+                F::from_canonical_u8(t.trusted_next_intersect_indices[i]),
+            )
+        });
+        witness.set_target(
+            trusted_next_intersect_indices_target[cc.N_INTERSECTION_INDICES - 1],
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
+        witness.set_target(
+            n_untrusted_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        witness.set_target(
+            n_trusted_next_validators_target,
+            F::from_canonical_usize(t.trusted_next_validators_padded.len()),
+        );
         let data = builder.build::<C>();
         prove_and_verify(data, witness);
     }
@@ -1832,7 +2086,7 @@ mod tests {
 
     #[traced_test]
     #[test]
-    fn test_computer_validators_hash() {
+    fn test_compute_validators_hash() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1843,7 +2097,7 @@ mod tests {
             .collect::<Vec<Vec<BoolTarget>>>();
 
         let t = get_test_data();
-        let validators_hash = computer_validators_hash(
+        let validators_hash = compute_validators_hash(
             &mut builder,
             &n_validators_target,
             &max_validator_leaves_padded_target,
@@ -1897,7 +2151,7 @@ mod tests {
     #[traced_test]
     #[should_panic]
     #[test]
-    fn test_computer_validators_hash_incorrect_n_validators() {
+    fn test_compute_validators_hash_incorrect_n_validators() {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
@@ -1908,7 +2162,7 @@ mod tests {
             .collect::<Vec<Vec<BoolTarget>>>();
 
         let t = get_test_data();
-        let validators_hash = computer_validators_hash(
+        let validators_hash = compute_validators_hash(
             &mut builder,
             &n_validators_target,
             &max_validator_leaves_padded_target,
