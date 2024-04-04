@@ -213,7 +213,7 @@ pub fn hash256_to_bool_targets<F: RichField + Extendable<D>, const D: usize>(
     hash_bool
 }
 
-// resulting bits are in Hash256Target order
+/// resulting bits are in Hash256Target order
 pub fn sha256_n_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     input_padded: &Vec<BoolTarget>,
@@ -242,12 +242,12 @@ pub fn sha256_n_block_hash_target<F: RichField + Extendable<D>, const D: usize>(
     biguint_hash_to_bool_targets(builder, &hash)
 }
 
-// left - 256bits, where all bits are in the same order as in Hash256Target
-// right - 256bits, where all bits are in the same order as in Hash256Target
-// order of bits in Hash256Target:
-//  * each u32 limb is in big endian
-//  * all bits in any byte are stored in reversed order
-// resulting bits are in Hash256Target order
+/// - left - 256bits, where all bits are in the same order as in Hash256Target
+/// - right - 256bits, where all bits are in the same order as in Hash256Target
+/// - order of bits in Hash256Target:
+///     - each u32 limb is in big endian
+///     - all bits in any byte are stored in reversed order
+/// - resulting bits are in Hash256Target order
 pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
     left: &Vec<BoolTarget>,
@@ -272,36 +272,107 @@ pub fn sha256_2_block_two_to_one_hash_target<F: RichField + Extendable<D>, const
 
     let hash = builder.hash_sha256(&hash_input_target);
     hash
-    // let mut hash_bool: Vec<BoolTarget> = Vec::with_capacity(256);
-
-    // hash.limbs.iter().for_each(|&u32_elm| {
-    //     let bin32_target = builder.convert_u32_bin32(u32_elm);
-    //     hash_bool.extend(bin32_target.bits);
-    // });
-
-    // hash_bool
 }
 
-// TODO:
-// /// return array of validators hash for the range [min_n_validators, max_n_validators] using minimal number of hashes
-// pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
-//     builder: &mut CircuitBuilder<F, D>,
-//     leaves_padded: &Vec<Vec<BoolTarget>>,
-//     min_n_validators: usize,
-//     max_n_validators: usize,
-// ) {
-//     assert!(min_n_validators <= max_n_validators);
-//     assert!(leaves_padded.len() == max_n_validators);
+pub fn get_tree_root_from_sub_trees<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    sub_tree_roots: Vec<(usize, Vec<BoolTarget>)>,
+) -> Vec<BoolTarget> {
+    let mut tree_root = sub_tree_roots[0].1.clone();
+    for i in 1..sub_tree_roots.len() {
+        let hash = &sha256_2_block_two_to_one_hash_target(
+            builder,
+            &sub_tree_roots[i].1.clone(),
+            &tree_root.clone(),
+        );
+        tree_root = biguint_hash_to_bool_targets(builder, hash);
+    }
+    tree_root
+}
 
-//     let mut leaves_hash = leaves_padded
-//         .iter()
-//         .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
-//         .collect::<Vec<Vec<BoolTarget>>>();
+/// Example:<br>
+/// - 150 leaves<br>
+/// Sub trees -> 128+16+4+2<br>
+/// - 149 leaves<br>
+/// Sub trees -> 128+16+4+1<br>
+pub fn get_sub_tree_roots<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    prev_sub_tree_roots: Vec<(usize, Vec<BoolTarget>)>,
+    new_elm: Vec<BoolTarget>,
+) -> Vec<(usize, Vec<BoolTarget>)> {
+    let mut sub_tree_roots: Vec<(usize, Vec<BoolTarget>)> = vec![];
+    let mut cur_size: usize = 1;
+    let mut tree_root: Vec<BoolTarget> = new_elm;
+    let mut last_index: usize = prev_sub_tree_roots.len();
 
-//     let mut prev_sub_tree_roots: Vec<(usize, Vec<u8>)> = vec![];
+    for i in 0..prev_sub_tree_roots.len() {
+        if cur_size == prev_sub_tree_roots[i].0 {
+            let hash = &sha256_2_block_two_to_one_hash_target(
+                builder,
+                &prev_sub_tree_roots[i].1.clone(),
+                &tree_root.clone(),
+            );
+            tree_root = biguint_hash_to_bool_targets(builder, hash);
+            cur_size += prev_sub_tree_roots[i].0;
+        } else {
+            last_index = i;
+            break;
+        }
+    }
 
-//     let mut right_leaves_hash = leaves_hash[..min_n_validators].to_vec();
-// }
+    sub_tree_roots.push((cur_size, tree_root.clone()));
+
+    for j in last_index..prev_sub_tree_roots.len() {
+        sub_tree_roots.push(prev_sub_tree_roots[j].clone());
+    }
+    sub_tree_roots
+}
+
+// TODO: test
+/// return array of validators hash for the range [min_n_validators, max_n_validators] using minimal number of hashes
+pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
+    builder: &mut CircuitBuilder<F, D>,
+    leaves_padded: &Vec<Vec<BoolTarget>>,
+    min_n_validators: usize,
+    max_n_validators: usize,
+) -> Vec<Vec<BoolTarget>> {
+    assert!(min_n_validators <= max_n_validators);
+    assert!(leaves_padded.len() == max_n_validators);
+
+    let leaves_hashes = leaves_padded
+        .iter()
+        .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
+        .collect::<Vec<Vec<BoolTarget>>>();
+    let mut prev_sub_tree_roots: Vec<(usize, Vec<BoolTarget>)> = vec![];
+
+    let mut right_leaves_hashes = leaves_hashes[..min_n_validators].to_vec();
+
+    while right_leaves_hashes.len() != 0 {
+        let split_point = get_split_point(right_leaves_hashes.len() as f32) as usize;
+        let root_hash =
+            merkle_1_block_leaf_root(builder, &right_leaves_hashes[..split_point].to_vec());
+        prev_sub_tree_roots.push((split_point, root_hash));
+        right_leaves_hashes = right_leaves_hashes[split_point..].to_vec();
+    }
+    prev_sub_tree_roots.reverse(); // putting rightmost subtree first
+
+    let mut validators_hash_range = Vec::with_capacity(max_n_validators - min_n_validators + 1);
+    let mut tree_root = get_tree_root_from_sub_trees(builder, prev_sub_tree_roots.clone());
+    validators_hash_range.push(tree_root);
+
+    for n_validators in min_n_validators..max_n_validators {
+        let sub_tree_roots = get_sub_tree_roots(
+            builder,
+            prev_sub_tree_roots.clone(),
+            leaves_hashes[n_validators].clone(),
+        );
+        tree_root = get_tree_root_from_sub_trees(builder, sub_tree_roots.clone());
+        validators_hash_range.push(tree_root);
+        prev_sub_tree_roots = sub_tree_roots;
+    }
+
+    validators_hash_range
+}
 
 pub fn merkle_1_block_leaf_root<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,

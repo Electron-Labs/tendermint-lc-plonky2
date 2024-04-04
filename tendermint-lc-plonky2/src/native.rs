@@ -90,14 +90,12 @@ pub fn get_tree_root_from_sub_trees(sub_tree_roots: Vec<(usize, Vec<u8>)>) -> (V
     (tree_root, n_hashes)
 }
 
-/*
-Example:
-150 leaves
-Sub trees -> 128+16+4+2
 
-149 leaves
-Sub trees -> 128+16+4+1
- */
+/// Example:<br>
+/// - 150 leaves<br>
+/// Sub trees -> 128+16+4+2<br>
+/// - 149 leaves<br>
+/// Sub trees -> 128+16+4+1<br>
 pub fn get_sub_tree_roots(
     prev_sub_tree_roots: Vec<(usize, Vec<u8>)>,
     new_elm: Vec<u8>,
@@ -152,7 +150,7 @@ pub fn get_validators_hash_range(
         prev_sub_tree_roots.push((split_point, root_hash));
         right_leaves_hashes = right_leaves_hashes[split_point..].to_vec();
     }
-    prev_sub_tree_roots.reverse(); // puttting rightmost subtree first
+    prev_sub_tree_roots.reverse(); // putting rightmost subtree first
 
     let mut validators_hash_range = Vec::with_capacity(max_n_validators - min_n_validators + 1);
     let (mut tree_root, _n) = get_tree_root_from_sub_trees(prev_sub_tree_roots.clone());

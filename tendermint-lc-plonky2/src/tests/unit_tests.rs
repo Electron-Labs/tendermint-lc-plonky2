@@ -5,9 +5,9 @@ mod tests {
     use crate::circuits::indices::constrain_indices;
     use crate::circuits::merkle_targets::{
         get_256_bool_target, get_formatted_hash_256_bools, get_sha_2_block_target,
-        get_sha_512_2_block_target, get_sha_block_target, hash256_to_bool_targets,
-        header_merkle_root, merkle_1_block_leaf_root, sha256_n_block_hash_target,
-        verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
+        get_sha_512_2_block_target, get_sha_block_target, get_validators_hash_range,
+        hash256_to_bool_targets, header_merkle_root, merkle_1_block_leaf_root,
+        sha256_n_block_hash_target, verify_next_validators_hash_merkle_proof, SHA_BLOCK_BITS,
     };
     use crate::circuits::sign_messages::verify_signatures;
     use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
@@ -477,8 +477,7 @@ mod tests {
                 .for_each(|j| witness.set_bool_target(signatures[i][j], data.signatures[i][j]))
         });
         // connect untrusted_pub_key
-        // TODO: get this value from inputs file
-        let n_validators = 60;
+        let n_validators = data.untrusted_validators_padded.len();
         (0..n_validators).for_each(|i| {
             (0..256).for_each(|j| {
                 witness.set_bool_target(
@@ -489,10 +488,7 @@ mod tests {
         });
         (n_validators..cc.MAX_N_VALIDATORS).for_each(|i| {
             (0..256).for_each(|j| {
-                witness.set_bool_target(
-                    untrusted_pub_keys[i][j],
-                    false,
-                );
+                witness.set_bool_target(untrusted_pub_keys[i][j], false);
             });
         });
 
@@ -1268,9 +1264,12 @@ mod tests {
             .iter()
             .map(|elm| sha256_n_block_hash_target(&mut builder, &elm, 1))
             .collect::<Vec<Vec<BoolTarget>>>();
-        // TODO: get this value from inputs file
-        let n_validators = 60;
-        let computed = merkle_1_block_leaf_root(&mut builder, &validator_leaves_hashes[..n_validators].to_vec());
+
+        let n_validators = t.untrusted_validators_padded.len();
+        let computed = merkle_1_block_leaf_root(
+            &mut builder,
+            &validator_leaves_hashes[..n_validators].to_vec(),
+        );
 
         let expected_hash_vec =
             bool_to_bytes(t.untrusted_header_padded.validators_hash[24..24 + 256].to_vec());
@@ -1350,7 +1349,10 @@ mod tests {
 
         let computed = sha256_n_block_hash_target(&mut builder, &last_block_id_target, 2);
 
-        let expected_hash = [25, 244, 156, 16, 94, 189, 142, 191, 149, 97, 231, 119, 13, 121, 136, 60, 223, 212, 212, 54, 149, 201, 48, 252, 69, 174, 209, 24, 109, 175, 43, 2];
+        let expected_hash = [
+            25, 244, 156, 16, 94, 189, 142, 191, 149, 97, 231, 119, 13, 121, 136, 60, 223, 212,
+            212, 54, 149, 201, 48, 252, 69, 174, 209, 24, 109, 175, 43, 2,
+        ];
         let expected_hash_target = builder.add_virtual_hash256_target();
         witness.set_hash256_target(&expected_hash_target, &expected_hash);
 
@@ -1706,5 +1708,123 @@ mod tests {
         println!("3 * quorum_vp {:?}", 3 * quorum_vp);
         println!("2 * total_vp {:?}", 2 * total_vp);
         assert!(sufficient == true)
+    }
+
+    // TODO: negative test
+    #[traced_test]
+    #[test]
+    fn test_get_validators_hash_range() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let t = get_test_data();
+        let validators_hash_range = get_validators_hash_range(
+            &mut builder,
+            &validator_leaves_padded_target,
+            cc.MIN_N_VALIDATORS,
+            cc.MAX_N_VALIDATORS,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..t.untrusted_validators_padded.len()).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    validator_leaves_padded_target[i][j],
+                    t.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+        (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS)
+                .for_each(|j| witness.set_bool_target(validator_leaves_padded_target[i][j], false))
+        });
+
+        let expected_hash_vec =
+            bool_to_bytes(t.untrusted_header_padded.validators_hash[24..24 + 256].to_vec());
+        let mut expected_hash = [0u8; 32];
+        expected_hash.copy_from_slice(&expected_hash_vec.as_slice());
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(
+                        validators_hash_range[4][i * 32 + j].target,
+                        bin32_target.bits[j].target,
+                    )
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[traced_test]
+    #[should_panic]
+    #[test]
+    fn test_get_validators_hash_range_should_panic() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let t = get_test_data();
+        let validators_hash_range = get_validators_hash_range(
+            &mut builder,
+            &validator_leaves_padded_target,
+            cc.MIN_N_VALIDATORS,
+            cc.MAX_N_VALIDATORS,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        (0..t.untrusted_validators_padded.len()).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    validator_leaves_padded_target[i][j],
+                    t.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+        (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS)
+                .for_each(|j| witness.set_bool_target(validator_leaves_padded_target[i][j], false))
+        });
+
+        let expected_hash_vec =
+            bool_to_bytes(t.untrusted_header_padded.validators_hash[24..24 + 256].to_vec());
+        let mut expected_hash = [0u8; 32];
+        expected_hash.copy_from_slice(&expected_hash_vec.as_slice());
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(
+                        validators_hash_range[3][i * 32 + j].target,
+                        bin32_target.bits[j].target,
+                    )
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
     }
 }

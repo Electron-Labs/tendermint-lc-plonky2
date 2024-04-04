@@ -17,6 +17,7 @@ pub struct Config {
     pub INTERSECTION_INDICES_DOMAIN_SIZE: usize,
     pub SIGNATURE_INDICES_DOMAIN_SIZE: usize,
     pub LEB128_GROUP_SIZE: usize,
+    // TODO: remove this
     pub N_VALIDATORS_LEAVES: usize,
     pub CHAIN_ID: Vec<bool>,
     pub VERSION_BLOCK: Vec<bool>,
