@@ -11,6 +11,7 @@ mod tests {
     };
     use crate::circuits::sign_messages::verify_signatures;
     use crate::circuits::tendermint::{add_virtual_header_padded_target, set_header_padded_target};
+    use crate::circuits::validators_hash::computer_validators_hash;
     use crate::circuits::validators_quorum::{
         constrain_trusted_quorum, constrain_untrusted_quorum,
     };
@@ -1710,7 +1711,6 @@ mod tests {
         assert!(sufficient == true)
     }
 
-    // TODO: negative test
     #[traced_test]
     #[test]
     fn test_get_validators_hash_range() {
@@ -1718,14 +1718,14 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+        let max_validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
         let t = get_test_data();
         let validators_hash_range = get_validators_hash_range(
             &mut builder,
-            &validator_leaves_padded_target,
+            &max_validator_leaves_padded_target,
             cc.MIN_N_VALIDATORS,
             cc.MAX_N_VALIDATORS,
         );
@@ -1735,14 +1735,15 @@ mod tests {
         (0..t.untrusted_validators_padded.len()).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
-                    validator_leaves_padded_target[i][j],
+                    max_validator_leaves_padded_target[i][j],
                     t.untrusted_validators_padded[i][j],
                 )
             })
         });
         (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
-            (0..SHA_BLOCK_BITS)
-                .for_each(|j| witness.set_bool_target(validator_leaves_padded_target[i][j], false))
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(max_validator_leaves_padded_target[i][j], false)
+            })
         });
 
         let expected_hash_vec =
@@ -1777,14 +1778,14 @@ mod tests {
         let mut builder = CircuitBuilder::<F, D>::new(config);
         let cc = load_chain_config();
 
-        let validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+        let max_validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
             .map(|_| get_sha_block_target(&mut builder))
             .collect::<Vec<Vec<BoolTarget>>>();
 
         let t = get_test_data();
         let validators_hash_range = get_validators_hash_range(
             &mut builder,
-            &validator_leaves_padded_target,
+            &max_validator_leaves_padded_target,
             cc.MIN_N_VALIDATORS,
             cc.MAX_N_VALIDATORS,
         );
@@ -1794,14 +1795,15 @@ mod tests {
         (0..t.untrusted_validators_padded.len()).for_each(|i| {
             (0..SHA_BLOCK_BITS).for_each(|j| {
                 witness.set_bool_target(
-                    validator_leaves_padded_target[i][j],
+                    max_validator_leaves_padded_target[i][j],
                     t.untrusted_validators_padded[i][j],
                 )
             })
         });
         (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
-            (0..SHA_BLOCK_BITS)
-                .for_each(|j| witness.set_bool_target(validator_leaves_padded_target[i][j], false))
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(max_validator_leaves_padded_target[i][j], false)
+            })
         });
 
         let expected_hash_vec =
@@ -1819,6 +1821,135 @@ mod tests {
                 (0..32).for_each(|j| {
                     builder.connect(
                         validators_hash_range[3][i * 32 + j].target,
+                        bin32_target.bits[j].target,
+                    )
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[traced_test]
+    #[test]
+    fn test_computer_validators_hash() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let n_validators_target = builder.add_virtual_target();
+        let max_validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let t = get_test_data();
+        let validators_hash = computer_validators_hash(
+            &mut builder,
+            &n_validators_target,
+            &max_validator_leaves_padded_target,
+            &cc,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        witness.set_target(
+            n_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len()),
+        );
+        (0..t.untrusted_validators_padded.len()).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    max_validator_leaves_padded_target[i][j],
+                    t.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+        (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(max_validator_leaves_padded_target[i][j], false)
+            })
+        });
+
+        let expected_hash_vec =
+            bool_to_bytes(t.untrusted_header_padded.validators_hash[24..24 + 256].to_vec());
+        let mut expected_hash = [0u8; 32];
+        expected_hash.copy_from_slice(&expected_hash_vec.as_slice());
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(
+                        validators_hash[i * 32 + j].target,
+                        bin32_target.bits[j].target,
+                    )
+                });
+            });
+
+        let data = builder.build::<C>();
+        prove_and_verify(data, witness);
+    }
+
+    #[traced_test]
+    #[should_panic]
+    #[test]
+    fn test_computer_validators_hash_incorrect_n_validators() {
+        let config = CircuitConfig::standard_recursion_config();
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let cc = load_chain_config();
+
+        let n_validators_target = builder.add_virtual_target();
+        let max_validator_leaves_padded_target = (0..cc.MAX_N_VALIDATORS)
+            .map(|_| get_sha_block_target(&mut builder))
+            .collect::<Vec<Vec<BoolTarget>>>();
+
+        let t = get_test_data();
+        let validators_hash = computer_validators_hash(
+            &mut builder,
+            &n_validators_target,
+            &max_validator_leaves_padded_target,
+            &cc,
+        );
+
+        // set targets
+        let mut witness = PartialWitness::<F>::new();
+        witness.set_target(
+            n_validators_target,
+            F::from_canonical_usize(t.untrusted_validators_padded.len() - 1),
+        );
+        (0..t.untrusted_validators_padded.len()).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(
+                    max_validator_leaves_padded_target[i][j],
+                    t.untrusted_validators_padded[i][j],
+                )
+            })
+        });
+        (t.untrusted_validators_padded.len()..cc.MAX_N_VALIDATORS).for_each(|i| {
+            (0..SHA_BLOCK_BITS).for_each(|j| {
+                witness.set_bool_target(max_validator_leaves_padded_target[i][j], false)
+            })
+        });
+
+        let expected_hash_vec =
+            bool_to_bytes(t.untrusted_header_padded.validators_hash[24..24 + 256].to_vec());
+        let mut expected_hash = [0u8; 32];
+        expected_hash.copy_from_slice(&expected_hash_vec.as_slice());
+        let expected_hash_target = builder.add_virtual_hash256_target();
+        witness.set_hash256_target(&expected_hash_target, &expected_hash);
+
+        expected_hash_target
+            .iter()
+            .enumerate()
+            .for_each(|(i, &u32_elm)| {
+                let bin32_target = builder.convert_u32_bin32(u32_elm);
+                (0..32).for_each(|j| {
+                    builder.connect(
+                        validators_hash[i * 32 + j].target,
                         bin32_target.bits[j].target,
                     )
                 });

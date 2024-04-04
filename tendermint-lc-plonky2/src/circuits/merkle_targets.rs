@@ -328,18 +328,17 @@ pub fn get_sub_tree_roots<F: RichField + Extendable<D>, const D: usize>(
     sub_tree_roots
 }
 
-// TODO: test
 /// return array of validators hash for the range [min_n_validators, max_n_validators] using minimal number of hashes
 pub fn get_validators_hash_range<F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
-    leaves_padded: &Vec<Vec<BoolTarget>>,
+    max_validators_leaves_padded: &Vec<Vec<BoolTarget>>,
     min_n_validators: usize,
     max_n_validators: usize,
 ) -> Vec<Vec<BoolTarget>> {
     assert!(min_n_validators <= max_n_validators);
-    assert!(leaves_padded.len() == max_n_validators);
+    assert!(max_validators_leaves_padded.len() == max_n_validators);
 
-    let leaves_hashes = leaves_padded
+    let leaves_hashes = max_validators_leaves_padded
         .iter()
         .map(|elm| sha256_n_block_hash_target(builder, &elm, 1))
         .collect::<Vec<Vec<BoolTarget>>>();
