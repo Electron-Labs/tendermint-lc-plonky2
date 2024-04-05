@@ -446,8 +446,15 @@ pub async fn get_inputs_for_height(
         };
 
         let cv = CanonicalVote::new(v, untrusted_block.header.chain_id.clone());
+        // TODO:
+        println!("idx {:?}", idx);
+        println!("time {:?}", cv.timestamp.clone());
 
         let msg = Protobuf::<tendermint_proto::types::CanonicalVote>::encode_vec(cv);
+
+        // TODO:
+        println!("msg {:?}", msg);
+        println!("---------------------");
 
         let sign_message: Vec<u8> = [vec![msg.len() as u8], msg.clone()].concat();
 
