@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://rpc-axelar.cosmos-spaces.cloud
 - https://axelar-rpc.pops.one
 - https://axelar-rpc.qubelabs.io
+- https://rpc-1.axelar.nodes.guru
+- https://rpc-axelar-ia.cosmosia.notional.ventures/
+- https://axelar-rpc.polkachu.com
+- https://axelar.rpc.stakin-nodes.com
+- https://rpc.axelar.bh.rocks
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 80
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 30
-N_INTERSECTION_INDICES: 30
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 51
+N_INTERSECTION_INDICES: 51
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 80
 CHAIN_ID:

@@ -1,9 +1,14 @@
 RPC_ENDPOINT:
 - https://rpc.comdex.one
 - https://comdex-rpc.polkachu.com
+- https://comdex.rpc.m.stavr.tech
 - https://rpc.comdex.chaintools.tech/
 - https://comdex-rpc.lavenderfive.com/
 - https://rpc-comdex.cosmos-spaces.cloud
+- https://rpc-comdex.whispernode.com
+- https://comdex-mainnet-rpc.autostake.com
+- https://comdex-rpc.w3coins.io
+- https://comdex-rpc.stakerhouse.com
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 93
@@ -12,8 +17,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 48
-N_INTERSECTION_INDICES: 48
+N_SIGNATURE_INDICES: 53
+N_INTERSECTION_INDICES: 53
 INTERSECTION_INDICES_DOMAIN_SIZE: 64
 SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7

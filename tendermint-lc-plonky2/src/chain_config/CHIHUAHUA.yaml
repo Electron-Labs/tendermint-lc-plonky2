@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://chihua.rpc.m.stavr.tech
 - https://chihuahua-rpc.polkachu.com
 - https://rpc-chihuahua-ia.cosmosia.notional.ventures
+- https://chihuahua-rpc.lavenderfive.com
+- https://rpc.huahua.bh.rocks
+- https://chihuahua-rpc.kleomedes.network
+- https://rpc-chihuahua.pupmos.network
+- https://chihuahua-mainnet-rpc.autostake.com
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 130
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 29
-N_INTERSECTION_INDICES: 29
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 52
+N_INTERSECTION_INDICES: 52
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 130
 CHAIN_ID:

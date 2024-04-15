@@ -4,6 +4,9 @@ RPC_ENDPOINT:
 - https://rpc-provenance-ia.cosmosia.notional.ventures/
 - https://provenance-mainnet-rpc.autostake.com
 - https://provenance-rpc.ibs.team
+- https://provenance-rpc.highstakes.ch
+- https://rpc.provenance.blockval.io/
+- https://provenance-rpc.panthea.eu
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 68
@@ -12,8 +15,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 23
-N_INTERSECTION_INDICES: 23
+N_SIGNATURE_INDICES: 27
+N_INTERSECTION_INDICES: 27
 INTERSECTION_INDICES_DOMAIN_SIZE: 32
 SIGNATURE_INDICES_DOMAIN_SIZE: 32
 LEB128_GROUP_SIZE: 7

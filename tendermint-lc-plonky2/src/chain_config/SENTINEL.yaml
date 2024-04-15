@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://rpc-sentinel.whispernode.com
 - https://rpc.sentinel.chaintools.tech/
 - https://rpc.sentinel.quokkastake.io
+- https://rpc.dvpn.roomit.xyz
+- https://sentinel-rpc.badgerbite.io/
+- https://sentinel-rpc.publicnode.com
+- https://sentinel-rpc.validatornode.com/
+- https://rpc.trinityvalidator.com
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 85
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 28
-N_INTERSECTION_INDICES: 28
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 49
+N_INTERSECTION_INDICES: 49
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 85
 CHAIN_ID:

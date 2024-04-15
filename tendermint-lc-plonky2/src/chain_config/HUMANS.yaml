@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://humans.rpc.nodeshub.online
 - https://humans-mainnet-rpc.itrocket.net
 - https://humans-rpc.staketab.org
+- https://rpc-humansai.thenop.io
+- https://humans-rpc.stakeangle.com/
+- https://humans-rpc.anyvalid.com
+- https://mainnet-humans-rpc.konsortech.xyz
+- http://135.181.75.235
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 55
@@ -12,8 +17,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 24
-N_INTERSECTION_INDICES: 24
+N_SIGNATURE_INDICES: 27
+N_INTERSECTION_INDICES: 27
 INTERSECTION_INDICES_DOMAIN_SIZE: 32
 SIGNATURE_INDICES_DOMAIN_SIZE: 32
 LEB128_GROUP_SIZE: 7

@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://rpc.omniflix.chaintools.tech/
 - https://rpc-omniflixhub-ia.cosmosia.notional.ventures/
 - https://omniflixhub-rpc.lavenderfive.com/
+- https://rpc.omniflix.silentvalidator.com/
+- https://omniflixhub-mainnet-rpc.autostake.com
+- https://rpc-omniflix.architectnodes.com
+- https://omniflix-rpc.staketab.org
+- https://rpc-omniflixhub.cosmos-spaces.cloud
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 80
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 31
-N_INTERSECTION_INDICES: 31
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 53
+N_INTERSECTION_INDICES: 53
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 80
 CHAIN_ID:

@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - http://juno.rpc.m.stavr.tech
 - https://rpc-juno.ecostake.com
 - https://juno-rpc.polkachu.com
+- https://juno-rpc.lavenderfive.com
+- https://rpc-juno.pupmos.network
+- https://rpc-juno.cosmos-spaces.cloud
+- https://rpc-juno-ia.cosmosia.notional.ventures/
+- https://rpc.juno.chaintools.tech/
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 155
@@ -12,8 +17,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 48
-N_INTERSECTION_INDICES: 48
+N_SIGNATURE_INDICES: 57
+N_INTERSECTION_INDICES: 57
 INTERSECTION_INDICES_DOMAIN_SIZE: 64
 SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7

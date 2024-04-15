@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://teritori.rpc.m.stavr.tech
 - https://rpc.teritori.silentvalidator.com/
 - https://teritori-rpc.brocha.in
+- https://teritori-rpc.ibs.team
+- https://teritori.rpc.kjnodes.com
+- https://rpc.tori.bh.rocks
+- https://teritori-rpc.kleomedes.network
+- https://m-teritori.rpc.utsa.tech
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 105
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 25
-N_INTERSECTION_INDICES: 25
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 48
+N_INTERSECTION_INDICES: 48
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 105
 CHAIN_ID:

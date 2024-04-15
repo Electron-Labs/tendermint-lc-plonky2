@@ -1,9 +1,14 @@
 RPC_ENDPOINT:
-- https://rpc.akash.forbole.com
 - https://rpc-akash.ecostake.com
 - https://akash-rpc.lavenderfive.com
 - https://akash-rpc.polkachu.com
 - https://rpc-akash.cosmos-spaces.cloud
+- https://rpc-akash-ia.cosmosia.notional.ventures
+- http://akash.c29r3.xyz
+- https://akash-mainnet-rpc.autostake.com
+- https://akash-rpc.kleomedes.network
+- https://rpc-akash-01.stakeflow.io
+- https://rpc.akash.forbole.com
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 105
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 27
-N_INTERSECTION_INDICES: 27
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 49
+N_INTERSECTION_INDICES: 49
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 105
 CHAIN_ID:

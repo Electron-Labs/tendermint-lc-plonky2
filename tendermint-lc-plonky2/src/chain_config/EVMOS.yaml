@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://tendermint.bd.evmos.org
 - https://rpc-evmos-ia.cosmosia.notional.ventures
 - https://rpc.evmos.testnet.run
+- https://rpc.evmos.nodestake.top
+- https://rpc.evmos.chaintools.tech/
+- https://evmos-rpc.polkachu.com
+- https://rpc.evmos.silentvalidator.com/
+- https://rpc.evmos.tcnetwork.io
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 155
@@ -12,10 +17,10 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 28
-N_INTERSECTION_INDICES: 28
-INTERSECTION_INDICES_DOMAIN_SIZE: 32
-SIGNATURE_INDICES_DOMAIN_SIZE: 32
+N_SIGNATURE_INDICES: 52
+N_INTERSECTION_INDICES: 52
+INTERSECTION_INDICES_DOMAIN_SIZE: 64
+SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
 N_VALIDATORS_LEAVES: 155
 CHAIN_ID:

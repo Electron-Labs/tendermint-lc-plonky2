@@ -1,9 +1,14 @@
 RPC_ENDPOINT:
 - https://rpc.core.persistence.one
 - https://rpc-persistent-ia.cosmosia.notional.ventures/
+- https://persistence.rpc.m.stavr.tech
 - https://persistence-rpc.polkachu.com
 - https://persistence-rpc.kleomedes.network
 - https://rpc-persistence.architectnodes.com
+- https://rpc-persistence.cosmos-spaces.cloud
+- https://persistence-mainnet-rpc.cosmonautstakes.com
+- https://persistence-rpc.quantnode.tech
+- https://persistence-rpc.zenscape.one
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 105
@@ -12,8 +17,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 50
-N_INTERSECTION_INDICES: 50
+N_SIGNATURE_INDICES: 57
+N_INTERSECTION_INDICES: 57
 INTERSECTION_INDICES_DOMAIN_SIZE: 64
 SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7

@@ -4,6 +4,11 @@ RPC_ENDPOINT:
 - https://injective-rpc.polkachu.com
 - https://injective-rpc.lavenderfive.com
 - https://rpc-injective-ia.cosmosia.notional.ventures/
+- https://injective-mainnet-rpc.autostake.com
+- https://rpc-injective.whispernode.com
+- https://rpc-injective-01.stakeflow.io
+- https://injective-rpc.publicnode.com
+- https://injective-rpc.highstakes.ch
 VP_BITS: 64
 SIGNATURE_BITS: 512
 MAX_N_VALIDATORS: 65
@@ -12,8 +17,8 @@ HEADER_NEXT_VALIDATORS_HASH_PROOF_SIZE: 4
 HEIGHT_BITS: 64
 TIMESTAMP_BITS: 35
 TRUSTING_PERIOD: 1209600
-N_SIGNATURE_INDICES: 40
-N_INTERSECTION_INDICES: 40
+N_SIGNATURE_INDICES: 48
+N_INTERSECTION_INDICES: 48
 INTERSECTION_INDICES_DOMAIN_SIZE: 64
 SIGNATURE_INDICES_DOMAIN_SIZE: 64
 LEB128_GROUP_SIZE: 7
