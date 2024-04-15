@@ -4,6 +4,7 @@ use std::fmt;
 use tendermint::block::{Block, Commit, Height};
 use tendermint::validator::Info;
 use tendermint_rpc::{Client, HttpClient, Paging, Response};
+use tokio::time::timeout;
 use tokio::time::{sleep, Duration};
 use tracing::{error, info};
 
@@ -22,21 +23,31 @@ pub async fn get_latest_commit(c: &Config) -> Result<Commit, Box<dyn Error + Sen
     let mut result: Result<Commit, Box<dyn Error + Send + Sync>> = Err(Box::new(Empty));
     for endpoint in &c.RPC_ENDPOINT {
         let client = HttpClient::new(endpoint.as_str())?;
-        let reponse = client.latest_commit().await;
-        match reponse {
-            Ok(s) => {
-                result = Ok(s.signed_header.commit);
-                break;
-            },
+        match timeout(Duration::from_millis(5000), client.latest_commit()).await {
             Err(e) => {
                 info!(
-                    "Error in get_latest_commit::RPC->{:?}, {:?}, {:?}",
+                    "unresponsive RPC->{:?}, {:?}. {:?}",
                     endpoint,
                     e.to_string(),
-                    "Trying again..."
+                    "Trying with another RPC..."
                 );
-                result = Err(Box::new(e));
+                result = Err(Box::new(e))
             }
+            Ok(reponse) => match reponse {
+                Ok(s) => {
+                    result = Ok(s.signed_header.commit);
+                    break;
+                }
+                Err(e) => {
+                    info!(
+                        "Error in get_latest_commit::RPC->{:?}, {:?}, {:?}",
+                        endpoint,
+                        e.to_string(),
+                        "Trying with another RPC..."
+                    );
+                    result = Err(Box::new(e));
+                }
+            },
         }
     }
 
@@ -50,21 +61,31 @@ pub async fn get_commit(
     let mut result: Result<Commit, Box<dyn Error + Send + Sync>> = Err(Box::new(Empty));
     for endpoint in &c.RPC_ENDPOINT {
         let client = HttpClient::new(endpoint.as_str())?;
-        let reponse = client.commit(height).await;
-        match reponse {
-            Ok(s) => {
-                result = Ok(s.signed_header.commit);
-                break;
-            },
+        match timeout(Duration::from_millis(5000), client.commit(height)).await {
             Err(e) => {
                 info!(
-                    "Error in get_commit::RPC->{:?}, {:?}, {:?}",
+                    "unresponsive RPC->{:?}, {:?}. {:?}",
                     endpoint,
                     e.to_string(),
                     "Trying with another RPC..."
                 );
-                result = Err(Box::new(e));
+                result = Err(Box::new(e))
             }
+            Ok(reponse) => match reponse {
+                Ok(s) => {
+                    result = Ok(s.signed_header.commit);
+                    break;
+                }
+                Err(e) => {
+                    info!(
+                        "Error in get_commit::RPC->{:?}, {:?}, {:?}",
+                        endpoint,
+                        e.to_string(),
+                        "Trying with another RPC..."
+                    );
+                    result = Err(Box::new(e));
+                }
+            },
         }
     }
 
@@ -75,21 +96,32 @@ pub async fn get_block(c: &Config, height: Height) -> Result<Block, Box<dyn Erro
     let mut result: Result<Block, Box<dyn Error + Send + Sync>> = Err(Box::new(Empty));
     for endpoint in &c.RPC_ENDPOINT {
         let client = HttpClient::new(endpoint.as_str())?;
-        let reponse = client.block(height).await;
-        match reponse {
-            Ok(s) => {
-                result = Ok(s.block);
-                break;
-            },
+
+        match timeout(Duration::from_millis(5000), client.block(height)).await {
             Err(e) => {
                 info!(
-                    "Error in get_block::RPC->{:?}, {:?}, {:?}",
+                    "unresponsive RPC->{:?}, {:?}. {:?}",
                     endpoint,
                     e.to_string(),
-                    "Trying again..."
+                    "Trying with another RPC..."
                 );
-                result = Err(Box::new(e));
+                result = Err(Box::new(e))
             }
+            Ok(reponse) => match reponse {
+                Ok(s) => {
+                    result = Ok(s.block);
+                    break;
+                }
+                Err(e) => {
+                    info!(
+                        "Error in get_block::RPC->{:?}, {:?}, {:?}",
+                        endpoint,
+                        e.to_string(),
+                        "Trying with another RPC..."
+                    );
+                    result = Err(Box::new(e));
+                }
+            },
         }
     }
 
@@ -103,21 +135,36 @@ pub async fn get_validators_all(
     let mut result: Result<Vec<Info>, Box<dyn Error + Send + Sync>> = Err(Box::new(Empty));
     for endpoint in &c.RPC_ENDPOINT {
         let client = HttpClient::new(endpoint.as_str())?;
-        let reponse = client.validators(height, Paging::All).await;
-        match reponse {
-            Ok(s) => {
-                result = Ok(s.validators);
-                break;
-            },
+        match timeout(
+            Duration::from_millis(5000),
+            client.validators(height, Paging::All),
+        )
+        .await
+        {
             Err(e) => {
                 info!(
-                    "Error in get_validators_all::RPC->{:?}, {:?}, {:?}",
+                    "unresponsive RPC->{:?}, {:?}. {:?}",
                     endpoint,
                     e.to_string(),
-                    "Trying again..."
+                    "Trying with another RPC..."
                 );
-                result = Err(Box::new(e));
+                result = Err(Box::new(e))
             }
+            Ok(reponse) => match reponse {
+                Ok(s) => {
+                    result = Ok(s.validators);
+                    break;
+                }
+                Err(e) => {
+                    info!(
+                        "Error in get_validators_all::RPC->{:?}, {:?}, {:?}",
+                        endpoint,
+                        e.to_string(),
+                        "Trying with another RPC..."
+                    );
+                    result = Err(Box::new(e));
+                }
+            },
         }
     }
 
